@@ -1,0 +1,13 @@
+{
+  "name": "the-loops-pos-backend",
+  "version": "1.0.0",
+  "description": "The Loop.s POS Server — Port 3002",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node src/server.js"
+  },
+  "dependencies": {},
+  "type": "commonjs"
+}
+

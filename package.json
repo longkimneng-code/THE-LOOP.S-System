@@ -1,0 +1,29 @@
+{
+  "name": "the-loops-universal-retail-ecosystem",
+  "version": "2.0.0",
+  "description": "The Loops — Unified POS + Stock Management + Account System Retail Platform",
+  "main": "gateway/server.js",
+  "scripts": {
+    "start": "node gateway/server.js",
+    "dev": "node start-all.js",
+    "dev:gateway": "node gateway/server.js",
+    "dev:pos": "node The_Loop.s_POS/backend/src/server.js",
+    "dev:stock": "node Stock_management_loops/backend/src/server.js",
+    "dev:finance": "node account_system_Loops/backend/src/server.js",
+    "build": "npm --prefix The_Loop.s_POS/frontend run build",
+    "test": "node test_unified_architecture.js"
+  },
+  "keywords": [
+    "pos",
+    "retail",
+    "inventory",
+    "stock-management",
+    "finance",
+    "dual-currency",
+    "khmer-riel",
+    "loyverse"
+  ],
+  "author": "The Loops Team",
+  "license": "ISC"
+}
+

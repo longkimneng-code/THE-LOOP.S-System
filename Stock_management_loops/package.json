@@ -1,0 +1,17 @@
+{
+  "name": "stock_management_loops",
+  "version": "1.0.0",
+  "description": "An inventory management platform designed for fashion and apparel studios, featuring a Color × Size variant matrix, live stock ledger, defect tracking, and hang-tag barcode printing.",
+  "main": "index.js",
+  "scripts": {
+    "start": "node backend/src/server.js",
+    "dev:backend": "node backend/src/server.js",
+    "dev:frontend": "npm --prefix frontend run dev",
+    "build:frontend": "npm --prefix frontend run build",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs"
+}

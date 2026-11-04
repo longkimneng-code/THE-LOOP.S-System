@@ -1,0 +1,654 @@
+// The Loops System — Universal Retail Management Platform
+// Multi-Business, Multi-Location, Configurable Physical Product Inventory Engine
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// ==========================================
+// 1. BUSINESS & MULTI-TENANCY
+// ==========================================
+
+model Business {
+  id          String            @id @default(cuid())
+  name        String            // e.g. "Apex Retail Studio", "Urban Homeware", "Solstice Jewelry"
+  slug        String            @unique
+  industry    String            @default("GENERAL_RETAIL") // APPAREL, ELECTRONICS, JEWELRY, FOOTWEAR, COSMETICS, HOMEWARE, GENERAL
+  currency    String            @default("USD")
+  timezone    String            @default("UTC")
+  settings    BusinessSettings?
+  users       AppUser[]
+  locations   Location[]
+  categories  Category[]
+  brands      Brand[]
+  products    Product[]
+  suppliers   Supplier[]
+  customers   Customer[]
+  sales       Sale[]
+  purchases   PurchaseOrder[]
+  transfers   StockTransfer[]
+  stockCounts StockCount[]
+  auditLogs   AuditLog[]
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+}
+
+model BusinessSettings {
+  id                   String   @id @default(cuid())
+  businessId           String   @unique
+  business             Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  defaultTaxRate       Float    @default(0.0) // Percentage e.g. 8.25
+  lowStockAlertDefault Int      @default(5)
+  enableBarcodeScanner Boolean  @default(true)
+  allowNegativeStock   Boolean  @default(false)
+  autoSkuGeneration    Boolean  @default(true)
+  skuPrefix            String   @default("LP")
+  receiptFooterMessage String?
+  updatedAt            DateTime @updatedAt
+}
+
+// ==========================================
+// 2. USERS, ROLES & ACCESS CONTROL
+// ==========================================
+
+model AppUser {
+  id           String            @id @default(cuid())
+  businessId   String
+  business     Business          @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  username     String            @unique
+  email        String            @unique
+  fullName     String
+  passwordHash String?
+  isActive     Boolean           @default(true)
+  roleId       String?
+  role         Role?             @relation(fields: [roleId], references: [id])
+  movements    StockMovement[]
+  sales        Sale[]
+  goodsReceipts GoodsReceipt[]
+  auditLogs    AuditLog[]
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+}
+
+model Role {
+  id          String       @id @default(cuid())
+  name        String       // ADMIN, STORE_MANAGER, CASHIER, INVENTORY_AUDITOR
+  description String?
+  permissions Permission[]
+  users       AppUser[]
+}
+
+model Permission {
+  id     String @id @default(cuid())
+  action String // e.g. "products:create", "stock:adjust", "sales:process", "reports:view"
+  roles  Role[]
+}
+
+// ==========================================
+// 3. STORES & MULTI-LOCATION
+// ==========================================
+
+model Location {
+  id           String            @id @default(cuid())
+  businessId   String
+  business     Business          @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  name         String            // e.g. "Main Flagship Store", "Central Distribution Warehouse", "Storage Room B"
+  code         String            // e.g. "LOC-01", "WH-MAIN"
+  type         String            @default("STORE") // STORE, WAREHOUSE, OUTLET, STORAGE_ROOM
+  address      String?
+  isDefault    Boolean           @default(false)
+  isActive     Boolean           @default(true)
+  balances     StockBalance[]
+  movements    StockMovement[]
+  transfersOut StockTransfer[]   @relation("TransferSource")
+  transfersIn  StockTransfer[]   @relation("TransferDestination")
+  stockCounts  StockCount[]
+  saleItems    SaleItem[]
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+
+  @@unique([businessId, code])
+}
+
+// ==========================================
+// 4. CATEGORIES, BRANDS & ATTRIBUTES
+// ==========================================
+
+model Category {
+  id          String     @id @default(cuid())
+  businessId  String
+  business    Business   @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  name        String     // e.g. "Electronics", "Bags & Accessories", "Footwear", "Cosmetics"
+  slug        String
+  description String?
+  parentId    String?
+  parent      Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children    Category[] @relation("CategoryHierarchy")
+  products    Product[]
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@unique([businessId, slug])
+}
+
+model Brand {
+  id         String    @id @default(cuid())
+  businessId String
+  business   Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  name       String    // e.g. "The Loops Studio", "Urban Minimal", "Aura Tech"
+  code       String?
+  products   Product[]
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@unique([businessId, name])
+}
+
+// Configurable attribute definitions (e.g. "Color", "Size", "Model", "Material", "Capacity", "Shade")
+model ProductAttribute {
+  id         String                  @id @default(cuid())
+  businessId String
+  name       String                  // e.g. "Color", "Size", "Storage Capacity", "Shade"
+  slug       String                  // e.g. "color", "size", "capacity", "shade"
+  values     ProductAttributeValue[]
+  createdAt  DateTime                @default(now())
+
+  @@unique([businessId, slug])
+}
+
+model ProductAttributeValue {
+  id          String           @id @default(cuid())
+  attributeId String
+  attribute   ProductAttribute @relation(fields: [attributeId], references: [id], onDelete: Cascade)
+  value       String           // e.g. "Matte Black", "64GB", "Size 42", "Crimson Red"
+  hexColor    String?          // Optional hex swatch for color attributes (e.g. "#1A1A1A")
+  displayOrder Int             @default(0)
+}
+
+// ==========================================
+// 5. UNIVERSAL PRODUCT CATALOG & VARIANTS
+// ==========================================
+
+enum ProductStatus {
+  ACTIVE
+  INACTIVE
+  ARCHIVED
+}
+
+model Product {
+  id               String           @id @default(cuid())
+  businessId       String
+  business         Business         @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  name             String           // e.g. "Minimalist Leather Backpack", "MagSafe Phone Case", "Velvet Matte Lipstick"
+  description      String?
+  productCode      String           // e.g. "PRD-BAG-001" or "PRD-ACC-092"
+  categoryId       String
+  category         Category         @relation(fields: [categoryId], references: [id])
+  brandId          String?
+  brand            Brand?           @relation(fields: [brandId], references: [id])
+  supplierId       String?
+  supplier         Supplier?        @relation(fields: [supplierId], references: [id])
+  
+  status           ProductStatus    @default(ACTIVE)
+  trackInventory   Boolean          @default(true)
+  hasVariants      Boolean          @default(false)
+  stockUnit        String           @default("piece") // piece, unit, box, set, pair, bottle
+  
+  // Base default pricing (minor units, e.g. cents)
+  baseCostMinor    Int              @default(0)
+  basePriceMinor   Int              @default(0)
+  compareAtMinor   Int?
+  wholesaleMinor   Int?
+  taxRate          Float            @default(0.0)
+  
+  allowBackorders  Boolean          @default(false)
+  tags             String?          // Comma-separated tags e.g. "bestseller,summer,minimal"
+  
+  images           ProductImage[]
+  variants         ProductVariant[]
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  @@unique([businessId, productCode])
+  @@index([businessId, categoryId])
+}
+
+model ProductImage {
+  id         String   @id @default(cuid())
+  productId  String
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  url        String
+  altText    String?
+  isPrimary  Boolean  @default(false)
+  sortOrder  Int      @default(0)
+}
+
+// Variant entity representing each sellable SKU permutation (or the single default variant for non-variant products)
+model ProductVariant {
+  id               String              @id @default(cuid())
+  productId        String
+  product          Product             @relation(fields: [productId], references: [id], onDelete: Cascade)
+  variantTitle     String              // e.g. "Default", "Matte Black / 128GB", "Shade 04 Berry"
+  
+  sku              String              // Unique sellable code e.g. "PRD-BAG-BLK", "ACC-CAS-15PRO-BLK"
+  barcode          String?             // EAN-13, UPC-A, Code-128
+  
+  // JSON array of selected attributes: e.g. [{"name": "Color", "value": "Black"}, {"name": "Capacity", "value": "128GB"}]
+  attributesJson   String?             @default("[]")
+  
+  costMinor        Int                 // Acquisition / manufacturing cost in cents
+  priceMinor       Int                 // Selling retail price in cents
+  compareAtMinor   Int?                // Original MSRP / strikethrough price
+  wholesaleMinor   Int?
+  
+  lowStockThreshold Int                @default(5)
+  imageUrl         String?
+  isActive         Boolean             @default(true)
+  
+  balances         StockBalance[]
+  movements        StockMovement[]
+  poItems          PurchaseOrderItem[]
+  goodsReceiptItems GoodsReceiptItem[]
+  saleItems        SaleItem[]
+  returnItems      CustomerReturnItem[]
+  transferItems    StockTransferItem[]
+  countItems       StockCountItem[]
+  
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+
+  @@unique([productId, sku])
+}
+
+// Dedicated sellable SKU registry index
+model SKU {
+  id        String   @id @default(cuid())
+  code      String   @unique // Globally unique SKU across the business
+  barcode   String?  @unique
+  variantId String   @unique
+  createdAt DateTime @default(now())
+}
+
+// ==========================================
+// 6. INVENTORY BALANCES & MOVEMENT LEDGER
+// ==========================================
+
+model StockBalance {
+  id               String         @id @default(cuid())
+  variantId        String
+  variant          ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  locationId       String
+  location         Location       @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  
+  quantityOpening  Int            @default(0) // Initial stock baseline entered at onboarding
+  quantityOnHand   Int            @default(0) // Current sellable physical stock
+  quantityReserved Int            @default(0) // Committed to open orders/holds
+  quantityDamaged  Int            @default(0) // Physical units quarantined as damaged
+  
+  rackLocation     String?        // Physical aisle/shelf/bin coordinate e.g. "Shelf A-04"
+  lastCountedAt    DateTime?
+  updatedAt        DateTime       @updatedAt
+
+  @@unique([variantId, locationId])
+  @@index([locationId])
+}
+
+enum StockMovementType {
+  OPENING_STOCK           // Initial stock setup
+  RECEIVE_STOCK           // Inflow from supplier purchase order
+  SALE_OUT                // Outflow from finalized retail sale
+  CUSTOMER_RETURN         // Inflow from customer return (sellable or quarantined)
+  SUPPLIER_RETURN         // Outflow returned back to vendor
+  DAMAGED_STOCK           // Outflow from sellable into damaged quarantine
+  STOCK_ADJUSTMENT        // Correction from physical stock count variance
+  STOCK_TRANSFER_IN       // Internal inflow arriving from another location
+  STOCK_TRANSFER_OUT      // Internal outflow departing for another location
+  RESERVED_STOCK          // Temporary reservation hold for pending customer order
+  RELEASE_RESERVED_STOCK  // Release or cancellation of reservation
+}
+
+model StockMovement {
+  id                 String            @id @default(cuid())
+  businessId         String
+  business           Business          @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  variantId          String
+  variant            ProductVariant    @relation(fields: [variantId], references: [id], onDelete: Restrict)
+  locationId         String
+  location           Location          @relation(fields: [locationId], references: [id], onDelete: Restrict)
+  
+  type               StockMovementType
+  quantityDelta      Int               // Signed delta (+15, -2)
+  balanceAfter       Int               // Resulting on-hand balance at this location
+  unitCostMinor      Int?              // Cost snapshot at time of transaction
+  
+  referenceNo        String?           // PO-001, SALE-8012, ADJ-004, TRANS-012
+  sourceType         String?           // PURCHASE_ORDER, SALE, RETURN, STOCK_COUNT, TRANSFER, MANUAL
+  sourceId           String?
+  reasonNote         String?
+  
+  performedById      String?
+  performedBy        AppUser?          @relation(fields: [performedById], references: [id])
+  idempotencyKey     String?           @unique
+  reversesMovementId String?
+  
+  createdAt          DateTime          @default(now())
+
+  @@index([variantId, locationId, createdAt])
+  @@index([referenceNo])
+}
+
+// ==========================================
+// 7. PURCHASING & SUPPLIERS
+// ==========================================
+
+model Supplier {
+  id             String          @id @default(cuid())
+  businessId     String
+  business       Business        @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  name           String          // e.g. "Pacific Wholesale Co.", "Nordic Craft Guild"
+  code           String?         // e.g. "SUP-001"
+  contactPerson  String?
+  email          String?
+  phone          String?
+  address        String?
+  leadTimeDays   Int             @default(7)
+  paymentTerms   String?         // Net 30, COD, Due on Receipt
+  notes          String?
+  products       Product[]
+  purchaseOrders PurchaseOrder[]
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  @@unique([businessId, name])
+}
+
+enum PurchaseOrderStatus {
+  DRAFT
+  ORDERED
+  PARTIAL_RECEIVED
+  COMPLETED
+  CANCELLED
+}
+
+model PurchaseOrder {
+  id             String              @id @default(cuid())
+  businessId     String
+  business       Business            @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  poNumber       String              @unique // e.g. "PO-2026-0001"
+  supplierId     String
+  supplier       Supplier            @relation(fields: [supplierId], references: [id])
+  status         PurchaseOrderStatus @default(DRAFT)
+  
+  orderDate      DateTime            @default(now())
+  expectedDate   DateTime?
+  notes          String?
+  totalCostMinor Int                 @default(0)
+  
+  items          PurchaseOrderItem[]
+  goodsReceipts  GoodsReceipt[]
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+
+  @@unique([businessId, poNumber])
+}
+
+model PurchaseOrderItem {
+  id                 String             @id @default(cuid())
+  purchaseOrderId    String
+  purchaseOrder      PurchaseOrder      @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  variantId          String
+  variant            ProductVariant     @relation(fields: [variantId], references: [id], onDelete: Restrict)
+  quantityOrdered    Int
+  quantityReceived   Int                @default(0)
+  unitCostMinor      Int
+  goodsReceiptItems  GoodsReceiptItem[]
+
+  @@unique([purchaseOrderId, variantId])
+}
+
+model GoodsReceipt {
+  id              String             @id @default(cuid())
+  receiptNumber   String             @unique // e.g. "GRN-2026-0082"
+  purchaseOrderId String
+  purchaseOrder   PurchaseOrder      @relation(fields: [purchaseOrderId], references: [id])
+  receivedById    String?
+  receivedBy      AppUser?           @relation(fields: [receivedById], references: [id])
+  supplierDeliveryNote String?
+  receivedAt      DateTime           @default(now())
+  notes           String?
+  items           GoodsReceiptItem[]
+}
+
+model GoodsReceiptItem {
+  id             String            @id @default(cuid())
+  goodsReceiptId String
+  goodsReceipt   GoodsReceipt      @relation(fields: [goodsReceiptId], references: [id], onDelete: Cascade)
+  poItemId       String?
+  poItem         PurchaseOrderItem? @relation(fields: [poItemId], references: [id])
+  variantId      String
+  variant        ProductVariant    @relation(fields: [variantId], references: [id], onDelete: Restrict)
+  quantity       Int               // Quantity received in this specific delivery batch
+  unitCostMinor  Int
+}
+
+// ==========================================
+// 8. SALES, ORDERS & CUSTOMERS
+// ==========================================
+
+model Customer {
+  id             String           @id @default(cuid())
+  businessId     String
+  business       Business         @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  customerCode   String?          // e.g. "CUST-0092"
+  name           String           // e.g. "Eleanor Vance"
+  email          String?
+  phone          String?
+  address        String?
+  notes          String?
+  sales          Sale[]
+  returns        CustomerReturn[]
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  @@index([businessId, email])
+}
+
+enum SaleStatus {
+  COMPLETED
+  DRAFT
+  CANCELLED
+  REFUNDED
+}
+
+enum PaymentMethod {
+  CASH
+  CREDIT_CARD
+  DEBIT_CARD
+  BANK_TRANSFER
+  STORE_CREDIT
+  SPLIT
+}
+
+model Sale {
+  id             String           @id @default(cuid())
+  businessId     String
+  business       Business         @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  saleNumber     String           // e.g. "INV-2026-8801"
+  customerId     String?
+  customer       Customer?        @relation(fields: [customerId], references: [id])
+  status         SaleStatus       @default(COMPLETED)
+  
+  subtotalMinor  Int              // Amount before discount and tax
+  discountMinor  Int              @default(0)
+  taxMinor       Int              @default(0)
+  totalMinor     Int              // Final collected price in cents
+  
+  channel        String           @default("STORE_POS") // STORE_POS, ONLINE, WHOLESALE
+  notes          String?
+  
+  cashierId      String?
+  cashier        AppUser?         @relation(fields: [cashierId], references: [id])
+  
+  items          SaleItem[]
+  payments       Payment[]
+  returns        CustomerReturn[]
+  createdAt      DateTime         @default(now())
+
+  @@unique([businessId, saleNumber])
+  @@index([businessId, createdAt])
+}
+
+model SaleItem {
+  id             String         @id @default(cuid())
+  saleId         String
+  sale           Sale           @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  variantId      String
+  variant        ProductVariant @relation(fields: [variantId], references: [id], onDelete: Restrict)
+  locationId     String
+  location       Location       @relation(fields: [locationId], references: [id])
+  
+  quantity       Int
+  unitPriceMinor Int            // Price sold per unit in cents
+  unitCostMinor  Int            // Cost snapshot at time of sale
+  discountMinor  Int            @default(0)
+  taxRate        Float          @default(0.0)
+  subtotalMinor  Int
+}
+
+model Payment {
+  id            String        @id @default(cuid())
+  saleId        String
+  sale          Sale          @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  method        PaymentMethod @default(CREDIT_CARD)
+  amountMinor   Int
+  referenceCode String?       // Card auth code, transaction reference
+  status        String        @default("PAID")
+  createdAt     DateTime      @default(now())
+}
+
+enum ReturnDisposition {
+  SELLABLE_RESTOCK  // Restock back to sellable on-hand
+  DAMAGED_WRITE_OFF // Route to damaged quarantine
+}
+
+model CustomerReturn {
+  id            String               @id @default(cuid())
+  businessId    String
+  business      Business             @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  returnNumber  String               @unique // e.g. "RET-2026-0012"
+  originalSaleId String?
+  originalSale  Sale?                @relation(fields: [originalSaleId], references: [id])
+  customerId    String?
+  customer      Customer?            @relation(fields: [customerId], references: [id])
+  
+  refundAmountMinor Int              @default(0)
+  reason        String?
+  processedAt   DateTime             @default(now())
+  items         CustomerReturnItem[]
+}
+
+model CustomerReturnItem {
+  id               String            @id @default(cuid())
+  customerReturnId String
+  customerReturn   CustomerReturn    @relation(fields: [customerReturnId], references: [id], onDelete: Cascade)
+  variantId        String
+  variant          ProductVariant    @relation(fields: [variantId], references: [id], onDelete: Restrict)
+  quantity         Int
+  disposition      ReturnDisposition @default(SELLABLE_RESTOCK)
+  unitRefundMinor  Int
+}
+
+// ==========================================
+// 9. MULTI-LOCATION STOCK TRANSFERS
+// ==========================================
+
+enum TransferStatus {
+  PENDING
+  IN_TRANSIT
+  COMPLETED
+  CANCELLED
+}
+
+model StockTransfer {
+  id                    String              @id @default(cuid())
+  businessId            String
+  business              Business            @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  transferNumber        String              // e.g. "TRF-2026-0042"
+  fromLocationId        String
+  fromLocation          Location            @relation("TransferSource", fields: [fromLocationId], references: [id])
+  toLocationId          String
+  toLocation            Location            @relation("TransferDestination", fields: [toLocationId], references: [id])
+  status                TransferStatus      @default(PENDING)
+  
+  notes                 String?
+  items                 StockTransferItem[]
+  dispatchedAt          DateTime?
+  receivedAt            DateTime?
+  createdAt             DateTime            @default(now())
+
+  @@unique([businessId, transferNumber])
+}
+
+model StockTransferItem {
+  id              String        @id @default(cuid())
+  stockTransferId String
+  stockTransfer   StockTransfer @relation(fields: [stockTransferId], references: [id], onDelete: Cascade)
+  variantId       String
+  variant         ProductVariant @relation(fields: [variantId], references: [id], onDelete: Restrict)
+  quantity        Int
+}
+
+// ==========================================
+// 10. STOCK COUNT & AUDIT RECONCILIATION
+// ==========================================
+
+model StockCount {
+  id          String           @id @default(cuid())
+  businessId  String
+  business    Business         @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  countNumber String           // e.g. "CNT-2026-W44"
+  locationId  String
+  location    Location         @relation(fields: [locationId], references: [id])
+  status      String           @default("DRAFT") // DRAFT, COMPLETED, CANCELLED
+  countedAt   DateTime         @default(now())
+  notes       String?
+  items       StockCountItem[]
+
+  @@unique([businessId, countNumber])
+}
+
+model StockCountItem {
+  id               String         @id @default(cuid())
+  stockCountId     String
+  stockCount       StockCount     @relation(fields: [stockCountId], references: [id], onDelete: Cascade)
+  variantId        String
+  variant          ProductVariant @relation(fields: [variantId], references: [id], onDelete: Restrict)
+  expectedQuantity Int
+  countedQuantity  Int
+  variance         Int            // counted - expected
+}
+
+// ==========================================
+// 11. AUDIT LOGGING
+// ==========================================
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  userId     String?
+  user       AppUser? @relation(fields: [userId], references: [id])
+  action     String   // e.g. "PRODUCT_CREATE", "STOCK_TRANSFER", "SALE_COMPLETE", "PO_RECEIVE"
+  entityType String   // e.g. "Product", "StockMovement", "Sale", "StockTransfer"
+  entityId   String?
+  metadata   String?  // JSON string payload with diff or context
+  ipAddress  String?
+  createdAt  DateTime @default(now())
+
+  @@index([businessId, createdAt])
+}

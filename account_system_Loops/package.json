@@ -1,0 +1,24 @@
+{
+  "name": "account_system_loops",
+  "version": "3.0.0",
+  "description": "Loops Finance V3 — Universal Retail & Import Business Financial Management Platform",
+  "main": "backend/src/server.js",
+  "scripts": {
+    "start": "node backend/src/server.js",
+    "dev:backend": "node backend/src/server.js",
+    "dev:frontend": "npm --prefix frontend run dev",
+    "build:frontend": "npm --prefix frontend run build",
+    "init:db": "mysql -u root -p loops_finance < db/schema.sql"
+  },
+  "keywords": [
+    "accounting",
+    "finance",
+    "landed-cost",
+    "inventory-valuation",
+    "general-ledger",
+    "retail-pos"
+  ],
+  "author": "The Loops System",
+  "license": "ISC"
+}
+

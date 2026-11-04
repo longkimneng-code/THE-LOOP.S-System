@@ -1,0 +1,11 @@
+{
+  "name": "the-loops-backend",
+  "version": "1.0.0",
+  "description": "Universal Retail Management Platform - Backend REST API",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node src/server.js"
+  },
+  "dependencies": {}
+}

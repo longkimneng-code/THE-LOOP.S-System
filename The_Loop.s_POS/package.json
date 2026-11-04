@@ -1,0 +1,23 @@
+{
+  "name": "the-loops-pos",
+  "version": "1.0.0",
+  "description": "The Loop.s POS — High-Throughput Universal Point of Sale Terminal for The Loops System",
+  "private": true,
+  "scripts": {
+    "start": "node backend/src/server.js",
+    "dev:backend": "node backend/src/server.js",
+    "dev:frontend": "npm --prefix frontend run dev",
+    "build:frontend": "npm --prefix frontend run build"
+  },
+  "keywords": [
+    "pos",
+    "retail",
+    "point-of-sale",
+    "the-loops",
+    "inventory-sync",
+    "split-tender"
+  ],
+  "author": "The Loops System",
+  "license": "ISC"
+}
+

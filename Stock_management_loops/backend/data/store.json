@@ -1,0 +1,677 @@
+{
+  "locations": [
+    {
+      "id": "loc-01",
+      "name": "BeyondVER Main Branch",
+      "code": "MAIN",
+      "type": "STORE",
+      "address": "Phnom Penh, Cambodia",
+      "isDefault": true,
+      "organizationId": "org-6e9ed3cf",
+      "phone": "",
+      "managerId": null,
+      "managerName": "Unassigned",
+      "isActive": true,
+      "createdAt": "2026-11-04T08:00:00.000Z"
+    },
+    {
+      "id": "loc-zprdw9b",
+      "organizationId": "org-6e9ed3cf",
+      "code": "SSW",
+      "name": "BEYONDSISOWAT",
+      "type": "STORE",
+      "address": "sisowat",
+      "phone": "",
+      "managerId": null,
+      "managerName": "Unassigned",
+      "isActive": true,
+      "isDefault": false,
+      "createdAt": "2026-11-04T08:00:00.000Z"
+    }
+  ],
+  "categories": [
+    {
+      "id": "cat-gf8lh7h",
+      "organizationId": "org-6e9ed3cf",
+      "name": "Silk Accessories",
+      "slug": "silk-accessories"
+    },
+    {
+      "id": "cat-lwedatc",
+      "organizationId": "org-6e9ed3cf",
+      "name": "General",
+      "slug": "general"
+    },
+    {
+      "id": "cat-5p5z2q0",
+      "organizationId": "org-6e9ed3cf",
+      "name": "Apparel",
+      "slug": "apparel"
+    },
+    {
+      "id": "cat-bf535a76",
+      "organizationId": "org-6e9ed3cf",
+      "name": "Audio",
+      "slug": "audio"
+    },
+    {
+      "id": "cat-1c849552",
+      "organizationId": "org-6e9ed3cf",
+      "name": "Accessories",
+      "slug": "accessories"
+    }
+  ],
+  "attributes": [
+    {
+      "id": "attr-1",
+      "name": "Color",
+      "values": [
+        "Black",
+        "White",
+        "Navy",
+        "Olive",
+        "Beige"
+      ]
+    },
+    {
+      "id": "attr-2",
+      "name": "Size",
+      "values": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "Free Size"
+      ]
+    },
+    {
+      "id": "attr-3",
+      "name": "Material",
+      "values": [
+        "Cotton",
+        "Linen",
+        "Denim",
+        "Silk",
+        "Leather"
+      ]
+    }
+  ],
+  "suppliers": [],
+  "customers": [],
+  "products": [
+    {
+      "id": "prod-d2fce8ab",
+      "organizationId": "org-6e9ed3cf",
+      "code": "BV-GEN-2723",
+      "name": "Cattie",
+      "category": "Accessories",
+      "brand": "LODA",
+      "stockUnit": "piece",
+      "imageUrl": "/uploads/40ac179a6f86e757.jpg",
+      "description": "Imported via IMP-2026-1974 from LODA",
+      "costMinor": 581,
+      "retailMinor": 2500,
+      "hasVariants": false,
+      "variants": [
+        {
+          "sku": "BV-GEN-2723",
+          "title": "Standard",
+          "barcode": "880314994113",
+          "costMinor": 581,
+          "retailMinor": 2500,
+          "onHand": 2,
+          "reserved": 0,
+          "damaged": 0,
+          "rop": 5
+        }
+      ]
+    },
+    {
+      "id": "prod-1d6b30bb",
+      "organizationId": "org-6e9ed3cf",
+      "code": "BV-GEN-5280",
+      "name": "glasses",
+      "category": "Apparel",
+      "brand": "LODA",
+      "stockUnit": "piece",
+      "imageUrl": "/uploads/4015969bdeb81768.jpg",
+      "description": "Imported via IMP-2026-1974 from LODA",
+      "costMinor": 334,
+      "retailMinor": 2500,
+      "hasVariants": false,
+      "variants": [
+        {
+          "sku": "BV-GEN-5280",
+          "title": "Standard",
+          "barcode": "880730502876",
+          "costMinor": 334,
+          "retailMinor": 2500,
+          "onHand": 16,
+          "reserved": 0,
+          "damaged": 0,
+          "rop": 5
+        }
+      ]
+    }
+  ],
+  "purchaseOrders": [],
+  "sales": [
+    {
+      "id": "sale-1icxm28",
+      "saleNumber": "INV-8807",
+      "customerId": "Walk-in Customer",
+      "customerName": "Walk-in Retail Guest",
+      "date": "2026-11-04 18:57:50",
+      "locationId": "loc-01",
+      "locationName": "BeyondVER Main Branch",
+      "subtotalMinor": 7500,
+      "discountMinor": 0,
+      "taxMinor": 563,
+      "totalMinor": 8063,
+      "method": "CASH",
+      "status": "COMPLETED",
+      "items": [
+        {
+          "sku": "BV-GEN-5280",
+          "title": "Standard",
+          "qty": 3,
+          "priceMinor": 2500,
+          "costMinor": 334
+        }
+      ]
+    },
+    {
+      "id": "sale-1b9c693d",
+      "saleNumber": "REG-01-20261104-1225",
+      "customerId": "WALK_IN",
+      "customerName": "Walk-in Retail Guest",
+      "date": "2026-11-04 18:57:47",
+      "locationId": "loc-01",
+      "locationName": "BeyondVER Main Branch",
+      "subtotalMinor": 7500,
+      "discountMinor": 0,
+      "taxMinor": 750,
+      "totalMinor": 8250,
+      "method": "CASH",
+      "status": "COMPLETED",
+      "items": [
+        {
+          "sku": "BV-GEN-5280",
+          "title": "glasses — Standard",
+          "qty": 3,
+          "priceMinor": 2500
+        }
+      ]
+    },
+    {
+      "id": "sale-zphxva5",
+      "saleNumber": "INV-8805",
+      "customerId": "Walk-in Customer",
+      "customerName": "Walk-in Retail Guest",
+      "date": "2026-11-04 18:55:45",
+      "locationId": "loc-01",
+      "locationName": "BeyondVER Main Branch",
+      "subtotalMinor": 2500,
+      "discountMinor": 0,
+      "taxMinor": 188,
+      "totalMinor": 2688,
+      "method": "CASH",
+      "status": "COMPLETED",
+      "items": [
+        {
+          "sku": "BV-GEN-5280",
+          "title": "Standard",
+          "qty": 1,
+          "priceMinor": 2500,
+          "costMinor": 334
+        }
+      ]
+    },
+    {
+      "id": "sale-f0458ac4",
+      "saleNumber": "REG-01-20261104-7558",
+      "customerId": "WALK_IN",
+      "customerName": "Walk-in Retail Guest",
+      "date": "2026-11-04 18:55:42",
+      "locationId": "loc-01",
+      "locationName": "BeyondVER Main Branch",
+      "subtotalMinor": 2500,
+      "discountMinor": 0,
+      "taxMinor": 250,
+      "totalMinor": 2750,
+      "method": "CASH",
+      "status": "COMPLETED",
+      "items": [
+        {
+          "sku": "BV-GEN-5280",
+          "title": "glasses",
+          "qty": 1,
+          "priceMinor": 2500
+        }
+      ]
+    },
+    {
+      "id": "sale-fv2v1gc",
+      "saleNumber": "INV-8803",
+      "customerId": "Walk-in Customer",
+      "customerName": "Walk-in Retail Guest",
+      "date": "2026-11-04 18:53:19",
+      "locationId": "loc-01",
+      "locationName": "BeyondVER Main Branch",
+      "subtotalMinor": 2500,
+      "discountMinor": 0,
+      "taxMinor": 188,
+      "totalMinor": 2688,
+      "method": "CASH",
+      "status": "COMPLETED",
+      "items": [
+        {
+          "sku": "BV-GEN-5280",
+          "title": "Standard",
+          "qty": 1,
+          "priceMinor": 2500,
+          "costMinor": 334
+        }
+      ]
+    },
+    {
+      "id": "sale-9a1159a0",
+      "saleNumber": "REG-01-20261104-8385",
+      "customerId": "WALK_IN",
+      "customerName": "Walk-in Retail Guest",
+      "date": "2026-11-04 18:53:18",
+      "locationId": "loc-01",
+      "locationName": "BeyondVER Main Branch",
+      "subtotalMinor": 2500,
+      "discountMinor": 0,
+      "taxMinor": 250,
+      "totalMinor": 2750,
+      "method": "CASH",
+      "status": "COMPLETED",
+      "items": [
+        {
+          "sku": "BV-GEN-5280",
+          "title": "glasses",
+          "qty": 1,
+          "priceMinor": 2500
+        }
+      ]
+    },
+    {
+      "id": "sale-g6qp33f",
+      "saleNumber": "INV-8801",
+      "customerId": "Walk-in Customer",
+      "customerName": "Walk-in Retail Guest",
+      "date": "2026-11-04 18:25:43",
+      "locationId": "loc-01",
+      "locationName": "BeyondVER Main Branch",
+      "subtotalMinor": 17500,
+      "discountMinor": 0,
+      "taxMinor": 1313,
+      "totalMinor": 18813,
+      "method": "CASH",
+      "status": "COMPLETED",
+      "items": [
+        {
+          "sku": "BV-GEN-5280",
+          "title": "Standard",
+          "qty": 7,
+          "priceMinor": 2500,
+          "costMinor": 0
+        }
+      ]
+    }
+  ],
+  "stockBalances": [
+    {
+      "id": "bal-loc-01-BV-GEN-2723",
+      "sku": "BV-GEN-2723",
+      "locationId": "loc-01",
+      "onHand": 2,
+      "reserved": 0,
+      "damaged": 0,
+      "rop": 5
+    },
+    {
+      "id": "bal-loc-01-BV-GEN-5280",
+      "sku": "BV-GEN-5280",
+      "locationId": "loc-01",
+      "onHand": 8,
+      "reserved": 0,
+      "damaged": 0,
+      "rop": 5
+    },
+    {
+      "id": "bal-loc-zprdw9b-BV-GEN-2723",
+      "sku": "BV-GEN-2723",
+      "locationId": "loc-zprdw9b",
+      "onHand": 0,
+      "reserved": 0,
+      "damaged": 0,
+      "rop": 5
+    },
+    {
+      "id": "bal-loc-zprdw9b-BV-GEN-5280",
+      "sku": "BV-GEN-5280",
+      "locationId": "loc-zprdw9b",
+      "onHand": 8,
+      "reserved": 0,
+      "damaged": 0,
+      "rop": 5
+    }
+  ],
+  "ledger": [
+    {
+      "id": "mov-cawczzh",
+      "timestamp": "2026-11-04 18:57:50",
+      "type": "SALE_OUT",
+      "sku": "BV-GEN-5280",
+      "productCode": "BV-GEN-5280",
+      "productName": "glasses",
+      "variantTitle": "Standard",
+      "locationId": "loc-01",
+      "locationName": "BeyondVER Main Branch",
+      "delta": -3,
+      "balanceAfter": 8,
+      "unitCostMinor": 334,
+      "referenceNo": "INV-8807",
+      "staff": "Register POS",
+      "reason": "Completed sale to Walk-in Retail Guest at BeyondVER Main Branch."
+    },
+    {
+      "id": "mov-096b850b",
+      "timestamp": "2026-11-04 18:57:47",
+      "type": "SALE_OUT",
+      "sku": "BV-GEN-5280",
+      "productCode": "BV-GEN-5280",
+      "productName": "glasses — Standard",
+      "variantTitle": "glasses — Standard",
+      "locationId": "loc-01",
+      "locationName": "BeyondVER Main Branch",
+      "delta": -3,
+      "balanceAfter": 11,
+      "unitCostMinor": 0,
+      "referenceNo": "REG-01-20261104-1225",
+      "staff": "long kimneng",
+      "reason": "POS Sale #REG-01-20261104-1225"
+    },
+    {
+      "id": "mov-bip00ki",
+      "timestamp": "2026-11-04 18:55:45",
+      "type": "SALE_OUT",
+      "sku": "BV-GEN-5280",
+      "productCode": "BV-GEN-5280",
+      "productName": "glasses",
+      "variantTitle": "Standard",
+      "locationId": "loc-01",
+      "locationName": "BeyondVER Main Branch",
+      "delta": -1,
+      "balanceAfter": 14,
+      "unitCostMinor": 334,
+      "referenceNo": "INV-8805",
+      "staff": "Register POS",
+      "reason": "Completed sale to Walk-in Retail Guest at BeyondVER Main Branch."
+    },
+    {
+      "id": "mov-fbe66404",
+      "timestamp": "2026-11-04 18:55:42",
+      "type": "SALE_OUT",
+      "sku": "BV-GEN-5280",
+      "productCode": "BV-GEN-5280",
+      "productName": "glasses",
+      "variantTitle": "glasses",
+      "locationId": "loc-01",
+      "locationName": "BeyondVER Main Branch",
+      "delta": -1,
+      "balanceAfter": 15,
+      "unitCostMinor": 0,
+      "referenceNo": "REG-01-20261104-7558",
+      "staff": "long kimneng",
+      "reason": "POS Sale #REG-01-20261104-7558"
+    },
+    {
+      "id": "mov-l2jj6pd",
+      "timestamp": "2026-11-04 18:53:19",
+      "type": "SALE_OUT",
+      "sku": "BV-GEN-5280",
+      "productCode": "BV-GEN-5280",
+      "productName": "glasses",
+      "variantTitle": "Standard",
+      "locationId": "loc-01",
+      "locationName": "BeyondVER Main Branch",
+      "delta": -1,
+      "balanceAfter": 16,
+      "unitCostMinor": 334,
+      "referenceNo": "INV-8803",
+      "staff": "Register POS",
+      "reason": "Completed sale to Walk-in Retail Guest at BeyondVER Main Branch."
+    },
+    {
+      "id": "mov-dd239e15",
+      "timestamp": "2026-11-04 18:53:18",
+      "type": "SALE_OUT",
+      "sku": "BV-GEN-5280",
+      "productCode": "BV-GEN-5280",
+      "productName": "glasses",
+      "variantTitle": "glasses",
+      "locationId": "loc-01",
+      "locationName": "BeyondVER Main Branch",
+      "delta": -1,
+      "balanceAfter": 17,
+      "unitCostMinor": 0,
+      "referenceNo": "REG-01-20261104-8385",
+      "staff": "long kimneng",
+      "reason": "POS Sale #REG-01-20261104-8385"
+    },
+    {
+      "id": "mov-wg7g09c",
+      "timestamp": "2026-11-04 18:52:41",
+      "type": "STOCK_TRANSFER_IN",
+      "sku": "BV-GEN-5280",
+      "productCode": "BV-GEN-5280",
+      "productName": "glasses",
+      "variantTitle": "Standard",
+      "locationId": "loc-zprdw9b",
+      "locationName": "BEYONDSISOWAT",
+      "delta": 2,
+      "balanceAfter": 8,
+      "unitCostMinor": 334,
+      "referenceNo": "TRF-1765",
+      "staff": "Logistics Lead",
+      "reason": "Received 2 units from BeyondVER Main Branch."
+    },
+    {
+      "id": "mov-yfwldy5",
+      "timestamp": "2026-11-04 18:52:41",
+      "type": "STOCK_TRANSFER_OUT",
+      "sku": "BV-GEN-5280",
+      "productCode": "BV-GEN-5280",
+      "productName": "glasses",
+      "variantTitle": "Standard",
+      "locationId": "loc-01",
+      "locationName": "BeyondVER Main Branch",
+      "delta": -2,
+      "balanceAfter": 18,
+      "unitCostMinor": 334,
+      "referenceNo": "TRF-1765",
+      "staff": "Logistics Lead",
+      "reason": "Dispatched 2 units to BEYONDSISOWAT."
+    },
+    {
+      "id": "mov-clityq3",
+      "timestamp": "2026-11-04 18:36:07",
+      "type": "STOCK_TRANSFER_IN",
+      "sku": "BV-GEN-5280",
+      "productCode": "BV-GEN-5280",
+      "productName": "glasses",
+      "variantTitle": "Standard",
+      "locationId": "loc-zprdw9b",
+      "locationName": "BEYONDSISOWAT",
+      "delta": 1,
+      "balanceAfter": 6,
+      "unitCostMinor": 0,
+      "referenceNo": "TRF-5350",
+      "staff": "Logistics Lead",
+      "reason": "Received 1 units from BeyondVER Main Branch."
+    },
+    {
+      "id": "mov-1vu4kny",
+      "timestamp": "2026-11-04 18:36:07",
+      "type": "STOCK_TRANSFER_OUT",
+      "sku": "BV-GEN-5280",
+      "productCode": "BV-GEN-5280",
+      "productName": "glasses",
+      "variantTitle": "Standard",
+      "locationId": "loc-01",
+      "locationName": "BeyondVER Main Branch",
+      "delta": -1,
+      "balanceAfter": 19,
+      "unitCostMinor": 0,
+      "referenceNo": "TRF-5350",
+      "staff": "Logistics Lead",
+      "reason": "Dispatched 1 units to BEYONDSISOWAT."
+    },
+    {
+      "id": "mov-ec3a7at",
+      "timestamp": "2026-11-04 18:25:43",
+      "type": "SALE_OUT",
+      "sku": "BV-GEN-5280",
+      "productCode": "BV-GEN-5280",
+      "productName": "glasses",
+      "variantTitle": "Standard",
+      "locationId": "loc-01",
+      "locationName": "BeyondVER Main Branch",
+      "delta": -7,
+      "balanceAfter": 13,
+      "unitCostMinor": 0,
+      "referenceNo": "INV-8801",
+      "staff": "Register POS",
+      "reason": "Completed sale to Walk-in Retail Guest at BeyondVER Main Branch."
+    },
+    {
+      "id": "mov-8t4wcv5",
+      "timestamp": "2026-11-04 18:17:22",
+      "type": "STOCK_TRANSFER_IN",
+      "sku": "BV-GEN-5280",
+      "productCode": "BV-GEN-5280",
+      "productName": "glasses",
+      "variantTitle": "Standard",
+      "locationId": "loc-zprdw9b",
+      "locationName": "BEYONDSISOWAT",
+      "delta": 5,
+      "balanceAfter": 5,
+      "unitCostMinor": 0,
+      "referenceNo": "TRF-5246",
+      "staff": "Logistics Lead",
+      "reason": "Received 5 units from BeyondVER Main Branch."
+    },
+    {
+      "id": "mov-piwlmip",
+      "timestamp": "2026-11-04 18:17:22",
+      "type": "STOCK_TRANSFER_OUT",
+      "sku": "BV-GEN-5280",
+      "productCode": "BV-GEN-5280",
+      "productName": "glasses",
+      "variantTitle": "Standard",
+      "locationId": "loc-01",
+      "locationName": "BeyondVER Main Branch",
+      "delta": -5,
+      "balanceAfter": 15,
+      "unitCostMinor": 0,
+      "referenceNo": "TRF-5246",
+      "staff": "Logistics Lead",
+      "reason": "Dispatched 5 units to BEYONDSISOWAT."
+    },
+    {
+      "id": "mov-3c745f4a",
+      "timestamp": "2026-11-04 18:10:07",
+      "type": "RECEIVE_STOCK",
+      "sku": "BV-GEN-5280",
+      "productCode": "BV-GEN-5280",
+      "productName": "glasses",
+      "variantTitle": "Standard",
+      "locationId": "loc-01",
+      "locationName": "BeyondVER Main Branch",
+      "delta": 10,
+      "balanceAfter": 20,
+      "unitCostMinor": 0,
+      "referenceNo": "IMP-202611-662109",
+      "staff": "Staff",
+      "reason": "Finalized import received from LODA."
+    },
+    {
+      "id": "mov-fab3c710",
+      "timestamp": "2026-11-04 18:10:07",
+      "type": "RECEIVE_STOCK",
+      "sku": "BV-GEN-2723",
+      "productCode": "BV-GEN-2723",
+      "productName": "Cattie",
+      "variantTitle": "Standard",
+      "locationId": "loc-01",
+      "locationName": "BeyondVER Main Branch",
+      "delta": 1,
+      "balanceAfter": 2,
+      "unitCostMinor": 0,
+      "referenceNo": "IMP-202611-662109",
+      "staff": "Staff",
+      "reason": "Finalized import received from LODA."
+    },
+    {
+      "id": "mov-b464a585",
+      "timestamp": "2026-11-04 18:10:07",
+      "type": "RECEIVE_STOCK",
+      "sku": "BV-GEN-5280",
+      "productCode": "BV-GEN-5280",
+      "productName": "glasses",
+      "variantTitle": "Standard",
+      "locationId": "loc-01",
+      "locationName": "BeyondVER Main Branch",
+      "delta": 10,
+      "balanceAfter": 10,
+      "unitCostMinor": 334,
+      "referenceNo": "IMP-2026-1974",
+      "staff": "Staff",
+      "reason": "Finalized import received from LODA."
+    },
+    {
+      "id": "mov-15fab358",
+      "timestamp": "2026-11-04 18:10:07",
+      "type": "RECEIVE_STOCK",
+      "sku": "BV-GEN-2723",
+      "productCode": "BV-GEN-2723",
+      "productName": "Cattie",
+      "variantTitle": "Standard",
+      "locationId": "loc-01",
+      "locationName": "BeyondVER Main Branch",
+      "delta": 1,
+      "balanceAfter": 1,
+      "unitCostMinor": 581,
+      "referenceNo": "IMP-2026-1974",
+      "staff": "Staff",
+      "reason": "Finalized import received from LODA."
+    }
+  ],
+  "settings": {
+    "businessName": "BeyondVER",
+    "ownerName": "Neng Long",
+    "currency": "USD",
+    "taxRate": 0,
+    "skuPrefix": "BV",
+    "lowStockThresholdDefault": 5,
+    "isOnboarded": true
+  },
+  "receivedPurchases": [
+    {
+      "purchaseCode": "IMP-2026-1974",
+      "organizationId": "org-6e9ed3cf",
+      "supplierName": "LODA",
+      "receivedAt": "2026-11-04T18:10:07.458Z"
+    },
+    {
+      "purchaseCode": "IMP-202611-662109",
+      "organizationId": "org-6e9ed3cf",
+      "supplierName": "LODA",
+      "receivedAt": "2026-11-04T18:10:07.458Z"
+    }
+  ]
+}

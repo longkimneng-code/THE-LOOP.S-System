@@ -1,0 +1,407 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html {
+  color-scheme: dark;
+}
+
+select, input, textarea {
+  color-scheme: dark;
+  background-color: #13161F;
+  color: #F1F5F9;
+  border-color: #232838;
+}
+
+select option {
+  background-color: #0F1117 !important;
+  color: #F1F5F9 !important;
+}
+
+:root {
+  --color-obsidian-bg: #090A0F;
+  --color-obsidian-card: #13161F;
+  --color-obsidian-border: #232838;
+  --color-brass-primary: #D4AF37;
+  --color-brass-hover: #E5C358;
+}
+
+/* Custom Scrollbar for fast retail catalogs */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(15, 17, 23, 0.6);
+}
+::-webkit-scrollbar-thumb {
+  background: #2A3042;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #3A435C;
+}
+
+/* Smooth transitions */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Print specific styles for 80mm thermal receipt */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  #thermal-receipt-printable, #thermal-receipt-printable * {
+    visibility: visible;
+  }
+  #thermal-receipt-printable {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 80mm;
+    margin: 0;
+    padding: 2mm;
+    background: white !important;
+    color: black !important;
+  }
+}
+
+/* ==========================================================================
+   THE LOOPS — UNIVERSAL RETAIL OS DESIGN SYSTEM
+   Implementation based on Pro_max_skill_Ui & design_system_skill
+   Three-Layer Token Architecture: Primitive → Semantic → Component
+   ========================================================================== */
+
+:root {
+  /* --------------------------------------------------
+     1. Primitive Tokens (Raw Scales)
+     -------------------------------------------------- */
+  --primitive-obsidian-950: #07090D;
+  --primitive-obsidian-900: #0C0F17;
+  --primitive-obsidian-850: #111522;
+  --primitive-obsidian-800: #171D2D;
+  --primitive-obsidian-750: #1F273D;
+  --primitive-obsidian-700: #26314A;
+  --primitive-obsidian-600: #34405E;
+
+  --primitive-porcelain-50: #F8FAFC;
+  --primitive-porcelain-100: #F1F5F9;
+  --primitive-porcelain-200: #E2E8F0;
+  --primitive-porcelain-300: #CBD5E1;
+  --primitive-porcelain-400: #94A3B8;
+
+  --primitive-gold-300: #FDE68A;
+  --primitive-gold-400: #FBBF24;
+  --primitive-gold-500: #E5A93C;
+  --primitive-gold-600: #D97706;
+
+  --primitive-emerald-400: #34D399;
+  --primitive-emerald-500: #10B981;
+  --primitive-emerald-600: #059669;
+
+  --primitive-crimson-400: #FB7185;
+  --primitive-crimson-500: #F43F5E;
+  --primitive-crimson-600: #E11D48;
+
+  --primitive-indigo-400: #818CF8;
+  --primitive-indigo-500: #6366F1;
+  --primitive-indigo-600: #4F46E5;
+
+  /* --------------------------------------------------
+     2. Semantic Tokens (Dark Obsidian Default)
+     -------------------------------------------------- */
+  --bg-canvas: #090A0F;
+  --bg-surface: #13161F;
+  --bg-surface-elevated: #181C26;
+  --bg-surface-card: #0F1117;
+  --bg-surface-hover: rgba(255, 255, 255, 0.05);
+  --bg-input: #0C0F17;
+
+  --text-primary: #F8FAFC;
+  --text-secondary: #94A3B8;
+  --text-muted: #64748B;
+  --text-accent: #FBBF24;
+
+  --border-subtle: #232838;
+  --border-medium: rgba(255, 255, 255, 0.14);
+  --border-focus: rgba(229, 169, 60, 0.6);
+
+  --accent-gold: #D4AF37;
+  --accent-emerald: #10B981;
+  --accent-crimson: #F43F5E;
+  --accent-indigo: #6366F1;
+
+  --shadow-panel: 0 4px 20px -2px rgba(0, 0, 0, 0.5);
+  --shadow-modal: 0 25px 50px -12px rgba(0, 0, 0, 0.75);
+
+  /* Component Tokens */
+  --kpi-card-bg: rgba(12, 15, 23, 0.75);
+  --kpi-card-border: rgba(255, 255, 255, 0.08);
+  --kpi-card-hover: rgba(255, 255, 255, 0.15);
+  
+  --badge-gold-bg: rgba(229, 169, 60, 0.12);
+  --badge-gold-text: #FBBF24;
+  --badge-gold-border: rgba(229, 169, 60, 0.28);
+
+  --badge-emerald-bg: rgba(16, 185, 129, 0.12);
+  --badge-emerald-text: #34D399;
+  --badge-emerald-border: rgba(16, 185, 129, 0.28);
+
+  --badge-crimson-bg: rgba(244, 63, 94, 0.12);
+  --badge-crimson-text: #FB7185;
+  --badge-crimson-border: rgba(244, 63, 94, 0.28);
+
+  --badge-indigo-bg: rgba(99, 102, 241, 0.12);
+  --badge-indigo-text: #818CF8;
+  --badge-indigo-border: rgba(99, 102, 241, 0.28);
+}
+
+/* --------------------------------------------------
+   Light Mode Semantic Overrides (Luxury Porcelain)
+   -------------------------------------------------- */
+html.light {
+  --bg-canvas: #F8FAFC;
+  --bg-surface: rgba(255, 255, 255, 0.94);
+  --bg-surface-elevated: #FFFFFF;
+  --bg-surface-card: #FFFFFF;
+  --bg-surface-hover: rgba(15, 23, 42, 0.04);
+  --bg-input: #FFFFFF;
+
+  --text-primary: #0F172A;
+  --text-secondary: #475569;
+  --text-muted: #64748B;
+  --text-accent: #D97706;
+
+  --border-subtle: rgba(226, 232, 240, 0.95);
+  --border-medium: rgba(203, 213, 225, 0.9);
+  --border-focus: rgba(217, 119, 6, 0.6);
+
+  --accent-gold: #D97706;
+  --accent-emerald: #059669;
+  --accent-crimson: #E11D48;
+  --accent-indigo: #4F46E5;
+
+  --shadow-panel: 0 4px 18px -2px rgba(15, 23, 42, 0.06);
+  --shadow-modal: 0 25px 50px -12px rgba(15, 23, 42, 0.15);
+
+  /* Component Tokens (Light) */
+  --kpi-card-bg: #FFFFFF;
+  --kpi-card-border: rgba(226, 232, 240, 0.95);
+  --kpi-card-hover: rgba(203, 213, 225, 0.9);
+  
+  --badge-gold-bg: rgba(217, 119, 6, 0.1);
+  --badge-gold-text: #B45309;
+  --badge-gold-border: rgba(217, 119, 6, 0.25);
+
+  --badge-emerald-bg: rgba(5, 150, 105, 0.1);
+  --badge-emerald-text: #047857;
+  --badge-emerald-border: rgba(5, 150, 105, 0.25);
+
+  --badge-crimson-bg: rgba(225, 29, 72, 0.1);
+  --badge-crimson-text: #BE123C;
+  --badge-crimson-border: rgba(225, 29, 72, 0.25);
+
+  --badge-indigo-bg: rgba(79, 70, 229, 0.1);
+  --badge-indigo-text: #4338CA;
+  --badge-indigo-border: rgba(79, 70, 229, 0.25);
+}
+
+@layer base {
+  body {
+    background-color: var(--bg-canvas);
+    color: var(--text-primary);
+    font-family: 'Outfit', sans-serif;
+    overflow-x: hidden;
+    background-image: 
+      radial-gradient(circle at 12% 8%, rgba(229, 169, 60, 0.04) 0%, transparent 40%),
+      radial-gradient(circle at 88% 92%, rgba(52, 64, 94, 0.08) 0%, transparent 50%);
+    transition: background-color 0.25s ease, color 0.25s ease;
+  }
+}
+
+/* Accessible Scrollbars */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--bg-canvas); }
+::-webkit-scrollbar-thumb { background: #232B40; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--accent-gold); }
+
+html.light ::-webkit-scrollbar-track { background: #F1F5F9; }
+html.light ::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 4px; }
+html.light ::-webkit-scrollbar-thumb:hover { background: #D97706; }
+
+/* --------------------------------------------------
+   3. Component Tokens & Utility Classes
+   -------------------------------------------------- */
+.glass-panel {
+  background: var(--bg-surface);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid var(--border-subtle);
+  box-shadow: var(--shadow-panel);
+  transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.glass-panel-elevated {
+  background: var(--bg-surface-elevated);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: 1px solid var(--border-medium);
+  box-shadow: var(--shadow-modal);
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+/* Subtle Interactive Pulses */
+@keyframes pulse-subtle {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.85; transform: scale(1.02); }
+}
+
+.badge-pulse { animation: pulse-subtle 3s infinite ease-in-out; }
+
+/* Accessible Interactive States (UI/UX Pro Max) */
+button, a, input, select, textarea {
+  transition: all 0.15s ease-out;
+}
+
+button:active {
+  transform: scale(0.98);
+}
+
+/* High Contrast Focus Visibility for Keyboard Navigation */
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+button:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--border-focus);
+}
+
+/* --------------------------------------------------
+   Light Mode Overrides for Tailwind Components
+   -------------------------------------------------- */
+html.light body {
+  background-color: #F8FAFC !important;
+  color: #0F172A !important;
+  background-image: 
+    radial-gradient(circle at 12% 8%, rgba(229, 169, 60, 0.08) 0%, transparent 40%),
+    radial-gradient(circle at 88% 92%, rgba(203, 213, 225, 0.45) 0%, transparent 50%) !important;
+}
+
+html.light .glass-panel {
+  background: rgba(255, 255, 255, 0.94) !important;
+  border-color: rgba(226, 232, 240, 0.95) !important;
+  box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.05) !important;
+}
+
+html.light .glass-panel-elevated {
+  background: #FFFFFF !important;
+  border-color: rgba(203, 213, 225, 0.9) !important;
+  box-shadow: 0 20px 45px -12px rgba(15, 23, 42, 0.12) !important;
+}
+
+html.light .bg-studio-950,
+html.light .bg-studio-950\/95,
+html.light .bg-studio-950\/80 {
+  background-color: #F8FAFC !important;
+}
+
+html.light .bg-studio-900 {
+  background-color: #FFFFFF !important;
+}
+
+html.light .bg-studio-900\/90,
+html.light .bg-studio-900\/80,
+html.light .bg-studio-900\/70,
+html.light .bg-studio-900\/60,
+html.light .bg-studio-900\/50,
+html.light .bg-studio-900\/40 {
+  background-color: rgba(241, 245, 249, 0.92) !important;
+}
+
+html.light .bg-studio-800 {
+  background-color: #E2E8F0 !important;
+  color: #1E293B !important;
+}
+
+html.light .bg-studio-800:hover {
+  background-color: #CBD5E1 !important;
+}
+
+html.light .text-white {
+  color: #0F172A !important;
+}
+
+html.light .text-studio-200 {
+  color: #1E293B !important;
+}
+
+html.light .text-studio-300 {
+  color: #334155 !important;
+}
+
+html.light .text-studio-400 {
+  color: #64748B !important;
+}
+
+html.light .border-white\/5,
+html.light .border-white\/10,
+html.light .border-white\/15,
+html.light .border-white\/20 {
+  border-color: rgba(226, 232, 240, 0.95) !important;
+}
+
+html.light .bg-white\/5,
+html.light .bg-white\/10 {
+  background-color: rgba(15, 23, 42, 0.05) !important;
+}
+
+/* Universal Obsidian Luxury Navigation Controls */
+header select,
+header input,
+header textarea,
+nav select,
+nav input,
+.obsidian-control,
+.bg-obsidian-850 select,
+.bg-obsidian-850 input,
+html:not(.light) select,
+html:not(.light) input,
+html.dark select,
+html.dark input {
+  background-color: #111522 !important;
+  color: #F1F5F9 !important;
+  border-color: #232838 !important;
+}
+
+header select option,
+nav select option,
+.obsidian-control option,
+.bg-obsidian-850 select option,
+html:not(.light) select option,
+html.dark select option {
+  background-color: #0C0F17 !important;
+  color: #F1F5F9 !important;
+}
+
+html.light main input,
+html.light main select,
+html.light main textarea {
+  background-color: #FFFFFF;
+  color: #0F172A;
+  border-color: #CBD5E1;
+}
+
+html.light input::placeholder {
+  color: #94A3B8 !important;
+}
+
+html.light thead {
+  background-color: #F1F5F9 !important;
+  color: #475569 !important;
+}
+
+html.light tr:hover {
+  background-color: rgba(241, 245, 249, 0.7) !important;
+}
+

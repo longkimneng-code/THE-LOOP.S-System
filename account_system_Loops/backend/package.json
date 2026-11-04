@@ -1,0 +1,14 @@
+{
+  "name": "loops-finance-backend",
+  "version": "3.0.0",
+  "description": "Loops Finance V3 — Accounting Engine REST API",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node src/server.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.6.1",
+    "mysql2": "^3.24.6"
+  }
+}

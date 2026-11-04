@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>THE LOOPS — Universal Retail Management Platform (React)</title>
+  
+  <!-- Curated Atelier Typography from Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700&family=Syne:wght@600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind CSS CDN for dynamic utility styling -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- SheetJS & jsPDF CDNs for native Excel/PDF export capabilities -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+  
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            display: ['Syne', 'sans-serif'],
+            sans: ['Outfit', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            studio: {
+              950: '#07090D',
+              900: '#0C0F17',
+              850: '#111520',
+              800: '#171D2D',
+              700: '#232B40',
+              600: '#34405E',
+              400: '#64748B',
+              300: '#94A3B8',
+              200: '#CBD5E1',
+              100: '#F1F5F9',
+            },
+            gold: {
+              400: '#FBBF24',
+              500: '#E5A93C',
+              600: '#D97706',
+              glow: 'rgba(229, 169, 60, 0.15)',
+            },
+            crimson: {
+              400: '#FB7185',
+              500: '#F43F5E',
+              glow: 'rgba(244, 63, 94, 0.15)',
+            },
+            emerald: {
+              400: '#34D399',
+              500: '#10B981',
+              glow: 'rgba(16, 185, 129, 0.15)',
+            }
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="min-h-screen flex flex-col antialiased selection:bg-gold-500 selection:text-studio-950 bg-[#07090D] text-[#F1F5F9]">
+  <div id="root"></div>
+  <script type="module" src="/src/main.jsx"></script>
+</body>
+</html>
+
