@@ -204,6 +204,33 @@ export const api = {
     return res.json();
   },
 
+  updateBudgetItem: async (id, data) => {
+    const res = await fetch(`${API_BASE}/budget/item/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    if (!res.ok) throw new Error('Failed to update budget item');
+    return res.json();
+  },
+
+  deleteBudgetItem: async (id) => {
+    const res = await fetch(`${API_BASE}/budget/item/${id}`, {
+      method: 'DELETE'
+    });
+    if (!res.ok) throw new Error('Failed to delete budget item');
+    return res.json();
+  },
+
+  prefillBudget: async () => {
+    const res = await fetch(`${API_BASE}/budget/prefill`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' }
+    });
+    if (!res.ok) throw new Error('Failed to prefill budget');
+    return res.json();
+  },
+
   // Imports & Landed Cost
   getShipments: async () => {
     const res = await fetch(`${API_BASE}/shipments`, { headers: getAuthHeaders() });

@@ -40,9 +40,9 @@
       "storeId": "loc-01",
       "registerCode": "REG-01",
       "name": "BeyondVER Main Branch Register 01",
-      "status": "OPEN",
-      "currentShiftId": "shift-720780-2941",
-      "currentCashierId": "usr-owner-83bbcc"
+      "status": "CLOSED",
+      "currentShiftId": null,
+      "currentCashierId": null
     },
     {
       "id": "reg-ssw-01",
@@ -51,9 +51,9 @@
       "storeId": "loc-zprdw9b",
       "registerCode": "REG-01",
       "name": "BEYONDSISOWAT Register 01",
-      "status": "CLOSED",
-      "currentShiftId": null,
-      "currentCashierId": null
+      "status": "OPEN",
+      "currentShiftId": "shift-410769-c77a",
+      "currentCashierId": "usr-6b13c38f"
     }
   ],
   "users": [
@@ -154,9 +154,9 @@
         "CASHIER"
       ],
       "passwordHash": "d459d5640feeb66f2ca85c8331f45ca7:523647174c4f4aac301d5afa2938df6d7e5e921126c0acc29cfd1d729fbedc6f9ba79ac8b21e9135d3ee19add81d40a18699de944eba5c24abd34a31ab2d6feb",
-      "pinHash": "7b2a2641f52a28ef6f6c9112749196eb:03b9a6bc656bf6ad820068963c11cbc9f7026f04f8d5a02bc8830a7d89285eb5",
-      "companyPinHash": "abded13db788fee3808b1abd692b478160ba2fe934b3fb2ab6d087cef5e9dac6",
-      "pinEncrypted": "9da729f5c8fb2c9f46c9bb9b:678a12d2e269d8e1eb98cc5d02e5867a:a044cbd7",
+      "pinHash": "be57cdb3dd06807579d3abfe538cae4f:d483b620c304ff1f71a99c912f360f7ffa8516b3ef931b5a50ac9a122c03285a",
+      "companyPinHash": "e716d49ae4eac5f1f0ca5e2a944774b1ad6baef96e9e3f3808fe98b30e392d63",
+      "pinEncrypted": "eedb1582a6120d2cb0a68b64:16f23de7ac6d9d154eefab964adae9ce:327f40f8",
       "active": true,
       "status": "ACTIVE",
       "assignedStoreIds": [
@@ -229,7 +229,8 @@
         "exportConfidentialReports": false
       },
       "createdAt": "2026-11-04T17:51:35.667Z",
-      "updatedAt": "2026-11-04T17:51:35.667Z"
+      "updatedAt": "2026-11-05T04:56:00.378Z",
+      "lastLoginAt": "2026-11-05T04:56:11.916Z"
     },
     {
       "id": "usr-6b13c38f",
@@ -311,7 +312,7 @@
       },
       "createdAt": "2026-11-04T11:19:14.258Z",
       "updatedAt": "2026-11-04T14:31:47.399Z",
-      "lastLoginAt": "2026-11-04T18:22:25.407Z"
+      "lastLoginAt": "2026-11-05T07:41:24.044Z"
     },
     {
       "id": "usr-owner-83bbcc",
@@ -355,7 +356,7 @@
         "changeSystemSettings": true
       },
       "createdAt": "2026-11-03T17:08:27.890Z",
-      "lastLoginAt": "2026-11-04T18:23:55.557Z",
+      "lastLoginAt": "2026-11-05T07:41:51.397Z",
       "updatedAt": "2026-11-03T17:45:50.336Z",
       "companyPinHash": "9542dc4c9a0e6c6259565ae72793b68e526ec7c73088f1a71dea1e69fae3f86f",
       "pinEncrypted": "72a20ec6f593a82a287a91b3:d16575fbe5fb7b2d0e0d9219077c2af5:7891006e"
@@ -368,9 +369,159 @@
       "organizationId": "org-6e9ed3cf",
       "createdAt": "2026-11-04T18:23:55.557Z",
       "expiresAt": "2026-11-04T18:28:55.557Z"
+    },
+    {
+      "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c3Itb3duZXItODNiYmNjIiwic2lkIjoic2Vzc183YzZhZTM3Ni0zYTc2LTQwMTItYmMzZS1kMDE2ODIyYTI1ZDMiLCJvcmciOiJvcmctNmU5ZWQzY2YiLCJyb2xlIjoiT1dORVIiLCJzdG9yZUlkIjpudWxsLCJlbWFpbCI6Im5lbmdAZ21haWwuY29tIiwibmFtZSI6Imxvbmcga2ltbmVuZyIsImlzcyI6Imh0dHBzOi8vYXV0aC50aGVsb29wcy5pbyIsImF1ZCI6InRoZWxvb3BzLWFwaSIsImlhdCI6MTc5Mzg1NDQ5MCwiZXhwIjoxNzkzODU0NzkwLCJqdGkiOiIwYjBhYTA4NC02MGVlLTRiYjAtOWJmMS05OGQ5OGUwMjI1NTkifQ.MQnz53qIHpMgsaTO0jDrt6eywdL1GT_KnNyx0pwo7JE",
+      "userId": "usr-owner-83bbcc",
+      "organizationId": "org-6e9ed3cf",
+      "createdAt": "2026-11-05T04:54:50.703Z",
+      "expiresAt": "2026-11-05T04:59:50.703Z"
+    },
+    {
+      "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c3Itb3duZXItODNiYmNjIiwic2lkIjoic2Vzc18zZDkyNmI0MC0xMWIwLTQ1NzctOThmNS1jNjdjNGI4NGE3MGEiLCJvcmciOiJvcmctNmU5ZWQzY2YiLCJyb2xlIjoiT1dORVIiLCJzdG9yZUlkIjpudWxsLCJlbWFpbCI6Im5lbmdAZ21haWwuY29tIiwibmFtZSI6Imxvbmcga2ltbmVuZyIsImlzcyI6Imh0dHBzOi8vYXV0aC50aGVsb29wcy5pbyIsImF1ZCI6InRoZWxvb3BzLWFwaSIsImlhdCI6MTc5Mzg1ODMxNSwiZXhwIjoxNzkzODU4NjE1LCJqdGkiOiI5OWRjOWNiMi03YmMyLTQ2NzEtYTJjYy05MzI2NjBmOGQ0YjQifQ.vLPST6a-t-0T3HBMRVzis9cWiyoImSvU6UTfIsdHrco",
+      "userId": "usr-owner-83bbcc",
+      "organizationId": "org-6e9ed3cf",
+      "createdAt": "2026-11-05T05:58:35.474Z",
+      "expiresAt": "2026-11-05T06:03:35.474Z"
+    },
+    {
+      "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c3ItNmIxM2MzOGYiLCJzaWQiOiJzZXNzX2ZhYTNlY2ViLTc4YTgtNGU0YS1iY2M4LTgwMGE1M2U2YWU4NCIsIm9yZyI6Im9yZy02ZTllZDNjZiIsInJvbGUiOiJTVE9SRV9NQU5BR0VSIiwic3RvcmVJZCI6bnVsbCwiZW1haWwiOiJwYW5oYUBnbWlhbC5jb20iLCJuYW1lIjoicGFuaGEiLCJpc3MiOiJodHRwczovL2F1dGgudGhlbG9vcHMuaW8iLCJhdWQiOiJ0aGVsb29wcy1hcGkiLCJpYXQiOjE3OTM4NjE5MzcsImV4cCI6MTc5Mzg2MjIzNywianRpIjoiN2MyMTkzZmEtMmI4OS00MjQyLWFlMGMtMzBmZmRmZDc3MjljIn0.wWjNptcpfh7id8-p3UQch_RABWLYwWNNakazknrHrSc",
+      "userId": "usr-6b13c38f",
+      "organizationId": "org-6e9ed3cf",
+      "createdAt": "2026-11-05T06:58:57.097Z",
+      "expiresAt": "2026-11-05T07:03:57.097Z"
+    },
+    {
+      "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c3Itb3duZXItODNiYmNjIiwic2lkIjoic2Vzc181MGIxMDVlYy1jNGU5LTQ2ZTMtYWFmOS04ODQ0ZDM0NGVmMjMiLCJvcmciOiJvcmctNmU5ZWQzY2YiLCJyb2xlIjoiT1dORVIiLCJzdG9yZUlkIjpudWxsLCJlbWFpbCI6Im5lbmdAZ21haWwuY29tIiwibmFtZSI6Imxvbmcga2ltbmVuZyIsImlzcyI6Imh0dHBzOi8vYXV0aC50aGVsb29wcy5pbyIsImF1ZCI6InRoZWxvb3BzLWFwaSIsImlhdCI6MTc5Mzg2MjAxNywiZXhwIjoxNzkzODYyMzE3LCJqdGkiOiIxNWQ5YTNlZC0yM2ZiLTQzMzctYmNkMC01ZjgxMjViMGVkMjUifQ.3m7QQaUuw1oDz-JSc3eEK9l9e1rNiBP2-8GGnzzglbU",
+      "userId": "usr-owner-83bbcc",
+      "organizationId": "org-6e9ed3cf",
+      "createdAt": "2026-11-05T07:00:17.242Z",
+      "expiresAt": "2026-11-05T07:05:17.242Z"
+    },
+    {
+      "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c3Itb3duZXItODNiYmNjIiwic2lkIjoic2Vzc180MzZhYzI1NC1jZWE4LTRkMDUtYWVjMC0yZTdjNzM3ZmNiNTUiLCJvcmciOiJvcmctNmU5ZWQzY2YiLCJyb2xlIjoiT1dORVIiLCJzdG9yZUlkIjpudWxsLCJlbWFpbCI6Im5lbmdAZ21haWwuY29tIiwibmFtZSI6Imxvbmcga2ltbmVuZyIsImlzcyI6Imh0dHBzOi8vYXV0aC50aGVsb29wcy5pbyIsImF1ZCI6InRoZWxvb3BzLWFwaSIsImlhdCI6MTc5Mzg2NDA5MiwiZXhwIjoxNzkzODY0MzkyLCJqdGkiOiIxZGU3Y2M2My1lMjczLTQ5MDMtODAzMC03MWIzNGUxMDU4MzUifQ.iEkwpA2uB5Rl9iRfNg6CuEY2NVKLDDiUHcbwLhxeKSw",
+      "userId": "usr-owner-83bbcc",
+      "organizationId": "org-6e9ed3cf",
+      "createdAt": "2026-11-05T07:34:52.123Z",
+      "expiresAt": "2026-11-05T07:39:52.123Z"
+    },
+    {
+      "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c3Itb3duZXItODNiYmNjIiwic2lkIjoic2Vzc19iMmRkYzExZC0zZDBhLTQ2MmEtYjJmMy0zOTBlMDNhMmNiNWEiLCJvcmciOiJvcmctNmU5ZWQzY2YiLCJyb2xlIjoiT1dORVIiLCJzdG9yZUlkIjpudWxsLCJlbWFpbCI6Im5lbmdAZ21haWwuY29tIiwibmFtZSI6Imxvbmcga2ltbmVuZyIsImlzcyI6Imh0dHBzOi8vYXV0aC50aGVsb29wcy5pbyIsImF1ZCI6InRoZWxvb3BzLWFwaSIsImlhdCI6MTc5Mzg2NDExOCwiZXhwIjoxNzkzODY0NDE4LCJqdGkiOiI5MzIwYjc1YS1mZmZjLTRkM2EtOWM2My0xMzEyMjJiOWM1NGUifQ.dV3q0YhzD3R_AKw9Dc2SLQ4XQ0vKQXAe494hSQJPo8Q",
+      "userId": "usr-owner-83bbcc",
+      "organizationId": "org-6e9ed3cf",
+      "createdAt": "2026-11-05T07:35:18.357Z",
+      "expiresAt": "2026-11-05T07:40:18.357Z"
+    },
+    {
+      "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c3ItNmIxM2MzOGYiLCJzaWQiOiJzZXNzXzQzNjBmMmQ4LTYyYmEtNGY3Yi1hOGE4LTdhMTZjMzc1M2RkZSIsIm9yZyI6Im9yZy02ZTllZDNjZiIsInJvbGUiOiJTVE9SRV9NQU5BR0VSIiwic3RvcmVJZCI6bnVsbCwiZW1haWwiOiJwYW5oYUBnbWlhbC5jb20iLCJuYW1lIjoicGFuaGEiLCJpc3MiOiJodHRwczovL2F1dGgudGhlbG9vcHMuaW8iLCJhdWQiOiJ0aGVsb29wcy1hcGkiLCJpYXQiOjE3OTM4NjQxMTgsImV4cCI6MTc5Mzg2NDQxOCwianRpIjoiNzU0Y2JjZGUtMmZiYS00MjlmLWE0ZGUtNjZjMmM1MjdhYjc4In0.RRqYjE-B_rgYHMh3JF5XQ_Y0y8MsT61aeqMXgfMRrN4",
+      "userId": "usr-6b13c38f",
+      "organizationId": "org-6e9ed3cf",
+      "createdAt": "2026-11-05T07:35:18.467Z",
+      "expiresAt": "2026-11-05T07:40:18.467Z"
+    },
+    {
+      "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c3ItNmIxM2MzOGYiLCJzaWQiOiJzZXNzX2U0OTI1NTdhLWU5MjUtNDU1Ny1iNzZiLWNjYjNmYTZlNDkzNSIsIm9yZyI6Im9yZy02ZTllZDNjZiIsInJvbGUiOiJTVE9SRV9NQU5BR0VSIiwic3RvcmVJZCI6bnVsbCwiZW1haWwiOiJwYW5oYUBnbWlhbC5jb20iLCJuYW1lIjoicGFuaGEiLCJpc3MiOiJodHRwczovL2F1dGgudGhlbG9vcHMuaW8iLCJhdWQiOiJ0aGVsb29wcy1hcGkiLCJpYXQiOjE3OTM4NjQxMTgsImV4cCI6MTc5Mzg2NDQxOCwianRpIjoiZTM4Mzg2MjgtM2I2YS00OTg1LTliZjgtMGM4Mjc3YWE5YWM0In0.HtcPq9R_K1-x3sXxRyIfzWh1XNqiD1pPIvzQvd1MeeA",
+      "userId": "usr-6b13c38f",
+      "organizationId": "org-6e9ed3cf",
+      "createdAt": "2026-11-05T07:35:18.712Z",
+      "expiresAt": "2026-11-05T07:40:18.712Z"
+    },
+    {
+      "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c3Itb3duZXItODNiYmNjIiwic2lkIjoic2Vzc19mOWE1ZjU3NS01Y2JlLTQ0OTYtYjE5MS01NDdhZmJmMjI0ZTQiLCJvcmciOiJvcmctNmU5ZWQzY2YiLCJyb2xlIjoiT1dORVIiLCJzdG9yZUlkIjpudWxsLCJlbWFpbCI6Im5lbmdAZ21haWwuY29tIiwibmFtZSI6Imxvbmcga2ltbmVuZyIsImlzcyI6Imh0dHBzOi8vYXV0aC50aGVsb29wcy5pbyIsImF1ZCI6InRoZWxvb3BzLWFwaSIsImlhdCI6MTc5Mzg2NDE1OCwiZXhwIjoxNzkzODY0NDU4LCJqdGkiOiIyNmM2MGJmYS01Mzc0LTQ3MmUtOTYwMi1iYzY4NjE0NjdkYzAifQ.IxQq4ex3mlvQnsc0JTQ19kqz49C9RNOYPeLPbW9pDRE",
+      "userId": "usr-owner-83bbcc",
+      "organizationId": "org-6e9ed3cf",
+      "createdAt": "2026-11-05T07:35:58.966Z",
+      "expiresAt": "2026-11-05T07:40:58.966Z"
+    },
+    {
+      "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c3ItNmIxM2MzOGYiLCJzaWQiOiJzZXNzXzRmMjAwYzM0LTc1MmItNGM5MC05ZTk1LTRiZDFiYzg3ZGQyZSIsIm9yZyI6Im9yZy02ZTllZDNjZiIsInJvbGUiOiJTVE9SRV9NQU5BR0VSIiwic3RvcmVJZCI6bnVsbCwiZW1haWwiOiJwYW5oYUBnbWlhbC5jb20iLCJuYW1lIjoicGFuaGEiLCJpc3MiOiJodHRwczovL2F1dGgudGhlbG9vcHMuaW8iLCJhdWQiOiJ0aGVsb29wcy1hcGkiLCJpYXQiOjE3OTM4NjQxNTksImV4cCI6MTc5Mzg2NDQ1OSwianRpIjoiM2RhNWFjZDctZTBkYi00MjU1LTgwYTgtZjk0ZDU1MmVlODEwIn0.AYh7lu-op-yY6erN5tIM_QKUMVEK0xlblIh5gWTSrMM",
+      "userId": "usr-6b13c38f",
+      "organizationId": "org-6e9ed3cf",
+      "createdAt": "2026-11-05T07:35:59.055Z",
+      "expiresAt": "2026-11-05T07:40:59.055Z"
+    },
+    {
+      "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c3ItNmIxM2MzOGYiLCJzaWQiOiJzZXNzX2ZlOTZlZTY3LWUzNzEtNGU4ZC04ZDAxLTRiNmNlNzdiNTQ0NCIsIm9yZyI6Im9yZy02ZTllZDNjZiIsInJvbGUiOiJTVE9SRV9NQU5BR0VSIiwic3RvcmVJZCI6bnVsbCwiZW1haWwiOiJwYW5oYUBnbWlhbC5jb20iLCJuYW1lIjoicGFuaGEiLCJpc3MiOiJodHRwczovL2F1dGgudGhlbG9vcHMuaW8iLCJhdWQiOiJ0aGVsb29wcy1hcGkiLCJpYXQiOjE3OTM4NjQxNTksImV4cCI6MTc5Mzg2NDQ1OSwianRpIjoiYzlmMzc4YzUtOGZkNy00ZDY1LWFjMTctNzU3NjZkYTRhMTEwIn0.M7h3_RbQw3nwGiDmko0I1a3kOG7ERE47ftP5vFD6fGg",
+      "userId": "usr-6b13c38f",
+      "organizationId": "org-6e9ed3cf",
+      "createdAt": "2026-11-05T07:35:59.411Z",
+      "expiresAt": "2026-11-05T07:40:59.411Z"
+    },
+    {
+      "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c3Itb3duZXItODNiYmNjIiwic2lkIjoic2Vzc19iODY1OWI3Yy0yN2JjLTQ5MjEtYjdmMi1jYmYyNjNjYTBhYTciLCJvcmciOiJvcmctNmU5ZWQzY2YiLCJyb2xlIjoiT1dORVIiLCJzdG9yZUlkIjpudWxsLCJlbWFpbCI6Im5lbmdAZ21haWwuY29tIiwibmFtZSI6Imxvbmcga2ltbmVuZyIsImlzcyI6Imh0dHBzOi8vYXV0aC50aGVsb29wcy5pbyIsImF1ZCI6InRoZWxvb3BzLWFwaSIsImlhdCI6MTc5Mzg2NDQyOSwiZXhwIjoxNzkzODY0NzI5LCJqdGkiOiJlZDk1MjI4Yy02YTJiLTQwN2QtOTY0My1iNjBmYjg4YTdlNjcifQ._fTVQQNPk4aFTqVRAcqOb8Xk-bl0PXNWfoADv8yOikw",
+      "userId": "usr-owner-83bbcc",
+      "organizationId": "org-6e9ed3cf",
+      "createdAt": "2026-11-05T07:40:29.968Z",
+      "expiresAt": "2026-11-05T07:45:29.968Z"
+    },
+    {
+      "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c3ItNmIxM2MzOGYiLCJzaWQiOiJzZXNzX2RlNWUyMzc1LTU3NmEtNDJlNC1iYjZmLTY4YzE0NDQ1YjhhMSIsIm9yZyI6Im9yZy02ZTllZDNjZiIsInJvbGUiOiJTVE9SRV9NQU5BR0VSIiwic3RvcmVJZCI6bnVsbCwiZW1haWwiOiJwYW5oYUBnbWlhbC5jb20iLCJuYW1lIjoicGFuaGEiLCJpc3MiOiJodHRwczovL2F1dGgudGhlbG9vcHMuaW8iLCJhdWQiOiJ0aGVsb29wcy1hcGkiLCJpYXQiOjE3OTM4NjQ0ODQsImV4cCI6MTc5Mzg2NDc4NCwianRpIjoiZDAxNWM1NjUtN2E5MS00NGI4LTg4MmYtNGJiZjJiN2E5ZTU4In0.6ZNFdZQqoh6_lVXkvuJDZxWBfqVxeeEa_RttpbFfczk",
+      "userId": "usr-6b13c38f",
+      "organizationId": "org-6e9ed3cf",
+      "createdAt": "2026-11-05T07:41:24.044Z",
+      "expiresAt": "2026-11-05T07:46:24.044Z"
+    },
+    {
+      "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c3Itb3duZXItODNiYmNjIiwic2lkIjoic2Vzc183Mjk5ODQ2Mi1hNGNiLTRlYzQtODA4Zi0wMTE4YjZlZmRlZTciLCJvcmciOiJvcmctNmU5ZWQzY2YiLCJyb2xlIjoiT1dORVIiLCJzdG9yZUlkIjpudWxsLCJlbWFpbCI6Im5lbmdAZ21haWwuY29tIiwibmFtZSI6Imxvbmcga2ltbmVuZyIsImlzcyI6Imh0dHBzOi8vYXV0aC50aGVsb29wcy5pbyIsImF1ZCI6InRoZWxvb3BzLWFwaSIsImlhdCI6MTc5Mzg2NDUxMSwiZXhwIjoxNzkzODY0ODExLCJqdGkiOiI1MmZhMzNhNC00YjhkLTRiZWEtOGY4NC02MWI1NDdkNGY5MzUifQ.vyZG3MFeIkgjDd1PA9eoavmtsMGXcHFHdxO5YACddwI",
+      "userId": "usr-owner-83bbcc",
+      "organizationId": "org-6e9ed3cf",
+      "createdAt": "2026-11-05T07:41:51.397Z",
+      "expiresAt": "2026-11-05T07:46:51.397Z"
     }
   ],
   "orders": [
+    {
+      "id": "79680263-bb70-41f7-aa35-0de440d0349c",
+      "transactionId": "79680263-bb70-41f7-aa35-0de440d0349c",
+      "orderNumber": "REG-01-20261105-4822",
+      "businessId": "org-6e9ed3cf",
+      "organizationId": "org-6e9ed3cf",
+      "storeId": "loc-01",
+      "storeName": "BeyondVER Main Branch",
+      "registerId": "reg-loc01-01",
+      "registerCode": "REG-01",
+      "shiftId": "shift-720780-2941",
+      "employeeId": "usr-owner-83bbcc",
+      "cashierUserId": "usr-owner-83bbcc",
+      "customerId": null,
+      "customerName": "Walk-in Customer",
+      "subtotal": 125,
+      "discountTotal": 0,
+      "taxTotal": 12.5,
+      "totalAmount": 137.5,
+      "currencyCode": "USD",
+      "exchangeRate": 4000,
+      "khrTotal": 550000,
+      "status": "COMPLETED",
+      "savedOrderId": null,
+      "createdAt": "2026-11-05T04:25:00.888Z"
+    },
+    {
+      "id": "7748fa95-6798-4063-a255-ccb7f46bfdb7",
+      "transactionId": "7748fa95-6798-4063-a255-ccb7f46bfdb7",
+      "orderNumber": "REG-01-20261105-4240",
+      "businessId": "org-6e9ed3cf",
+      "organizationId": "org-6e9ed3cf",
+      "storeId": "loc-01",
+      "storeName": "BeyondVER Main Branch",
+      "registerId": "reg-loc01-01",
+      "registerCode": "REG-01",
+      "shiftId": "shift-720780-2941",
+      "employeeId": "usr-owner-83bbcc",
+      "cashierUserId": "usr-owner-83bbcc",
+      "customerId": null,
+      "customerName": "Walk-in Customer",
+      "subtotal": 25,
+      "discountTotal": 0,
+      "taxTotal": 2.5,
+      "totalAmount": 27.5,
+      "currencyCode": "USD",
+      "exchangeRate": 4000,
+      "khrTotal": 110000,
+      "status": "COMPLETED",
+      "savedOrderId": null,
+      "createdAt": "2026-11-05T04:19:53.501Z"
+    },
     {
       "id": "8d240b10-fd19-4d75-930a-b5722ba63729",
       "transactionId": "8d240b10-fd19-4d75-930a-b5722ba63729",
@@ -528,6 +679,32 @@
       "lineDiscount": 0,
       "taxAmount": 7.5,
       "lineTotal": 75
+    },
+    {
+      "id": "fd817f43-f2b5-415b-bba3-dd5ff2781cb4",
+      "orderId": "7748fa95-6798-4063-a255-ccb7f46bfdb7",
+      "lineNo": 1,
+      "productId": "prod-d2fce8ab",
+      "variantSku": "BV-GEN-2723",
+      "itemTitle": "Cattie — Standard",
+      "quantity": 1,
+      "unitPrice": 25,
+      "lineDiscount": 0,
+      "taxAmount": 2.5,
+      "lineTotal": 25
+    },
+    {
+      "id": "b40007ff-2f8a-407c-afe1-34755b276fd1",
+      "orderId": "79680263-bb70-41f7-aa35-0de440d0349c",
+      "lineNo": 1,
+      "productId": "prod-1d6b30bb",
+      "variantSku": "BV-GEN-5280",
+      "itemTitle": "glasses — Standard",
+      "quantity": 5,
+      "unitPrice": 25,
+      "lineDiscount": 0,
+      "taxAmount": 12.5,
+      "lineTotal": 125
     }
   ],
   "payments": [
@@ -582,11 +759,38 @@
       "changeGiven": 0,
       "changeGivenKhr": 0,
       "referenceCode": null
+    },
+    {
+      "id": "6b9ac79d-c9fa-4374-bcca-b74cb1cfaff9",
+      "orderId": "7748fa95-6798-4063-a255-ccb7f46bfdb7",
+      "method": "CASH",
+      "currencyCode": "USD",
+      "exchangeRate": 1,
+      "amount": 27.5,
+      "amountKhr": 110000,
+      "tenderedAmount": 27.5,
+      "changeGiven": 0,
+      "changeGivenKhr": 0,
+      "referenceCode": null
+    },
+    {
+      "id": "b4114af6-d12d-4cad-8ecf-15ac5c4d5e95",
+      "orderId": "79680263-bb70-41f7-aa35-0de440d0349c",
+      "method": "CASH",
+      "currencyCode": "USD",
+      "exchangeRate": 1,
+      "amount": 137.5,
+      "amountKhr": 550000,
+      "tenderedAmount": 137.5,
+      "changeGiven": 0,
+      "changeGivenKhr": 0,
+      "referenceCode": null
     }
   ],
   "shifts": [
     {
-      "id": "shift-720780-2941",
+      "id": "shift-442002-a70d",
+      "posSessionId": "sess-mw38km1e-ce575b",
       "businessId": "org-6e9ed3cf",
       "organizationId": "org-6e9ed3cf",
       "storeId": "loc-01",
@@ -597,8 +801,59 @@
       "cashierUserId": "usr-owner-83bbcc",
       "cashierName": "long kimneng",
       "cashierEmail": "neng@gmail.com",
-      "openedAt": "2026-11-04T18:25:20.780Z",
+      "openedAt": "2026-11-05T07:40:42.002Z",
+      "closedAt": "2026-11-05T07:41:08.807Z",
+      "closedByUserId": "usr-owner-83bbcc",
+      "closedByName": "long kimneng",
+      "exchangeRateSnapshot": 4000,
+      "exchangeRateAtOpen": 4000,
+      "openingFloatUsd": 100,
+      "openingFloatKhr": 200000,
+      "totalOpeningFloatUsd": 150,
+      "openingNotes": "",
+      "expectedCashUsd": 100,
+      "expectedCashKhr": 200000,
+      "countedCashUsd": 150,
+      "countedCashKhr": 0,
+      "cashDifferenceUsd": 50,
+      "cashDifferenceKhr": -200000,
+      "closingNotes": "",
+      "status": "CLOSED",
+      "auditTrail": [
+        {
+          "action": "SHIFT_OPENED",
+          "by": "long kimneng",
+          "timestamp": "2026-11-05T07:40:42.002Z",
+          "details": "Shift opened with float: 100 USD + 200,000 KHR"
+        },
+        {
+          "action": "SHIFT_CLOSED",
+          "by": "long kimneng",
+          "timestamp": "2026-11-05T07:41:08.807Z",
+          "details": "Shift closed. Counted: 150 USD + 0 KHR. Discrepancy: 0."
+        }
+      ],
+      "countedCash": 150,
+      "expectedCash": 150,
+      "cashOverShort": 0
+    },
+    {
+      "id": "shift-410769-c77a",
+      "posSessionId": "sess-mw38jxxt-42b9a7",
+      "businessId": "org-6e9ed3cf",
+      "organizationId": "org-6e9ed3cf",
+      "storeId": "loc-zprdw9b",
+      "storeName": "BEYONDSISOWAT",
+      "registerId": "reg-ssw-01",
+      "registerCode": "REG-01",
+      "employeeId": "usr-6b13c38f",
+      "cashierUserId": "usr-6b13c38f",
+      "cashierName": "panha",
+      "cashierEmail": "panha@gmial.com",
+      "openedAt": "2026-11-05T07:40:10.769Z",
       "closedAt": null,
+      "closedByUserId": null,
+      "closedByName": null,
       "exchangeRateSnapshot": 4000,
       "exchangeRateAtOpen": 4000,
       "openingFloatUsd": 100,
@@ -616,12 +871,401 @@
       "auditTrail": [
         {
           "action": "SHIFT_OPENED",
+          "by": "panha",
+          "timestamp": "2026-11-05T07:40:10.769Z",
+          "details": "Shift opened with float: 100 USD + 200,000 KHR"
+        }
+      ]
+    },
+    {
+      "id": "shift-159304-2813",
+      "posSessionId": "sess-mw38ejwo-75128c",
+      "businessId": "org-6e9ed3cf",
+      "organizationId": "org-6e9ed3cf",
+      "storeId": "loc-01",
+      "storeName": "BeyondVER Main Branch",
+      "registerId": "reg-loc01-01",
+      "registerCode": "REG-01",
+      "employeeId": "usr-owner-83bbcc",
+      "cashierUserId": "usr-owner-83bbcc",
+      "cashierName": "long kimneng",
+      "cashierEmail": "neng@gmail.com",
+      "openedAt": "2026-11-05T07:35:59.304Z",
+      "closedAt": "2026-11-05T07:35:59.437Z",
+      "closedByUserId": "usr-owner-83bbcc",
+      "closedByName": "long kimneng",
+      "exchangeRateSnapshot": 4000,
+      "exchangeRateAtOpen": 4000,
+      "openingFloatUsd": 200,
+      "openingFloatKhr": 0,
+      "totalOpeningFloatUsd": 200,
+      "openingNotes": "",
+      "expectedCashUsd": 200,
+      "expectedCashKhr": 0,
+      "countedCashUsd": 200,
+      "countedCashKhr": 0,
+      "cashDifferenceUsd": 0,
+      "cashDifferenceKhr": 0,
+      "closingNotes": "Test teardown",
+      "status": "CLOSED",
+      "auditTrail": [
+        {
+          "action": "SHIFT_OPENED",
+          "by": "long kimneng",
+          "timestamp": "2026-11-05T07:35:59.304Z",
+          "details": "Shift opened with float: 200 USD + 0 KHR"
+        },
+        {
+          "action": "SHIFT_CLOSED",
+          "by": "long kimneng",
+          "timestamp": "2026-11-05T07:35:59.437Z",
+          "details": "Shift closed. Counted: 200 USD + 0 KHR. Discrepancy: 0."
+        }
+      ],
+      "countedCash": 200,
+      "expectedCash": 200,
+      "cashOverShort": 0
+    },
+    {
+      "id": "shift-159196-3852",
+      "posSessionId": "sess-mw38ejto-6536f5",
+      "businessId": "org-6e9ed3cf",
+      "organizationId": "org-6e9ed3cf",
+      "storeId": "loc-zprdw9b",
+      "storeName": "BEYONDSISOWAT",
+      "registerId": "reg-ssw-01",
+      "registerCode": "REG-01",
+      "employeeId": "usr-6b13c38f",
+      "cashierUserId": "usr-6b13c38f",
+      "cashierName": "panha",
+      "cashierEmail": "panha@gmial.com",
+      "openedAt": "2026-11-05T07:35:59.196Z",
+      "closedAt": "2026-11-05T07:35:59.451Z",
+      "closedByUserId": "usr-6b13c38f",
+      "closedByName": "panha",
+      "exchangeRateSnapshot": 4000,
+      "exchangeRateAtOpen": 4000,
+      "openingFloatUsd": 50,
+      "openingFloatKhr": 100000,
+      "totalOpeningFloatUsd": 75,
+      "openingNotes": "User B SSW float",
+      "expectedCashUsd": 50,
+      "expectedCashKhr": 100000,
+      "countedCashUsd": 50,
+      "countedCashKhr": 100000,
+      "cashDifferenceUsd": 0,
+      "cashDifferenceKhr": 0,
+      "closingNotes": "Test teardown",
+      "status": "CLOSED",
+      "auditTrail": [
+        {
+          "action": "SHIFT_OPENED",
+          "by": "panha",
+          "timestamp": "2026-11-05T07:35:59.196Z",
+          "details": "Shift opened with float: 50 USD + 100,000 KHR"
+        },
+        {
+          "action": "SHIFT_CLOSED",
+          "by": "panha",
+          "timestamp": "2026-11-05T07:35:59.451Z",
+          "details": "Shift closed. Counted: 50 USD + 100,000 KHR. Discrepancy: 0."
+        }
+      ],
+      "countedCash": 75,
+      "expectedCash": 75,
+      "cashOverShort": 0
+    },
+    {
+      "id": "shift-159105-23ff",
+      "posSessionId": "sess-mw38ejr5-12c61f",
+      "businessId": "org-6e9ed3cf",
+      "organizationId": "org-6e9ed3cf",
+      "storeId": "loc-01",
+      "storeName": "BeyondVER Main Branch",
+      "registerId": "reg-loc01-01",
+      "registerCode": "REG-01",
+      "employeeId": "usr-owner-83bbcc",
+      "cashierUserId": "usr-owner-83bbcc",
+      "cashierName": "long kimneng",
+      "cashierEmail": "neng@gmail.com",
+      "openedAt": "2026-11-05T07:35:59.105Z",
+      "closedAt": "2026-11-05T07:35:59.222Z",
+      "closedByUserId": "usr-owner-83bbcc",
+      "closedByName": "long kimneng",
+      "exchangeRateSnapshot": 4000,
+      "exchangeRateAtOpen": 4000,
+      "openingFloatUsd": 150,
+      "openingFloatKhr": 200000,
+      "totalOpeningFloatUsd": 200,
+      "openingNotes": "Owner Main Store float",
+      "expectedCashUsd": 150,
+      "expectedCashKhr": 200000,
+      "countedCashUsd": 150,
+      "countedCashKhr": 200000,
+      "cashDifferenceUsd": 0,
+      "cashDifferenceKhr": 0,
+      "closingNotes": "Owner closing Main Store shift",
+      "status": "CLOSED",
+      "auditTrail": [
+        {
+          "action": "SHIFT_OPENED",
+          "by": "long kimneng",
+          "timestamp": "2026-11-05T07:35:59.105Z",
+          "details": "Shift opened with float: 150 USD + 200,000 KHR"
+        },
+        {
+          "action": "SHIFT_CLOSED",
+          "by": "long kimneng",
+          "timestamp": "2026-11-05T07:35:59.222Z",
+          "details": "Shift closed. Counted: 150 USD + 200,000 KHR. Discrepancy: 0."
+        }
+      ],
+      "countedCash": 200,
+      "expectedCash": 200,
+      "cashOverShort": 0
+    },
+    {
+      "id": "shift-118596-510b",
+      "posSessionId": "sess-mw38dohw-9c696c",
+      "businessId": "org-6e9ed3cf",
+      "organizationId": "org-6e9ed3cf",
+      "storeId": "loc-01",
+      "storeName": "BeyondVER Main Branch",
+      "registerId": "reg-loc01-01",
+      "registerCode": "REG-01",
+      "employeeId": "usr-owner-83bbcc",
+      "cashierUserId": "usr-owner-83bbcc",
+      "cashierName": "long kimneng",
+      "cashierEmail": "neng@gmail.com",
+      "openedAt": "2026-11-05T07:35:18.596Z",
+      "closedAt": "2026-11-05T07:35:18.726Z",
+      "closedByUserId": "usr-owner-83bbcc",
+      "closedByName": "long kimneng",
+      "exchangeRateSnapshot": 4000,
+      "exchangeRateAtOpen": 4000,
+      "openingFloatUsd": 200,
+      "openingFloatKhr": 0,
+      "totalOpeningFloatUsd": 200,
+      "openingNotes": "",
+      "expectedCashUsd": 200,
+      "expectedCashKhr": 0,
+      "countedCashUsd": 200,
+      "countedCashKhr": 0,
+      "cashDifferenceUsd": 0,
+      "cashDifferenceKhr": 0,
+      "closingNotes": "Test teardown",
+      "status": "CLOSED",
+      "auditTrail": [
+        {
+          "action": "SHIFT_OPENED",
+          "by": "long kimneng",
+          "timestamp": "2026-11-05T07:35:18.596Z",
+          "details": "Shift opened with float: 200 USD + 0 KHR"
+        },
+        {
+          "action": "SHIFT_CLOSED",
+          "by": "long kimneng",
+          "timestamp": "2026-11-05T07:35:18.726Z",
+          "details": "Shift closed. Counted: 200 USD + 0 KHR. Discrepancy: 0."
+        }
+      ],
+      "countedCash": 200,
+      "expectedCash": 200,
+      "cashOverShort": 0
+    },
+    {
+      "id": "shift-118555-718e",
+      "posSessionId": "sess-mw38dogr-de182b",
+      "businessId": "org-6e9ed3cf",
+      "organizationId": "org-6e9ed3cf",
+      "storeId": "loc-zprdw9b",
+      "storeName": "BEYONDSISOWAT",
+      "registerId": "reg-ssw-01",
+      "registerCode": "REG-01",
+      "employeeId": "usr-6b13c38f",
+      "cashierUserId": "usr-6b13c38f",
+      "cashierName": "panha",
+      "cashierEmail": "panha@gmial.com",
+      "openedAt": "2026-11-05T07:35:18.555Z",
+      "closedAt": "2026-11-05T07:35:18.734Z",
+      "closedByUserId": "usr-6b13c38f",
+      "closedByName": "panha",
+      "exchangeRateSnapshot": 4000,
+      "exchangeRateAtOpen": 4000,
+      "openingFloatUsd": 50,
+      "openingFloatKhr": 100000,
+      "totalOpeningFloatUsd": 75,
+      "openingNotes": "User B SSW float",
+      "expectedCashUsd": 50,
+      "expectedCashKhr": 100000,
+      "countedCashUsd": 50,
+      "countedCashKhr": 100000,
+      "cashDifferenceUsd": 0,
+      "cashDifferenceKhr": 0,
+      "closingNotes": "Test teardown",
+      "status": "CLOSED",
+      "auditTrail": [
+        {
+          "action": "SHIFT_OPENED",
+          "by": "panha",
+          "timestamp": "2026-11-05T07:35:18.555Z",
+          "details": "Shift opened with float: 50 USD + 100,000 KHR"
+        },
+        {
+          "action": "SHIFT_CLOSED",
+          "by": "panha",
+          "timestamp": "2026-11-05T07:35:18.734Z",
+          "details": "Shift closed. Counted: 50 USD + 100,000 KHR. Discrepancy: 0."
+        }
+      ],
+      "countedCash": 75,
+      "expectedCash": 75,
+      "cashOverShort": 0
+    },
+    {
+      "id": "shift-118545-2eed",
+      "posSessionId": "sess-mw38dogh-8115a3",
+      "businessId": "org-6e9ed3cf",
+      "organizationId": "org-6e9ed3cf",
+      "storeId": "loc-01",
+      "storeName": "BeyondVER Main Branch",
+      "registerId": "reg-loc01-01",
+      "registerCode": "REG-01",
+      "employeeId": "usr-owner-83bbcc",
+      "cashierUserId": "usr-owner-83bbcc",
+      "cashierName": "long kimneng",
+      "cashierEmail": "neng@gmail.com",
+      "openedAt": "2026-11-05T07:35:18.546Z",
+      "closedAt": "2026-11-05T07:35:18.576Z",
+      "closedByUserId": "usr-owner-83bbcc",
+      "closedByName": "long kimneng",
+      "exchangeRateSnapshot": 4000,
+      "exchangeRateAtOpen": 4000,
+      "openingFloatUsd": 150,
+      "openingFloatKhr": 200000,
+      "totalOpeningFloatUsd": 200,
+      "openingNotes": "Owner Main Store float",
+      "expectedCashUsd": 150,
+      "expectedCashKhr": 200000,
+      "countedCashUsd": 150,
+      "countedCashKhr": 200000,
+      "cashDifferenceUsd": 0,
+      "cashDifferenceKhr": 0,
+      "closingNotes": "Owner closing Main Store shift",
+      "status": "CLOSED",
+      "auditTrail": [
+        {
+          "action": "SHIFT_OPENED",
+          "by": "long kimneng",
+          "timestamp": "2026-11-05T07:35:18.546Z",
+          "details": "Shift opened with float: 150 USD + 200,000 KHR"
+        },
+        {
+          "action": "SHIFT_CLOSED",
+          "by": "long kimneng",
+          "timestamp": "2026-11-05T07:35:18.576Z",
+          "details": "Shift closed. Counted: 150 USD + 200,000 KHR. Discrepancy: 0."
+        }
+      ],
+      "countedCash": 200,
+      "expectedCash": 200,
+      "cashOverShort": 0
+    },
+    {
+      "id": "shift-943596-4d25",
+      "businessId": "org-6e9ed3cf",
+      "organizationId": "org-6e9ed3cf",
+      "storeId": "loc-zprdw9b",
+      "storeName": "BEYONDSISOWAT",
+      "registerId": "reg-ssw-01",
+      "registerCode": "REG-01",
+      "employeeId": "usr-6b13c38f",
+      "cashierUserId": "usr-6b13c38f",
+      "cashierName": "panha",
+      "cashierEmail": "panha@gmial.com",
+      "openedAt": "2026-11-05T06:59:03.596Z",
+      "closedAt": "2026-11-05T07:00:01.276Z",
+      "exchangeRateSnapshot": 4000,
+      "exchangeRateAtOpen": 4000,
+      "openingFloatUsd": 100,
+      "openingFloatKhr": 200000,
+      "totalOpeningFloatUsd": 150,
+      "openingNotes": "",
+      "expectedCashUsd": 100,
+      "expectedCashKhr": 200000,
+      "countedCashUsd": 150,
+      "countedCashKhr": 0,
+      "cashDifferenceUsd": 50,
+      "cashDifferenceKhr": -200000,
+      "closingNotes": "close now",
+      "status": "CLOSED",
+      "auditTrail": [
+        {
+          "action": "SHIFT_OPENED",
+          "by": "panha",
+          "timestamp": "2026-11-05T06:59:03.596Z",
+          "details": "Shift opened with float: $100 USD + 200,000 KHR"
+        },
+        {
+          "action": "SHIFT_CLOSED",
+          "by": "panha",
+          "timestamp": "2026-11-05T07:00:01.276Z",
+          "details": "Shift closed. Counted: $150 USD + 0 KHR. Discrepancy: $0."
+        }
+      ],
+      "countedCash": 150,
+      "expectedCash": 150,
+      "cashOverShort": 0,
+      "closedByUserId": "usr-6b13c38f",
+      "closedByName": "panha"
+    },
+    {
+      "id": "shift-720780-2941",
+      "businessId": "org-6e9ed3cf",
+      "organizationId": "org-6e9ed3cf",
+      "storeId": "loc-01",
+      "storeName": "BeyondVER Main Branch",
+      "registerId": "reg-loc01-01",
+      "registerCode": "REG-01",
+      "employeeId": "usr-owner-83bbcc",
+      "cashierUserId": "usr-owner-83bbcc",
+      "cashierName": "long kimneng",
+      "cashierEmail": "neng@gmail.com",
+      "openedAt": "2026-11-04T18:25:20.780Z",
+      "closedAt": "2026-11-05T07:35:18.491Z",
+      "exchangeRateSnapshot": 4000,
+      "exchangeRateAtOpen": 4000,
+      "openingFloatUsd": 100,
+      "openingFloatKhr": 200000,
+      "totalOpeningFloatUsd": 150,
+      "openingNotes": "",
+      "expectedCashUsd": 595,
+      "expectedCashKhr": 200000,
+      "countedCashUsd": 595,
+      "countedCashKhr": 200000,
+      "cashDifferenceUsd": 0,
+      "cashDifferenceKhr": 0,
+      "closingNotes": "Test reset",
+      "status": "CLOSED",
+      "auditTrail": [
+        {
+          "action": "SHIFT_OPENED",
           "by": "long kimneng",
           "timestamp": "2026-11-04T18:25:20.780Z",
           "details": "Shift opened with float: $100 USD + 200,000 KHR"
+        },
+        {
+          "action": "SHIFT_CLOSED",
+          "by": "long kimneng",
+          "timestamp": "2026-11-05T07:35:18.491Z",
+          "details": "Shift closed. Counted: 595 USD + 200,000 KHR. Discrepancy: 0."
         }
       ],
-      "expectedCash": 330
+      "expectedCash": 645,
+      "countedCash": 645,
+      "cashOverShort": 0,
+      "closedByUserId": "usr-owner-83bbcc",
+      "closedByName": "long kimneng"
     },
     {
       "id": "shift-614754-d806",
@@ -788,9 +1432,9 @@
           "title": "Standard",
           "price": 25,
           "barcode": "880314994113",
-          "onHand": 2,
+          "onHand": 1,
           "reserved": 0,
-          "available": 2
+          "available": 1
         }
       ]
     },
@@ -811,14 +1455,519 @@
           "title": "Standard",
           "price": 25,
           "barcode": "880730502876",
-          "onHand": 20,
+          "onHand": 8,
           "reserved": 0,
-          "available": 20
+          "available": 8
         }
       ]
     }
   ],
   "outbox": [
+    {
+      "id": "a903055b-f2d5-418f-8cb5-423e9d3deb80",
+      "eventType": "SHIFT_CLOSED",
+      "schemaVersion": 1,
+      "sourceSystem": "POS",
+      "payload": {
+        "shiftId": "shift-442002-a70d",
+        "posSessionId": "sess-mw38km1e-ce575b",
+        "storeId": "loc-01",
+        "registerId": "reg-loc01-01",
+        "registerCode": "REG-01",
+        "cashierUserId": "usr-owner-83bbcc",
+        "cashierName": "long kimneng",
+        "closedByUserId": "usr-owner-83bbcc",
+        "closedByName": "long kimneng",
+        "openedAt": "2026-11-05T07:40:42.002Z",
+        "closedAt": "2026-11-05T07:41:08.807Z",
+        "durationHours": "0h 0m",
+        "openingFloatUsd": 100,
+        "openingFloatKhr": 200000,
+        "countedCashUsd": 150,
+        "countedCashKhr": 0,
+        "expectedCashUsd": 100,
+        "expectedCashKhr": 200000,
+        "cashDifferenceUsd": 50,
+        "cashDifferenceKhr": -200000,
+        "closingNotes": "",
+        "tenderTotals": {
+          "cashUsd": 0,
+          "cashKhr": 0,
+          "card": 0,
+          "qr": 0,
+          "storeCredit": 0,
+          "totalUsd": 0,
+          "totalKhr": 0
+        },
+        "orderCount": 0,
+        "refundCount": 0,
+        "refundTotalUsd": 0,
+        "cashMovements": []
+      },
+      "status": "PUBLISHED",
+      "attemptCount": 1,
+      "createdAt": "2026-11-05T07:41:08.807Z",
+      "publishedAt": "2026-11-05T07:41:11.412Z"
+    },
+    {
+      "id": "171975fe-d87a-4ceb-9725-6b5404cd89b4",
+      "eventType": "SHIFT_CLOSED",
+      "schemaVersion": 1,
+      "sourceSystem": "POS",
+      "payload": {
+        "shiftId": "shift-159196-3852",
+        "posSessionId": "sess-mw38ejto-6536f5",
+        "storeId": "loc-zprdw9b",
+        "registerId": "reg-ssw-01",
+        "registerCode": "REG-01",
+        "cashierUserId": "usr-6b13c38f",
+        "cashierName": "panha",
+        "closedByUserId": "usr-6b13c38f",
+        "closedByName": "panha",
+        "openedAt": "2026-11-05T07:35:59.196Z",
+        "closedAt": "2026-11-05T07:35:59.451Z",
+        "durationHours": "0h 0m",
+        "openingFloatUsd": 50,
+        "openingFloatKhr": 100000,
+        "countedCashUsd": 50,
+        "countedCashKhr": 100000,
+        "expectedCashUsd": 50,
+        "expectedCashKhr": 100000,
+        "cashDifferenceUsd": 0,
+        "cashDifferenceKhr": 0,
+        "closingNotes": "Test teardown",
+        "tenderTotals": {
+          "cashUsd": 0,
+          "cashKhr": 0,
+          "card": 0,
+          "qr": 0,
+          "storeCredit": 0,
+          "totalUsd": 0,
+          "totalKhr": 0
+        },
+        "orderCount": 0,
+        "refundCount": 0,
+        "refundTotalUsd": 0,
+        "cashMovements": []
+      },
+      "status": "PUBLISHED",
+      "attemptCount": 1,
+      "createdAt": "2026-11-05T07:35:59.451Z",
+      "publishedAt": "2026-11-05T07:36:02.797Z"
+    },
+    {
+      "id": "195bd500-d784-44ba-8824-bc46584ac064",
+      "eventType": "SHIFT_CLOSED",
+      "schemaVersion": 1,
+      "sourceSystem": "POS",
+      "payload": {
+        "shiftId": "shift-159304-2813",
+        "posSessionId": "sess-mw38ejwo-75128c",
+        "storeId": "loc-01",
+        "registerId": "reg-loc01-01",
+        "registerCode": "REG-01",
+        "cashierUserId": "usr-owner-83bbcc",
+        "cashierName": "long kimneng",
+        "closedByUserId": "usr-owner-83bbcc",
+        "closedByName": "long kimneng",
+        "openedAt": "2026-11-05T07:35:59.304Z",
+        "closedAt": "2026-11-05T07:35:59.437Z",
+        "durationHours": "0h 0m",
+        "openingFloatUsd": 200,
+        "openingFloatKhr": 0,
+        "countedCashUsd": 200,
+        "countedCashKhr": 0,
+        "expectedCashUsd": 200,
+        "expectedCashKhr": 0,
+        "cashDifferenceUsd": 0,
+        "cashDifferenceKhr": 0,
+        "closingNotes": "Test teardown",
+        "tenderTotals": {
+          "cashUsd": 0,
+          "cashKhr": 0,
+          "card": 0,
+          "qr": 0,
+          "storeCredit": 0,
+          "totalUsd": 0,
+          "totalKhr": 0
+        },
+        "orderCount": 0,
+        "refundCount": 0,
+        "refundTotalUsd": 0,
+        "cashMovements": []
+      },
+      "status": "PUBLISHED",
+      "attemptCount": 1,
+      "createdAt": "2026-11-05T07:35:59.437Z",
+      "publishedAt": "2026-11-05T07:36:02.804Z"
+    },
+    {
+      "id": "8db0c9b4-caa1-4997-9238-1a63f96794a8",
+      "eventType": "SHIFT_CLOSED",
+      "schemaVersion": 1,
+      "sourceSystem": "POS",
+      "payload": {
+        "shiftId": "shift-159105-23ff",
+        "posSessionId": "sess-mw38ejr5-12c61f",
+        "storeId": "loc-01",
+        "registerId": "reg-loc01-01",
+        "registerCode": "REG-01",
+        "cashierUserId": "usr-owner-83bbcc",
+        "cashierName": "long kimneng",
+        "closedByUserId": "usr-owner-83bbcc",
+        "closedByName": "long kimneng",
+        "openedAt": "2026-11-05T07:35:59.105Z",
+        "closedAt": "2026-11-05T07:35:59.222Z",
+        "durationHours": "0h 0m",
+        "openingFloatUsd": 150,
+        "openingFloatKhr": 200000,
+        "countedCashUsd": 150,
+        "countedCashKhr": 200000,
+        "expectedCashUsd": 150,
+        "expectedCashKhr": 200000,
+        "cashDifferenceUsd": 0,
+        "cashDifferenceKhr": 0,
+        "closingNotes": "Owner closing Main Store shift",
+        "tenderTotals": {
+          "cashUsd": 0,
+          "cashKhr": 0,
+          "card": 0,
+          "qr": 0,
+          "storeCredit": 0,
+          "totalUsd": 0,
+          "totalKhr": 0
+        },
+        "orderCount": 0,
+        "refundCount": 0,
+        "refundTotalUsd": 0,
+        "cashMovements": []
+      },
+      "status": "PUBLISHED",
+      "attemptCount": 1,
+      "createdAt": "2026-11-05T07:35:59.223Z",
+      "publishedAt": "2026-11-05T07:36:02.813Z"
+    },
+    {
+      "id": "75c4fab1-fae7-4d27-b5d3-d65113c0d027",
+      "eventType": "SHIFT_CLOSED",
+      "schemaVersion": 1,
+      "sourceSystem": "POS",
+      "payload": {
+        "shiftId": "shift-118555-718e",
+        "posSessionId": "sess-mw38dogr-de182b",
+        "storeId": "loc-zprdw9b",
+        "registerId": "reg-ssw-01",
+        "registerCode": "REG-01",
+        "cashierUserId": "usr-6b13c38f",
+        "cashierName": "panha",
+        "closedByUserId": "usr-6b13c38f",
+        "closedByName": "panha",
+        "openedAt": "2026-11-05T07:35:18.555Z",
+        "closedAt": "2026-11-05T07:35:18.734Z",
+        "durationHours": "0h 0m",
+        "openingFloatUsd": 50,
+        "openingFloatKhr": 100000,
+        "countedCashUsd": 50,
+        "countedCashKhr": 100000,
+        "expectedCashUsd": 50,
+        "expectedCashKhr": 100000,
+        "cashDifferenceUsd": 0,
+        "cashDifferenceKhr": 0,
+        "closingNotes": "Test teardown",
+        "tenderTotals": {
+          "cashUsd": 0,
+          "cashKhr": 0,
+          "card": 0,
+          "qr": 0,
+          "storeCredit": 0,
+          "totalUsd": 0,
+          "totalKhr": 0
+        },
+        "orderCount": 0,
+        "refundCount": 0,
+        "refundTotalUsd": 0,
+        "cashMovements": []
+      },
+      "status": "PUBLISHED",
+      "attemptCount": 1,
+      "createdAt": "2026-11-05T07:35:18.734Z",
+      "publishedAt": "2026-11-05T07:35:22.403Z"
+    },
+    {
+      "id": "e6f03c1d-46cf-423f-a56f-3e7577315c48",
+      "eventType": "SHIFT_CLOSED",
+      "schemaVersion": 1,
+      "sourceSystem": "POS",
+      "payload": {
+        "shiftId": "shift-118596-510b",
+        "posSessionId": "sess-mw38dohw-9c696c",
+        "storeId": "loc-01",
+        "registerId": "reg-loc01-01",
+        "registerCode": "REG-01",
+        "cashierUserId": "usr-owner-83bbcc",
+        "cashierName": "long kimneng",
+        "closedByUserId": "usr-owner-83bbcc",
+        "closedByName": "long kimneng",
+        "openedAt": "2026-11-05T07:35:18.596Z",
+        "closedAt": "2026-11-05T07:35:18.726Z",
+        "durationHours": "0h 0m",
+        "openingFloatUsd": 200,
+        "openingFloatKhr": 0,
+        "countedCashUsd": 200,
+        "countedCashKhr": 0,
+        "expectedCashUsd": 200,
+        "expectedCashKhr": 0,
+        "cashDifferenceUsd": 0,
+        "cashDifferenceKhr": 0,
+        "closingNotes": "Test teardown",
+        "tenderTotals": {
+          "cashUsd": 0,
+          "cashKhr": 0,
+          "card": 0,
+          "qr": 0,
+          "storeCredit": 0,
+          "totalUsd": 0,
+          "totalKhr": 0
+        },
+        "orderCount": 0,
+        "refundCount": 0,
+        "refundTotalUsd": 0,
+        "cashMovements": []
+      },
+      "status": "PUBLISHED",
+      "attemptCount": 1,
+      "createdAt": "2026-11-05T07:35:18.726Z",
+      "publishedAt": "2026-11-05T07:35:22.412Z"
+    },
+    {
+      "id": "40583182-0898-4360-ac8d-d6a054a9ad95",
+      "eventType": "SHIFT_CLOSED",
+      "schemaVersion": 1,
+      "sourceSystem": "POS",
+      "payload": {
+        "shiftId": "shift-118545-2eed",
+        "posSessionId": "sess-mw38dogh-8115a3",
+        "storeId": "loc-01",
+        "registerId": "reg-loc01-01",
+        "registerCode": "REG-01",
+        "cashierUserId": "usr-owner-83bbcc",
+        "cashierName": "long kimneng",
+        "closedByUserId": "usr-owner-83bbcc",
+        "closedByName": "long kimneng",
+        "openedAt": "2026-11-05T07:35:18.546Z",
+        "closedAt": "2026-11-05T07:35:18.576Z",
+        "durationHours": "0h 0m",
+        "openingFloatUsd": 150,
+        "openingFloatKhr": 200000,
+        "countedCashUsd": 150,
+        "countedCashKhr": 200000,
+        "expectedCashUsd": 150,
+        "expectedCashKhr": 200000,
+        "cashDifferenceUsd": 0,
+        "cashDifferenceKhr": 0,
+        "closingNotes": "Owner closing Main Store shift",
+        "tenderTotals": {
+          "cashUsd": 0,
+          "cashKhr": 0,
+          "card": 0,
+          "qr": 0,
+          "storeCredit": 0,
+          "totalUsd": 0,
+          "totalKhr": 0
+        },
+        "orderCount": 0,
+        "refundCount": 0,
+        "refundTotalUsd": 0,
+        "cashMovements": []
+      },
+      "status": "PUBLISHED",
+      "attemptCount": 1,
+      "createdAt": "2026-11-05T07:35:18.576Z",
+      "publishedAt": "2026-11-05T07:35:22.421Z"
+    },
+    {
+      "id": "db67ced8-2c5d-4605-96f4-9bfca2ee0838",
+      "eventType": "SHIFT_CLOSED",
+      "schemaVersion": 1,
+      "sourceSystem": "POS",
+      "payload": {
+        "shiftId": "shift-720780-2941",
+        "storeId": "loc-01",
+        "registerId": "reg-loc01-01",
+        "registerCode": "REG-01",
+        "cashierUserId": "usr-owner-83bbcc",
+        "cashierName": "long kimneng",
+        "closedByUserId": "usr-owner-83bbcc",
+        "closedByName": "long kimneng",
+        "openedAt": "2026-11-04T18:25:20.780Z",
+        "closedAt": "2026-11-05T07:35:18.491Z",
+        "durationHours": "13h 9m",
+        "openingFloatUsd": 100,
+        "openingFloatKhr": 200000,
+        "countedCashUsd": 595,
+        "countedCashKhr": 200000,
+        "expectedCashUsd": 595,
+        "expectedCashKhr": 200000,
+        "cashDifferenceUsd": 0,
+        "cashDifferenceKhr": 0,
+        "closingNotes": "Test reset",
+        "tenderTotals": {
+          "cashUsd": 495,
+          "cashKhr": 0,
+          "card": 0,
+          "qr": 0,
+          "storeCredit": 0,
+          "totalUsd": 495,
+          "totalKhr": 1980000
+        },
+        "orderCount": 6,
+        "refundCount": 0,
+        "refundTotalUsd": 0,
+        "cashMovements": []
+      },
+      "status": "PUBLISHED",
+      "attemptCount": 1,
+      "createdAt": "2026-11-05T07:35:18.533Z",
+      "publishedAt": "2026-11-05T07:35:22.429Z"
+    },
+    {
+      "id": "b41519e1-b1dc-47cd-8660-a372e79f388b",
+      "eventType": "SHIFT_CLOSED",
+      "schemaVersion": 1,
+      "sourceSystem": "POS",
+      "payload": {
+        "shiftId": "shift-943596-4d25",
+        "registerId": "reg-ssw-01",
+        "registerCode": "REG-01",
+        "cashierUserId": "usr-6b13c38f",
+        "cashierName": "panha",
+        "openedAt": "2026-11-05T06:59:03.596Z",
+        "closedAt": "2026-11-05T07:00:01.276Z",
+        "durationHours": "0h 0m",
+        "openingFloatUsd": 100,
+        "openingFloatKhr": 200000,
+        "countedCashUsd": 150,
+        "countedCashKhr": 0,
+        "expectedCashUsd": 100,
+        "expectedCashKhr": 200000,
+        "cashDifferenceUsd": 50,
+        "cashDifferenceKhr": -200000,
+        "closingNotes": "close now",
+        "tenderTotals": {
+          "cashUsd": 0,
+          "cashKhr": 0,
+          "card": 0,
+          "qr": 0,
+          "storeCredit": 0,
+          "totalUsd": 0,
+          "totalKhr": 0
+        },
+        "orderCount": 0,
+        "refundCount": 0,
+        "refundTotalUsd": 0,
+        "cashMovements": []
+      },
+      "status": "PUBLISHED",
+      "attemptCount": 1,
+      "createdAt": "2026-11-05T07:00:01.276Z",
+      "publishedAt": "2026-11-05T07:00:01.554Z"
+    },
+    {
+      "id": "f4ea628c-e43e-4c5c-a57b-0d5a8f5e6aed",
+      "eventType": "ORDER_COMPLETED",
+      "schemaVersion": 1,
+      "sourceSystem": "POS",
+      "organizationId": "org-6e9ed3cf",
+      "locationId": "loc-01",
+      "registerId": "reg-loc01-01",
+      "orderId": "79680263-bb70-41f7-aa35-0de440d0349c",
+      "orderNumber": "REG-01-20261105-4822",
+      "payload": {
+        "orderId": "79680263-bb70-41f7-aa35-0de440d0349c",
+        "orderNumber": "REG-01-20261105-4822",
+        "timestamp": "2026-11-05T04:25:00.888Z",
+        "locationId": "loc-01",
+        "cashierUserId": "usr-owner-83bbcc",
+        "customerName": "Walk-in Customer",
+        "subtotal": 125,
+        "discountTotal": 0,
+        "taxTotal": 12.5,
+        "totalAmount": 137.5,
+        "exchangeRate": 4000,
+        "khrTotal": 550000,
+        "items": [
+          {
+            "productId": "prod-1d6b30bb",
+            "sku": "BV-GEN-5280",
+            "title": "glasses — Standard",
+            "quantity": 5,
+            "unitPrice": 25,
+            "total": 125
+          }
+        ],
+        "payments": [
+          {
+            "method": "CASH",
+            "currencyCode": "USD",
+            "amount": 137.5,
+            "amountKhr": 550000,
+            "referenceCode": null
+          }
+        ]
+      },
+      "status": "PUBLISHED",
+      "attemptCount": 1,
+      "createdAt": "2026-11-05T04:25:00.902Z",
+      "publishedAt": "2026-11-05T04:25:03.308Z"
+    },
+    {
+      "id": "e9002340-024a-48f8-aa56-e9f9c9314702",
+      "eventType": "ORDER_COMPLETED",
+      "schemaVersion": 1,
+      "sourceSystem": "POS",
+      "organizationId": "org-6e9ed3cf",
+      "locationId": "loc-01",
+      "registerId": "reg-loc01-01",
+      "orderId": "7748fa95-6798-4063-a255-ccb7f46bfdb7",
+      "orderNumber": "REG-01-20261105-4240",
+      "payload": {
+        "orderId": "7748fa95-6798-4063-a255-ccb7f46bfdb7",
+        "orderNumber": "REG-01-20261105-4240",
+        "timestamp": "2026-11-05T04:19:53.501Z",
+        "locationId": "loc-01",
+        "cashierUserId": "usr-owner-83bbcc",
+        "customerName": "Walk-in Customer",
+        "subtotal": 25,
+        "discountTotal": 0,
+        "taxTotal": 2.5,
+        "totalAmount": 27.5,
+        "exchangeRate": 4000,
+        "khrTotal": 110000,
+        "items": [
+          {
+            "productId": "prod-d2fce8ab",
+            "sku": "BV-GEN-2723",
+            "title": "Cattie — Standard",
+            "quantity": 1,
+            "unitPrice": 25,
+            "total": 25
+          }
+        ],
+        "payments": [
+          {
+            "method": "CASH",
+            "currencyCode": "USD",
+            "amount": 27.5,
+            "amountKhr": 110000,
+            "referenceCode": null
+          }
+        ]
+      },
+      "status": "PUBLISHED",
+      "attemptCount": 1,
+      "createdAt": "2026-11-05T04:19:53.514Z",
+      "publishedAt": "2026-11-05T04:19:55.011Z"
+    },
     {
       "id": "400357dd-ece7-4a4f-84b3-7a141f22ba8a",
       "eventType": "ORDER_COMPLETED",
@@ -1144,6 +2293,428 @@
   "parkedCarts": [],
   "inbox": [],
   "auditLog": [
+    {
+      "id": "b4b95c20-f35d-476c-9a39-1fb0ddd6d11a",
+      "action": "PIN_LOGIN_SUCCESS",
+      "userId": "usr-owner-83bbcc",
+      "userName": "long kimneng",
+      "organizationId": "org-6e9ed3cf",
+      "role": "OWNER",
+      "details": "Successful Quick PIN login. Landing destination: /admin",
+      "timestamp": "2026-11-05T07:41:51.397Z"
+    },
+    {
+      "id": "4b0701a8-672a-4ebd-aad4-4259cafce3c9",
+      "action": "PIN_LOGIN_FAILED",
+      "organizationId": "org-6e9ed3cf",
+      "timestamp": "2026-11-05T07:41:47.058Z",
+      "details": "Failed Quick PIN authentication attempt in company org-6e9ed3cf"
+    },
+    {
+      "id": "707d0e31-18b9-4154-b668-0d26ecaa8a28",
+      "action": "PIN_LOGIN_SUCCESS",
+      "userId": "usr-6b13c38f",
+      "userName": "panha",
+      "organizationId": "org-6e9ed3cf",
+      "role": "STORE_MANAGER",
+      "details": "Successful Quick PIN login. Landing destination: /admin",
+      "timestamp": "2026-11-05T07:41:24.044Z"
+    },
+    {
+      "id": "9959a712-03f7-487e-9e43-5fb22886a192",
+      "action": "SHIFT_CLOSED",
+      "userId": "usr-owner-83bbcc",
+      "userName": "long kimneng",
+      "details": "Shift #shift-442002-a70d closed on REG-01 by long kimneng. Counted: 150, Discrepancy: 0",
+      "timestamp": "2026-11-05T07:41:08.807Z"
+    },
+    {
+      "id": "82845c3a-e320-4e3c-8a8d-79c4b5f6832a",
+      "action": "SHIFT_OPENED",
+      "userId": "usr-owner-83bbcc",
+      "userName": "long kimneng",
+      "details": "Shift #shift-442002-a70d (Session sess-mw38km1e-ce575b) opened in store loc-01 by long kimneng",
+      "timestamp": "2026-11-05T07:40:42.002Z"
+    },
+    {
+      "id": "9047b955-b44c-4a3d-b4d0-17d140b4e65d",
+      "action": "PIN_LOGIN_SUCCESS",
+      "userId": "usr-owner-83bbcc",
+      "userName": "long kimneng",
+      "organizationId": "org-6e9ed3cf",
+      "role": "OWNER",
+      "details": "Successful Quick PIN login. Landing destination: /admin",
+      "timestamp": "2026-11-05T07:40:29.968Z"
+    },
+    {
+      "id": "db702503-3208-4b91-b910-e9ff556fe183",
+      "action": "PIN_LOGIN_FAILED",
+      "organizationId": "org-6e9ed3cf",
+      "timestamp": "2026-11-05T07:40:20.126Z",
+      "details": "Failed Quick PIN authentication attempt in company org-6e9ed3cf"
+    },
+    {
+      "id": "1c232c25-edbf-40dc-a0d7-b15a3d13548b",
+      "action": "SHIFT_OPENED",
+      "userId": "usr-6b13c38f",
+      "userName": "panha",
+      "details": "Shift #shift-410769-c77a (Session sess-mw38jxxt-42b9a7) opened in store loc-zprdw9b by panha",
+      "timestamp": "2026-11-05T07:40:10.769Z"
+    },
+    {
+      "id": "9f96a278-e19f-4551-b1e5-f61bd44be148",
+      "action": "PIN_LOGIN_SUCCESS",
+      "userId": "usr-6b13c38f",
+      "userName": "panha",
+      "organizationId": "org-6e9ed3cf",
+      "role": "STORE_MANAGER",
+      "details": "Successful Quick PIN login. Landing destination: /admin",
+      "timestamp": "2026-11-05T07:40:04.649Z"
+    },
+    {
+      "id": "01a4953f-63c8-48bf-8852-8a494c511e63",
+      "action": "PIN_LOGIN_SUCCESS",
+      "userId": "usr-owner-83bbcc",
+      "userName": "long kimneng",
+      "organizationId": "org-6e9ed3cf",
+      "role": "OWNER",
+      "details": "Successful Quick PIN login. Landing destination: /admin",
+      "timestamp": "2026-11-05T07:39:58.549Z"
+    },
+    {
+      "id": "ba53537f-6770-4cf5-8ae4-78549982211e",
+      "action": "PIN_LOGIN_FAILED",
+      "organizationId": "org-6e9ed3cf",
+      "timestamp": "2026-11-05T07:39:48.392Z",
+      "details": "Failed Quick PIN authentication attempt in company org-6e9ed3cf"
+    },
+    {
+      "id": "460a2b24-b0cd-4567-a4c2-c7177c758be9",
+      "action": "PIN_LOGIN_FAILED",
+      "organizationId": "org-6e9ed3cf",
+      "timestamp": "2026-11-05T07:39:44.709Z",
+      "details": "Failed Quick PIN authentication attempt in company org-6e9ed3cf"
+    },
+    {
+      "id": "884adaf6-48f2-41bf-95b0-efb460c85bea",
+      "action": "SHIFT_CLOSED",
+      "userId": "usr-6b13c38f",
+      "userName": "panha",
+      "details": "Shift #shift-159196-3852 closed on REG-01 by panha. Counted: 75, Discrepancy: 0",
+      "timestamp": "2026-11-05T07:35:59.451Z"
+    },
+    {
+      "id": "be48fed0-e772-487e-8cdd-46eaeda6c8a9",
+      "action": "SHIFT_CLOSED",
+      "userId": "usr-owner-83bbcc",
+      "userName": "long kimneng",
+      "details": "Shift #shift-159304-2813 closed on REG-01 by long kimneng. Counted: 200, Discrepancy: 0",
+      "timestamp": "2026-11-05T07:35:59.437Z"
+    },
+    {
+      "id": "0fdd1299-a34c-496a-9fe8-215314602eb9",
+      "action": "LOGIN_SUCCESS",
+      "userId": "usr-6b13c38f",
+      "userName": "panha",
+      "organizationId": "org-6e9ed3cf",
+      "role": "STORE_MANAGER",
+      "details": "Successful Credentials login. Landing destination: /admin",
+      "timestamp": "2026-11-05T07:35:59.411Z"
+    },
+    {
+      "id": "c6fb803b-5933-4e1d-9f88-bd43f6afd7af",
+      "action": "SHIFT_OPENED",
+      "userId": "usr-owner-83bbcc",
+      "userName": "long kimneng",
+      "details": "Shift #shift-159304-2813 (Session sess-mw38ejwo-75128c) opened in store loc-01 by long kimneng",
+      "timestamp": "2026-11-05T07:35:59.304Z"
+    },
+    {
+      "id": "d6194b2a-a578-4f06-815a-83be6fed6d5f",
+      "action": "SHIFT_CLOSED",
+      "userId": "usr-owner-83bbcc",
+      "userName": "long kimneng",
+      "details": "Shift #shift-159105-23ff closed on REG-01 by long kimneng. Counted: 200, Discrepancy: 0",
+      "timestamp": "2026-11-05T07:35:59.223Z"
+    },
+    {
+      "id": "9bb06b0b-2315-479c-9119-8d63f7e9b8de",
+      "action": "SHIFT_OPENED",
+      "userId": "usr-6b13c38f",
+      "userName": "panha",
+      "details": "Shift #shift-159196-3852 (Session sess-mw38ejto-6536f5) opened in store loc-zprdw9b by panha",
+      "timestamp": "2026-11-05T07:35:59.196Z"
+    },
+    {
+      "id": "77970c7f-9757-4480-b906-42c7564c1604",
+      "action": "SHIFT_OPENED",
+      "userId": "usr-owner-83bbcc",
+      "userName": "long kimneng",
+      "details": "Shift #shift-159105-23ff (Session sess-mw38ejr5-12c61f) opened in store loc-01 by long kimneng",
+      "timestamp": "2026-11-05T07:35:59.185Z"
+    },
+    {
+      "id": "b7768bd0-6ce5-42f3-a94e-111968a1a526",
+      "action": "LOGIN_SUCCESS",
+      "userId": "usr-6b13c38f",
+      "userName": "panha",
+      "organizationId": "org-6e9ed3cf",
+      "role": "STORE_MANAGER",
+      "details": "Successful Credentials login. Landing destination: /admin",
+      "timestamp": "2026-11-05T07:35:59.055Z"
+    },
+    {
+      "id": "56b4419a-97f3-446e-827d-5a175a3e3ad9",
+      "action": "LOGIN_SUCCESS",
+      "userId": "usr-owner-83bbcc",
+      "userName": "long kimneng",
+      "organizationId": "org-6e9ed3cf",
+      "role": "OWNER",
+      "details": "Successful Credentials login. Landing destination: /admin",
+      "timestamp": "2026-11-05T07:35:58.966Z"
+    },
+    {
+      "id": "41c7eddd-0fe0-4dce-bf71-fd0e952f5f28",
+      "action": "SHIFT_CLOSED",
+      "userId": "usr-6b13c38f",
+      "userName": "panha",
+      "details": "Shift #shift-118555-718e closed on REG-01 by panha. Counted: 75, Discrepancy: 0",
+      "timestamp": "2026-11-05T07:35:18.734Z"
+    },
+    {
+      "id": "c85b3124-24da-4cd2-a04a-3b9de98cb559",
+      "action": "SHIFT_CLOSED",
+      "userId": "usr-owner-83bbcc",
+      "userName": "long kimneng",
+      "details": "Shift #shift-118596-510b closed on REG-01 by long kimneng. Counted: 200, Discrepancy: 0",
+      "timestamp": "2026-11-05T07:35:18.726Z"
+    },
+    {
+      "id": "52fb6847-7e0e-4f45-a33b-c249e7594be3",
+      "action": "LOGIN_SUCCESS",
+      "userId": "usr-6b13c38f",
+      "userName": "panha",
+      "organizationId": "org-6e9ed3cf",
+      "role": "STORE_MANAGER",
+      "details": "Successful Credentials login. Landing destination: /admin",
+      "timestamp": "2026-11-05T07:35:18.712Z"
+    },
+    {
+      "id": "b1660c2a-af78-4d8d-bcf1-fa54b63dbe98",
+      "action": "SHIFT_OPENED",
+      "userId": "usr-owner-83bbcc",
+      "userName": "long kimneng",
+      "details": "Shift #shift-118596-510b (Session sess-mw38dohw-9c696c) opened in store loc-01 by long kimneng",
+      "timestamp": "2026-11-05T07:35:18.596Z"
+    },
+    {
+      "id": "e2b12e55-d98e-481c-a37f-2e7077de045d",
+      "action": "SHIFT_CLOSED",
+      "userId": "usr-owner-83bbcc",
+      "userName": "long kimneng",
+      "details": "Shift #shift-118545-2eed closed on REG-01 by long kimneng. Counted: 200, Discrepancy: 0",
+      "timestamp": "2026-11-05T07:35:18.576Z"
+    },
+    {
+      "id": "157284ec-a788-46a6-aee3-eec3daf48153",
+      "action": "SHIFT_OPENED",
+      "userId": "usr-6b13c38f",
+      "userName": "panha",
+      "details": "Shift #shift-118555-718e (Session sess-mw38dogr-de182b) opened in store loc-zprdw9b by panha",
+      "timestamp": "2026-11-05T07:35:18.555Z"
+    },
+    {
+      "id": "7113f4c4-0b1e-47ae-b35e-ff2af5e95411",
+      "action": "SHIFT_OPENED",
+      "userId": "usr-owner-83bbcc",
+      "userName": "long kimneng",
+      "details": "Shift #shift-118545-2eed (Session sess-mw38dogh-8115a3) opened in store loc-01 by long kimneng",
+      "timestamp": "2026-11-05T07:35:18.546Z"
+    },
+    {
+      "id": "7170122e-cc23-46f0-8b46-95027f0b9be0",
+      "action": "SHIFT_CLOSED",
+      "userId": "usr-owner-83bbcc",
+      "userName": "long kimneng",
+      "details": "Shift #shift-720780-2941 closed on REG-01 by long kimneng. Counted: 645, Discrepancy: 0",
+      "timestamp": "2026-11-05T07:35:18.533Z"
+    },
+    {
+      "id": "d2ab4855-d73b-4ef7-ae60-f32815e83055",
+      "action": "LOGIN_SUCCESS",
+      "userId": "usr-6b13c38f",
+      "userName": "panha",
+      "organizationId": "org-6e9ed3cf",
+      "role": "STORE_MANAGER",
+      "details": "Successful Credentials login. Landing destination: /admin",
+      "timestamp": "2026-11-05T07:35:18.468Z"
+    },
+    {
+      "id": "e396de6c-ca1b-4181-b3ee-a32f79f88f61",
+      "action": "LOGIN_SUCCESS",
+      "userId": "usr-owner-83bbcc",
+      "userName": "long kimneng",
+      "organizationId": "org-6e9ed3cf",
+      "role": "OWNER",
+      "details": "Successful Credentials login. Landing destination: /admin",
+      "timestamp": "2026-11-05T07:35:18.357Z"
+    },
+    {
+      "id": "40740a4e-47e2-45bc-8856-a7b89f46321c",
+      "action": "LOGIN_FAILED",
+      "timestamp": "2026-11-05T07:34:52.146Z",
+      "details": "Failed credentials authentication for panha@gmail.com"
+    },
+    {
+      "id": "ec889efb-84bb-4024-90f3-7b012db38669",
+      "action": "LOGIN_SUCCESS",
+      "userId": "usr-owner-83bbcc",
+      "userName": "long kimneng",
+      "organizationId": "org-6e9ed3cf",
+      "role": "OWNER",
+      "details": "Successful Credentials login. Landing destination: /admin",
+      "timestamp": "2026-11-05T07:34:52.123Z"
+    },
+    {
+      "id": "885c6b4a-ab7d-4bb9-8101-c8edc5e0b5fa",
+      "action": "LOGIN_FAILED",
+      "timestamp": "2026-11-05T07:33:56.261Z",
+      "details": "Failed credentials authentication for neng@gmail.com"
+    },
+    {
+      "id": "b287a785-9a61-47c5-9834-e57587ddb5e9",
+      "action": "PIN_LOGIN_SUCCESS",
+      "userId": "usr-owner-83bbcc",
+      "userName": "long kimneng",
+      "organizationId": "org-6e9ed3cf",
+      "role": "OWNER",
+      "details": "Successful Quick PIN login. Landing destination: /admin",
+      "timestamp": "2026-11-05T07:00:17.242Z"
+    },
+    {
+      "id": "d7dab2b2-c3fc-4be5-a7de-9c62ecf054e8",
+      "action": "SHIFT_CLOSED",
+      "userId": "usr-6b13c38f",
+      "userName": "panha",
+      "details": "Shift #shift-943596-4d25 closed on REG-01. Counted: $150, Discrepancy: $0",
+      "timestamp": "2026-11-05T07:00:01.276Z"
+    },
+    {
+      "id": "be204532-910a-4295-865c-c46d6c996e25",
+      "action": "SHIFT_OPENED",
+      "userId": "usr-6b13c38f",
+      "userName": "panha",
+      "details": "Shift #shift-943596-4d25 opened on REG-01 by panha",
+      "timestamp": "2026-11-05T06:59:03.638Z"
+    },
+    {
+      "id": "9771f21f-85f2-4ccc-9457-3aa8b6cd0fa8",
+      "action": "PIN_LOGIN_SUCCESS",
+      "userId": "usr-6b13c38f",
+      "userName": "panha",
+      "organizationId": "org-6e9ed3cf",
+      "role": "STORE_MANAGER",
+      "details": "Successful Quick PIN login. Landing destination: /admin",
+      "timestamp": "2026-11-05T06:58:57.098Z"
+    },
+    {
+      "id": "ae1a0efe-5500-4f05-b22c-e767732b8799",
+      "action": "PIN_LOGIN_SUCCESS",
+      "userId": "usr-owner-83bbcc",
+      "userName": "long kimneng",
+      "organizationId": "org-6e9ed3cf",
+      "role": "OWNER",
+      "details": "Successful Quick PIN login. Landing destination: /admin",
+      "timestamp": "2026-11-05T05:58:35.474Z"
+    },
+    {
+      "id": "e3b72ee8-1602-4ef2-8740-e5fe694566e4",
+      "action": "PIN_LOGIN_SUCCESS",
+      "userId": "usr-6b13c38f",
+      "userName": "panha",
+      "organizationId": "org-6e9ed3cf",
+      "role": "STORE_MANAGER",
+      "details": "Successful Quick PIN login. Landing destination: /admin",
+      "timestamp": "2026-11-05T05:57:54.786Z"
+    },
+    {
+      "id": "0bfcc7f3-b056-4640-b507-c84903026a68",
+      "action": "PIN_LOGIN_SUCCESS",
+      "userId": "usr-38055d19",
+      "userName": "Test Cashier",
+      "organizationId": "org-6e9ed3cf",
+      "role": "CASHIER",
+      "details": "Successful Quick PIN login. Landing destination: /pos",
+      "timestamp": "2026-11-05T04:56:11.916Z"
+    },
+    {
+      "id": "86432dcc-0b69-4c51-b922-c7bb07f2ba1d",
+      "action": "PIN_VIEWED",
+      "organizationId": "org-6e9ed3cf",
+      "performedBy": "long kimneng",
+      "userId": "usr-38055d19",
+      "userName": "Test Cashier",
+      "details": "Quick PIN revealed for employee Test Cashier (cashier_1793814695566@test.com) by long kimneng",
+      "timestamp": "2026-11-05T04:56:04.765Z"
+    },
+    {
+      "id": "f02746a6-719d-4074-a4c1-08913046f47e",
+      "action": "USER_UPDATED",
+      "organizationId": "org-6e9ed3cf",
+      "performedBy": "long kimneng",
+      "userId": "usr-38055d19",
+      "userName": "Test Cashier",
+      "details": "Profile & permissions updated for Test Cashier",
+      "timestamp": "2026-11-05T04:56:00.380Z"
+    },
+    {
+      "id": "461dee39-7c3f-4047-9d7a-81fa8d674724",
+      "action": "PIN_VIEWED",
+      "organizationId": "org-6e9ed3cf",
+      "performedBy": "long kimneng",
+      "userId": "usr-38055d19",
+      "userName": "Test Cashier",
+      "details": "Quick PIN revealed for employee Test Cashier (cashier_1793814695566@test.com) by long kimneng",
+      "timestamp": "2026-11-05T04:55:41.331Z"
+    },
+    {
+      "id": "054b39fa-d6fd-40b7-b652-a5bd0ed6cef7",
+      "action": "PIN_LOGIN_SUCCESS",
+      "userId": "usr-owner-83bbcc",
+      "userName": "long kimneng",
+      "organizationId": "org-6e9ed3cf",
+      "role": "OWNER",
+      "details": "Successful Quick PIN login. Landing destination: /admin",
+      "timestamp": "2026-11-05T04:54:50.703Z"
+    },
+    {
+      "id": "33f8e270-ce1c-4e7b-9dce-c718c4581a4b",
+      "action": "COMPANY_CODE_VERIFIED",
+      "organizationId": "org-6e9ed3cf",
+      "performedBy": "IP ::1",
+      "details": "POS Terminal paired successfully with Company Code \"BV-8821\" (BeyondVER)",
+      "timestamp": "2026-11-05T04:54:38.904Z"
+    },
+    {
+      "id": "505c2c19-339d-438e-89f7-431f9cc805ff",
+      "action": "PIN_LOGIN_SUCCESS",
+      "userId": "usr-6b13c38f",
+      "userName": "panha",
+      "organizationId": "org-6e9ed3cf",
+      "role": "STORE_MANAGER",
+      "details": "Successful Quick PIN login. Landing destination: /admin",
+      "timestamp": "2026-11-05T04:50:11.101Z"
+    },
+    {
+      "id": "db93d29a-545b-4d0e-91c4-cd1b8b4d1700",
+      "action": "PIN_LOGIN_SUCCESS",
+      "userId": "usr-6b13c38f",
+      "userName": "panha",
+      "organizationId": "org-6e9ed3cf",
+      "role": "STORE_MANAGER",
+      "details": "Successful Quick PIN login. Landing destination: /admin",
+      "timestamp": "2026-11-05T04:48:36.795Z"
+    },
     {
       "id": "62695acf-75e0-43c8-960b-09ad3693d485",
       "action": "SHIFT_OPENED",

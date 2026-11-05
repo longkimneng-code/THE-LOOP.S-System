@@ -111,6 +111,44 @@ function processCheckout({
     };
   }
 
+  // Validate stock availability at target store location before processing checkout
+  const targetStoreId = register?.locationId || register?.storeId || activeShift?.locationId || 'loc-01';
+  const targetStoreObj = (db.locations || []).find(l => l.id === targetStoreId);
+  let sqlDb = null;
+  try {
+    const { getDatabase } = require('../../../shared/database/connection');
+    sqlDb = getDatabase();
+  } catch (e) {}
+
+  for (const line of totals.lines) {
+    const sku = line.variantSku;
+    let availableAtLoc = null;
+
+    if (sqlDb) {
+      try {
+        const balRow = sqlDb.prepare('SELECT on_hand, reserved FROM stock_balances WHERE sku = ? AND location_id = ?').get(sku, targetStoreId);
+        if (balRow) {
+          availableAtLoc = Math.max(0, (Number(balRow.on_hand) || 0) - (Number(balRow.reserved) || 0));
+        } else {
+          availableAtLoc = 0;
+        }
+      } catch (err) {}
+    }
+
+    if (availableAtLoc === null) {
+      const prod = db.products.find(p => (p.variants || []).some(v => v.sku === sku));
+      const vr = prod?.variants?.find(v => v.sku === sku);
+      availableAtLoc = vr ? (vr.available ?? vr.onHand ?? 0) : 0;
+    }
+
+    if (line.quantity > availableAtLoc) {
+      return {
+        ok: false,
+        error: `Insufficient stock for "${line.itemTitle}": Only ${availableAtLoc} unit(s) available in stock at ${targetStoreObj?.name || 'this location'}, but order requested ${line.quantity}. Cannot complete sale over available stock.`
+      };
+    }
+  }
+
   const orderId = generateUuid();
   const orderNumber = generateOrderNumber(register.registerCode);
 
@@ -170,8 +208,8 @@ function processCheckout({
     };
   });
 
-  const targetStoreId = register.locationId || register.storeId || 'loc-1';
-  const targetStore = (db.locations || []).find(l => l.id === targetStoreId);
+  const activeStoreId = targetStoreId || register.locationId || register.storeId || 'loc-01';
+  const targetStore = (db.locations || []).find(l => l.id === activeStoreId);
 
   const orderRecord = {
     id: orderId,
@@ -179,7 +217,7 @@ function processCheckout({
     orderNumber,
     businessId: register.organizationId || db.organization?.id || 'org-loops-001',
     organizationId: register.organizationId || db.organization?.id || 'org-loops-001',
-    storeId: targetStoreId,
+    storeId: activeStoreId,
     storeName: targetStore?.name || 'Sisowath Flagship Store',
     registerId: register.id,
     registerCode: register.registerCode,
@@ -305,6 +343,13 @@ function processCheckout({
         activeShift?.cashierName || 'Cashier',
         `POS Sale #${orderRecord.orderNumber}`
       );
+
+      // Keep product_variants table in sync with sum of location balances
+      sqlDb.prepare(`
+        UPDATE product_variants 
+        SET on_hand = (SELECT COALESCE(SUM(on_hand), 0) FROM stock_balances WHERE stock_balances.sku = product_variants.sku)
+        WHERE sku = ?
+      `).run(sku);
     });
   } catch (sqlErr) {
     console.warn('[Checkout] SQLite sync error:', sqlErr.message);

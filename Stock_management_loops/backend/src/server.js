@@ -128,17 +128,24 @@ function syncWithEnterpriseDb(db, tenantOrgId) {
         const variants = dbSql.prepare(`SELECT * FROM product_variants WHERE product_id = ?`).all(sp.id);
         const balances = dbSql.prepare(`SELECT * FROM stock_balances WHERE organization_id = ?`).all(sp.organization_id);
 
-        const mappedVariants = variants.map(v => ({
-          sku: v.sku,
-          title: v.title || 'Standard',
-          barcode: v.barcode || '',
-          costMinor: v.cost_minor || sp.cost_minor || 0,
-          retailMinor: v.retail_minor || sp.retail_minor || 0,
-          onHand: v.on_hand || 0,
-          reserved: v.reserved || 0,
-          damaged: v.damaged || 0,
-          rop: v.rop || 5
-        }));
+        const mappedVariants = variants.map(v => {
+          const skuBalTotal = dbSql.prepare(`SELECT SUM(on_hand) as totalOnHand, SUM(reserved) as totalReserved, SUM(damaged) as totalDamaged FROM stock_balances WHERE sku = ?`).get(v.sku);
+          const computedOnHand = (skuBalTotal && skuBalTotal.totalOnHand !== null) ? Number(skuBalTotal.totalOnHand) : (v.on_hand || 0);
+          const computedReserved = (skuBalTotal && skuBalTotal.totalReserved !== null) ? Number(skuBalTotal.totalReserved) : (v.reserved || 0);
+          const computedDamaged = (skuBalTotal && skuBalTotal.totalDamaged !== null) ? Number(skuBalTotal.totalDamaged) : (v.damaged || 0);
+
+          return {
+            sku: v.sku,
+            title: v.title || 'Standard',
+            barcode: v.barcode || '',
+            costMinor: v.cost_minor || sp.cost_minor || 0,
+            retailMinor: v.retail_minor || sp.retail_minor || 0,
+            onHand: computedOnHand,
+            reserved: computedReserved,
+            damaged: computedDamaged,
+            rop: v.rop || 5
+          };
+        });
 
         if (!existing) {
           existing = {
@@ -758,13 +765,14 @@ const server = http.createServer(async (req, res) => {
         let barcodeCounter = 880300000000 + Math.floor(Math.random() * 800000);
         const updatedVariants = body.variants.map((v, i) => {
           const existingVar = product.variants.find(ev => ev.sku === v.sku);
+          const newOnHand = v.onHand !== undefined ? Number(v.onHand) : (existingVar ? existingVar.onHand : 0);
           return {
             sku: v.sku || `${product.code}-V${i+1}`,
             title: v.title || `Variant ${i+1}`,
             barcode: v.barcode || existingVar?.barcode || (barcodeCounter++).toString(),
             costMinor: v.costMinor !== undefined ? v.costMinor : product.costMinor,
             retailMinor: v.retailMinor !== undefined ? v.retailMinor : product.retailMinor,
-            onHand: existingVar ? existingVar.onHand : (v.onHand || 0),
+            onHand: newOnHand,
             reserved: existingVar ? existingVar.reserved : 0,
             damaged: existingVar ? existingVar.damaged : 0,
             rop: v.rop || existingVar?.rop || 5
@@ -778,9 +786,9 @@ const server = http.createServer(async (req, res) => {
         locs.forEach(loc => {
           updatedVariants.forEach(v => {
             if (!db.stockBalances) db.stockBalances = [];
-            const exists = db.stockBalances.find(b => b.sku === v.sku && b.locationId === loc.id);
-            if (!exists) {
-              db.stockBalances.push({
+            let bal = db.stockBalances.find(b => b.sku === v.sku && b.locationId === loc.id);
+            if (!bal) {
+              bal = {
                 id: `bal-${loc.id}-${v.sku}`,
                 sku: v.sku,
                 locationId: loc.id,
@@ -788,7 +796,10 @@ const server = http.createServer(async (req, res) => {
                 reserved: 0,
                 damaged: 0,
                 rop: v.rop || 5
-              });
+              };
+              db.stockBalances.push(bal);
+            } else if (loc.isDefault && v.onHand !== undefined) {
+              bal.onHand = Number(v.onHand);
             }
           });
         });
@@ -802,6 +813,37 @@ const server = http.createServer(async (req, res) => {
             m.productName = product.name;
           }
         });
+      }
+
+      // Atomically sync updated variants & stock balances to SQLite
+      try {
+        const { getDatabase } = require('../../../shared/database/connection');
+        const sqlDb = getDatabase();
+        const tenant = getTenantContext(req);
+        const locs = ensureTenantLocation(db, tenant);
+        const defaultLoc = locs.find(l => l.isDefault) || locs[0] || { id: 'loc-01' };
+        
+        (product.variants || []).forEach(v => {
+          sqlDb.prepare(`
+            UPDATE product_variants 
+            SET on_hand = ?, cost_minor = ?, retail_minor = ? 
+            WHERE sku = ?
+          `).run(v.onHand, v.costMinor, v.retailMinor, v.sku);
+
+          sqlDb.prepare(`
+            INSERT INTO stock_balances (id, organization_id, location_id, sku, on_hand, reserved, damaged, rop, updated_at)
+            VALUES (?, ?, ?, ?, ?, 0, 0, 5, datetime('now'))
+            ON CONFLICT(id) DO UPDATE SET on_hand = excluded.on_hand, updated_at = datetime('now')
+          `).run(`bal-${defaultLoc.id}-${v.sku}`, tenant.orgId, defaultLoc.id, v.sku, v.onHand);
+        });
+
+        sqlDb.prepare(`
+          UPDATE products 
+          SET name = ?, category = ?, brand = ?, stock_unit = ?, cost_minor = ?, retail_minor = ?, image_url = ?, description = ?
+          WHERE id = ? OR code = ?
+        `).run(product.name, product.category, product.brand, product.stockUnit, product.costMinor, product.retailMinor, product.imageUrl, product.description, product.id, product.code);
+      } catch (sqlErr) {
+        console.warn('[Products PUT] SQLite sync warning:', sqlErr.message);
       }
 
       saveDb();

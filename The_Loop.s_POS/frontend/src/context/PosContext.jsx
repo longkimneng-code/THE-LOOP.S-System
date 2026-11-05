@@ -248,7 +248,7 @@ export function PosProvider({ children }) {
           setCashierUser(data.user);
           setIsAuthenticated(true);
           setAuthToken(token);
-          loadStores(token);
+          loadStores(token, data.user);
           fetch('/api/auth/status', { headers: { Authorization: `Bearer ${token}` } })
             .then(r => r.json())
             .then(orgData => setOrgStatus(orgData))
@@ -385,7 +385,7 @@ export function PosProvider({ children }) {
           }
         }
 
-        loadStores(data.token);
+        loadStores(data.token, data.user);
         fetchCatalog(data.token);
         fetchShift();
         playBeep(1200, 'sine', 0.1);
@@ -577,10 +577,11 @@ export function PosProvider({ children }) {
   };
 
   // Fetch Catalog
-  const fetchCatalog = useCallback(async () => {
+  const fetchCatalog = useCallback(async (tokenOverride, storeIdOverride) => {
     try {
-      const token = authToken || (typeof window !== 'undefined' ? localStorage.getItem('loops_auth_token') : null);
-      const res = await fetch('/api/catalog', {
+      const token = tokenOverride || authToken || (typeof window !== 'undefined' ? localStorage.getItem('loops_auth_token') : null);
+      const storeId = storeIdOverride || currentStore?.id || (typeof window !== 'undefined' ? localStorage.getItem('loops_selected_store_id') : null) || 'loc-01';
+      const res = await fetch(`/api/catalog?storeId=${encodeURIComponent(storeId)}`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {}
       });
       if (res.ok) {
@@ -592,7 +593,7 @@ export function PosProvider({ children }) {
     } catch (err) {
       console.error('[Catalog] Failed to load catalog:', err);
     }
-  }, [authToken]);
+  }, [authToken, currentStore?.id]);
 
   // Fetch Current Shift
   const fetchShift = useCallback(async () => {
@@ -628,9 +629,10 @@ export function PosProvider({ children }) {
     return assigned.includes(storeId);
   }, [currentUser, cashierUser]);
 
-  const loadStores = useCallback(async (tokenOverride) => {
+  const loadStores = useCallback(async (tokenOverride, userOverride) => {
     try {
       const token = tokenOverride || authToken || (typeof window !== 'undefined' ? localStorage.getItem('loops_auth_token') : null);
+      const activeUser = userOverride || cashierUser || currentUser;
       const res = await fetch('/api/stores', {
         headers: token ? { Authorization: `Bearer ${token}` } : {}
       });
@@ -638,14 +640,46 @@ export function PosProvider({ children }) {
         const storeList = await res.json();
         setStores(storeList);
         if (storeList.length > 0) {
-          const savedId = typeof window !== 'undefined' ? localStorage.getItem('loops_selected_store_id') : null;
-          const found = (savedId && storeList.find(s => s.id === savedId)) || storeList[0];
-          setCurrentStore(found);
-          if (found && typeof window !== 'undefined') {
-            localStorage.setItem('loops_selected_store_id', found.id);
+          let targetStore = null;
+
+          // 1. If active user has an active shift at a store, prioritize that store!
+          if (activeUser?.id) {
+            try {
+              const shiftRes = await fetch(`/api/shifts/current?cashierId=${encodeURIComponent(activeUser.id)}`, {
+                headers: token ? { Authorization: `Bearer ${token}` } : {}
+              });
+              if (shiftRes.ok) {
+                const shiftData = await shiftRes.json();
+                if (shiftData.hasActiveShift && shiftData.shift?.storeId) {
+                  const match = storeList.find(s => s.id === shiftData.shift.storeId);
+                  if (match) targetStore = match;
+                }
+              }
+            } catch (e) {}
           }
-          if (found) {
-            fetch(`/api/stores/${found.id}/registers`, {
+
+          // 2. If no active shift, check user-scoped storage
+          if (!targetStore && typeof window !== 'undefined' && activeUser?.id) {
+            const userStoredId = localStorage.getItem(`loops_selected_store_${activeUser.id}`);
+            if (userStoredId) {
+              const match = storeList.find(s => s.id === userStoredId);
+              if (match) targetStore = match;
+            }
+          }
+
+          // 3. Fallback to first authorized store in list
+          if (!targetStore) {
+            targetStore = storeList[0];
+          }
+
+          setCurrentStore(targetStore);
+          if (targetStore && typeof window !== 'undefined' && activeUser?.id) {
+            localStorage.setItem(`loops_selected_store_${activeUser.id}`, targetStore.id);
+            localStorage.setItem('loops_selected_store_id', targetStore.id);
+          }
+
+          if (targetStore) {
+            fetch(`/api/stores/${targetStore.id}/registers`, {
               headers: token ? { Authorization: `Bearer ${token}` } : {}
             })
               .then(r => r.ok ? r.json() : [])
@@ -663,17 +697,10 @@ export function PosProvider({ children }) {
     } catch (err) {
       console.warn('[Stores] Failed to load stores list:', err);
     }
-  }, [authToken]);
+  }, [authToken, cashierUser?.id, currentUser?.id]);
 
   const switchStore = async (newStoreId) => {
-    // 1. Section 15.7 Shift Safety Rule: Must close active shift before switching stores
-    if (shiftInfo && shiftInfo.hasActiveShift) {
-      const msg = `Active Shift Open: You currently have an active open shift on register ${register.code || 'REG-01'} at ${currentStore?.name || 'current store'}. Please close your shift before switching to another store location.`;
-      alert(msg);
-      return { ok: false, error: msg };
-    }
-
-    // 2. Validate user's access
+    // 1. Validate user's access
     const active = cashierUser || currentUser;
     if (active && active.role !== 'OWNER' && active.role !== 'SUPER_ADMIN') {
       const assigned = active.assignedStoreIds || active.locations || [];
@@ -688,11 +715,13 @@ export function PosProvider({ children }) {
     if (!targetStore) return { ok: false, error: 'Store not found' };
 
     setCurrentStore(targetStore);
-    if (typeof window !== 'undefined') {
+    if (typeof window !== 'undefined' && active?.id) {
+      localStorage.setItem(`loops_selected_store_${active.id}`, newStoreId);
       localStorage.setItem('loops_selected_store_id', newStoreId);
     }
 
-    // 3. Load registers for the selected store
+    // 2. Load registers for the selected store
+    let targetRegister = null;
     try {
       const regRes = await fetch(`/api/stores/${newStoreId}/registers`, {
         headers: authToken ? { Authorization: `Bearer ${authToken}` } : {}
@@ -700,21 +729,37 @@ export function PosProvider({ children }) {
       if (regRes.ok) {
         const regs = await regRes.json();
         if (regs && regs.length > 0) {
+          targetRegister = regs[0];
           setRegister(regs[0]);
-          const shiftRes = await fetch(`/api/shifts/current?registerId=${regs[0].id}`);
-          if (shiftRes.ok) {
-            setShiftInfo(await shiftRes.json());
-          }
         }
       }
     } catch (e) {
       console.warn('[Store Switch] Error loading registers:', e);
     }
 
-    // 4. Reset active cart and close modal
+    // 3. Fetch shift strictly for this user and the target store
+    try {
+      const params = new URLSearchParams();
+      if (targetRegister?.id) params.set('registerId', targetRegister.id);
+      if (active?.id) params.set('cashierId', active.id);
+      params.set('storeId', newStoreId);
+
+      const shiftRes = await fetch(`/api/shifts/current?${params.toString()}`, {
+        headers: authToken ? { Authorization: `Bearer ${authToken}` } : {}
+      });
+      if (shiftRes.ok) {
+        const shiftData = await shiftRes.json();
+        setShiftInfo(shiftData);
+      }
+    } catch (e) {
+      console.warn('[Store Switch] Error loading shift:', e);
+    }
+
+    // 4. Reset active cart, reload catalog for new store, and close modal
     setCartItems([]);
     setCustomer(null);
     setIsStoreModalOpen(false);
+    fetchCatalog(null, newStoreId);
     playBeep(1000, 'sine', 0.1);
     return { ok: true, store: targetStore };
   };
@@ -801,14 +846,31 @@ export function PosProvider({ children }) {
     };
   }, []);
 
-  // Cart Management
+  // Cart Management (Stock-enforced: cannot add or sell over available inventory)
   const addToCart = (product, variant) => {
-    playBeep(920, 'sine', 0.06);
+    const targetSku = variant ? variant.sku : (product.variants?.[0]?.sku || product.code);
+    const available = variant
+      ? (typeof variant.available === 'number' ? variant.available : (variant.onHand || 0))
+      : (typeof product.available === 'number' ? product.available : (product.variants?.[0]?.available || 0));
+
+    if (available <= 0) {
+      playBeep(250, 'sawtooth', 0.15);
+      alert(`Out of Stock: "${product.name}" has 0 units available in stock at ${currentStore?.name || 'this store location'}. Cannot add to cart.`);
+      return false;
+    }
+
+    let limitReached = false;
+    let currentInCart = 0;
+
     setCartItems(prev => {
-      const targetSku = variant ? variant.sku : (product.variants?.[0]?.sku || product.code);
       const existingIdx = prev.findIndex(item => item.variantSku === targetSku);
 
       if (existingIdx >= 0) {
+        currentInCart = prev[existingIdx].quantity;
+        if (currentInCart >= available) {
+          limitReached = true;
+          return prev;
+        }
         const updated = [...prev];
         updated[existingIdx].quantity += 1;
         return updated;
@@ -830,25 +892,54 @@ export function PosProvider({ children }) {
           lineDiscount: 0,
           image: product.image || product.imageUrl || '🏷️',
           imageUrl: product.imageUrl || '',
-          maxAvailable: variant ? variant.available : 99
+          maxAvailable: available
         }
       ];
     });
+
+    if (limitReached) {
+      playBeep(250, 'sawtooth', 0.15);
+      alert(`Stock Limit Reached: Only ${available} unit(s) of "${product.name}" available in stock at ${currentStore?.name || 'this location'}. You already have ${currentInCart} in your cart. Cannot add more.`);
+      return false;
+    }
+
+    playBeep(920, 'sine', 0.06);
+    return true;
   };
 
   const updateQuantity = (sku, delta) => {
-    playBeep(700, 'sine', 0.04);
+    let limitReached = false;
+    let availableCount = 0;
+    let itemName = '';
+
     setCartItems(prev => {
       return prev
         .map(item => {
           if (item.variantSku === sku) {
+            const maxAvail = typeof item.maxAvailable === 'number' ? item.maxAvailable : 999;
             const newQty = item.quantity + delta;
+
+            if (delta > 0 && newQty > maxAvail) {
+              limitReached = true;
+              availableCount = maxAvail;
+              itemName = item.itemTitle || item.name;
+              return item;
+            }
+
             return newQty > 0 ? { ...item, quantity: newQty } : null;
           }
           return item;
         })
         .filter(Boolean);
     });
+
+    if (limitReached) {
+      playBeep(250, 'sawtooth', 0.15);
+      alert(`Stock Limit Reached: Cannot add more. Only ${availableCount} unit(s) available in stock for "${itemName}".`);
+      return;
+    }
+
+    playBeep(700, 'sine', 0.04);
   };
 
   const removeFromCart = (sku) => {

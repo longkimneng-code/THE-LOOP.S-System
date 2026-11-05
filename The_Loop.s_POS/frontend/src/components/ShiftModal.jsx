@@ -22,6 +22,7 @@ export default function ShiftModal() {
     shiftInfo,
     refreshShift,
     register,
+    currentStore,
     cashierUser,
     exchangeRate,
     toKhr,
@@ -79,6 +80,7 @@ export default function ShiftModal() {
         },
         body: JSON.stringify({
           shiftId: shift?.id,
+          storeId: shift?.storeId || currentStore?.id,
           registerId: register?.id,
           countedCashUsd: inputUsd,
           countedCashKhr: inputKhr,

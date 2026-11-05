@@ -17,6 +17,7 @@ export default function ShiftOpeningGate() {
   const {
     cashierUser,
     register,
+    currentStore,
     exchangeRate,
     toKhr,
     toUsd,
@@ -59,6 +60,7 @@ export default function ShiftOpeningGate() {
         },
         body: JSON.stringify({
           registerId: register?.id,
+          storeId: currentStore?.id,
           cashierUserId: cashierUser?.id,
           openingFloatUsd: floatUsd,
           openingFloatKhr: floatKhr,
@@ -122,7 +124,7 @@ export default function ShiftOpeningGate() {
             <div className="text-[10px] text-slate-500 uppercase">Store & Register</div>
             <div className="font-semibold text-slate-200 flex items-center space-x-1.5">
               <Store className="w-3 h-3 text-brass-400 shrink-0" />
-              <span>{register?.name || 'Front Counter'}</span>
+              <span>{currentStore?.name ? `${currentStore.name} • ` : ''}{register?.name || 'Front Counter'}</span>
             </div>
             <div className="text-[10px] text-slate-400">Code: {register?.code || 'REG-01'}</div>
           </div>

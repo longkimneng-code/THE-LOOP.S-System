@@ -138,11 +138,15 @@ export default function StockTransferModal({
                 onChange={(e) => setFromLoc(e.target.value)}
                 className="w-full bg-studio-900 border border-white/10 rounded-lg p-2.5 text-white font-mono focus:outline-none focus:border-gold-500 shadow-sm cursor-pointer"
               >
-                {locations.map((l) => (
-                  <option key={l.id} value={l.id}>
-                    {l.name} ({l.code})
-                  </option>
-                ))}
+                {locations.map((l) => {
+                  const locBal = (balances || []).find((b) => b.sku === activeSku && b.locationId === l.id);
+                  const locOnHand = locBal ? locBal.onHand : 0;
+                  return (
+                    <option key={l.id} value={l.id}>
+                      {l.name} ({l.code}) — [{locOnHand} on hand]
+                    </option>
+                  );
+                })}
               </select>
             </div>
             <div>
@@ -152,14 +156,26 @@ export default function StockTransferModal({
                 onChange={(e) => setToLoc(e.target.value)}
                 className="w-full bg-studio-900 border border-white/10 rounded-lg p-2.5 text-white font-mono focus:outline-none focus:border-gold-500 shadow-sm cursor-pointer"
               >
-                {locations.map((l) => (
-                  <option key={l.id} value={l.id}>
-                    {l.name} ({l.code})
-                  </option>
-                ))}
+                {locations.map((l) => {
+                  const locBal = (balances || []).find((b) => b.sku === activeSku && b.locationId === l.id);
+                  const locOnHand = locBal ? locBal.onHand : 0;
+                  return (
+                    <option key={l.id} value={l.id}>
+                      {l.name} ({l.code}) — [{locOnHand} on hand]
+                    </option>
+                  );
+                })}
               </select>
             </div>
           </div>
+
+          {/* Warning for Zero Stock at Source */}
+          {sourceOnHand <= 0 && !isSameLocation && (
+            <div className="p-3 bg-crimson-500/10 border border-crimson-500/30 text-crimson-400 rounded-xl text-xs font-mono flex items-center space-x-2">
+              <Icon name="alertTriangle" size={14} />
+              <span>Source store "{fromLocObj.name}" has 0 units of this item. Select a store with available inventory as source.</span>
+            </div>
+          )}
 
           {/* Validation Warning for Same Location */}
           {isSameLocation && (

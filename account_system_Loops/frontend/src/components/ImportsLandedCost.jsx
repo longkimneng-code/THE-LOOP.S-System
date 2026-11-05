@@ -1,3 +1,13 @@
+
+function limitTwoDecimals(val) {
+  if (val === '' || val === null || val === undefined) return '';
+  const str = val.toString();
+  if (str.includes('.')) {
+    const [intPart, decPart] = str.split('.');
+    return `${intPart}.${decPart.slice(0, 2)}`;
+  }
+  return str;
+}
 import React, { useState, useEffect } from 'react';
 import { 
   Ship, 
@@ -989,7 +999,10 @@ export default function ImportsLandedCost({ mode, onShowToast, initialSubTab = '
                             {item.quantity.toLocaleString()}
                           </td>
                           <td className="py-3 px-3 text-right num-font text-slate-300">
-                            {formatMoney(item.unit_base_price_base)}
+                            <div className="font-medium text-white">{formatMoney(item.total_base_price_base || (item.unit_base_price_base * item.quantity))}</div>
+                            {item.quantity > 1 && (
+                              <div className="text-[10px] text-slate-400 font-mono">@{formatMoney(item.unit_base_price_base)}/ea</div>
+                            )}
                           </td>
                           <td className="py-3 px-3 text-right num-font text-slate-400">
                             +{formatMoney(item.allocated_freight)}
@@ -1594,7 +1607,7 @@ export default function ImportsLandedCost({ mode, onShowToast, initialSubTab = '
                           value={it.unitBasePrice}
                           onChange={(e) => {
                             const newItems = [...newShipmentForm.items];
-                            newItems[idx].unitBasePrice = e.target.value;
+                            newItems[idx].unitBasePrice = limitTwoDecimals(e.target.value);
                             setNewShipmentForm({ ...newShipmentForm, items: newItems });
                           }}
                           className="w-full bg-[#111520] border border-white/10 rounded-lg px-3 py-2 text-white font-mono text-xs focus:outline-none focus:border-[#E5A93C]"
@@ -1609,7 +1622,7 @@ export default function ImportsLandedCost({ mode, onShowToast, initialSubTab = '
                           value={it.targetRetailPrice}
                           onChange={(e) => {
                             const newItems = [...newShipmentForm.items];
-                            newItems[idx].targetRetailPrice = e.target.value;
+                            newItems[idx].targetRetailPrice = limitTwoDecimals(e.target.value);
                             setNewShipmentForm({ ...newShipmentForm, items: newItems });
                           }}
                           className="w-full bg-[#111520] border border-white/10 rounded-lg px-3 py-2 text-white font-mono text-xs text-[#10B981] focus:outline-none focus:border-[#10B981]"
@@ -1948,7 +1961,7 @@ export default function ImportsLandedCost({ mode, onShowToast, initialSubTab = '
                           value={it.unitBasePrice}
                           onChange={(e) => {
                             const newItems = [...editForm.items];
-                            newItems[idx].unitBasePrice = Number(e.target.value);
+                            newItems[idx].unitBasePrice = limitTwoDecimals(e.target.value);
                             setEditForm({ ...editForm, items: newItems });
                           }}
                           className="w-full bg-[#111520] border border-white/10 rounded-lg px-3 py-2 text-white font-mono text-xs focus:outline-none focus:border-[#E5A93C]"
@@ -1962,7 +1975,7 @@ export default function ImportsLandedCost({ mode, onShowToast, initialSubTab = '
                           value={it.targetRetailPrice}
                           onChange={(e) => {
                             const newItems = [...editForm.items];
-                            newItems[idx].targetRetailPrice = Number(e.target.value);
+                            newItems[idx].targetRetailPrice = limitTwoDecimals(e.target.value);
                             setEditForm({ ...editForm, items: newItems });
                           }}
                           className="w-full bg-[#111520] border border-white/10 rounded-lg px-3 py-2 text-white font-mono text-xs text-[#10B981] focus:outline-none focus:border-[#10B981]"

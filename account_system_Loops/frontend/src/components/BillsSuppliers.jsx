@@ -1,3 +1,13 @@
+
+function limitTwoDecimals(val) {
+  if (val === '' || val === null || val === undefined) return '';
+  const str = val.toString();
+  if (str.includes('.')) {
+    const [intPart, decPart] = str.split('.');
+    return `${intPart}.${decPart.slice(0, 2)}`;
+  }
+  return str;
+}
 import React, { useState, useEffect } from 'react';
 import { 
   Receipt, 
@@ -295,7 +305,7 @@ export default function BillsSuppliers({ mode, onShowToast }) {
                   step="0.01"
                   required
                   value={payAmount}
-                  onChange={(e) => setPayAmount(e.target.value)}
+                  onChange={(e) => setPayAmount(limitTwoDecimals(e.target.value))}
                   className="w-full bg-[#111520] border border-white/10 rounded-lg p-2.5 text-white num-font font-bold text-base"
                 />
                 <span className="text-[11px] text-slate-400 mt-1 block">
@@ -458,7 +468,7 @@ export default function BillsSuppliers({ mode, onShowToast }) {
                     required
                     placeholder="3400.00"
                     value={expenseForm.amount}
-                    onChange={(e) => setExpenseForm({ ...expenseForm, amount: e.target.value })}
+                    onChange={(e) => setExpenseForm({ ...expenseForm, amount: limitTwoDecimals(e.target.value) })}
                     className="w-full bg-[#111520] border border-white/10 rounded-lg p-2.5 text-white num-font"
                   />
                 </div>

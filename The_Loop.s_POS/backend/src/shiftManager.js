@@ -11,12 +11,73 @@ function getExchangeRate() {
   return Number(db.organization?.exchangeRate) || 4000;
 }
 
+function syncShiftToSqlite(shift, isClosing = false) {
+  try {
+    const { getDatabase } = require('../../../shared/database/connection');
+    const dbSql = getDatabase();
+    if (isClosing) {
+      dbSql.prepare(`
+        UPDATE shifts SET
+          status = 'CLOSED',
+          closed_at = ?,
+          actual_cash_usd = ?,
+          actual_cash_khr = ?,
+          discrepancy_usd = ?,
+          discrepancy_khr = ?,
+          closing_note = ?
+        WHERE id = ?
+      `).run(
+        shift.closedAt,
+        shift.countedCashUsd || 0,
+        shift.countedCashKhr || 0,
+        shift.cashDifferenceUsd || 0,
+        shift.cashDifferenceKhr || 0,
+        shift.closingNotes || '',
+        shift.id
+      );
+    } else {
+      dbSql.prepare(`
+        INSERT OR REPLACE INTO shifts (
+          id, organization_id, store_id, register_id, cashier_id, cashier_name,
+          opened_at, closed_at, status, starting_cash_usd, starting_cash_khr,
+          expected_cash_usd, expected_cash_khr, actual_cash_usd, actual_cash_khr,
+          discrepancy_usd, discrepancy_khr, closing_note, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        shift.id,
+        shift.organizationId || shift.businessId || 'org-loops-001',
+        shift.storeId || 'loc-01',
+        shift.registerId || 'reg-01',
+        shift.cashierUserId || shift.employeeId,
+        shift.cashierName || 'Cashier',
+        shift.openedAt,
+        shift.closedAt || null,
+        shift.status === 'ACTIVE' ? 'OPEN' : 'CLOSED',
+        shift.openingFloatUsd || 0,
+        shift.openingFloatKhr || 0,
+        shift.expectedCashUsd || shift.openingFloatUsd || 0,
+        shift.expectedCashKhr || shift.openingFloatKhr || 0,
+        shift.countedCashUsd || 0,
+        shift.countedCashKhr || 0,
+        shift.cashDifferenceUsd || 0,
+        shift.cashDifferenceKhr || 0,
+        shift.closingNotes || '',
+        shift.openedAt
+      );
+    }
+  } catch (e) {
+    // Non-blocking sync warning
+  }
+}
+
+
 // ----------------------------------------------------------------------------
 // 1. OPEN SHIFT (Section 13.1 & 13.2)
 // ----------------------------------------------------------------------------
 function openShift({
   registerId,
   cashierUserId,
+  storeId,
   openingFloatUsd = 0,
   openingFloatKhr = 0,
   openingNotes = ''
@@ -31,84 +92,76 @@ function openShift({
 
   const cashierOrgId = cashier.organizationId || db.organization?.id || 'org-loops-001';
 
-  // 1. Identify or auto-assign the register within cashier's organization
+  // Determine targetStoreId
+  let targetStoreId = storeId;
+  if (!targetStoreId && registerId) {
+    const r = (db.registers || []).find(reg => reg.id === registerId);
+    if (r) targetStoreId = r.locationId || r.storeId;
+  }
+  if (!targetStoreId) {
+    targetStoreId = (cashier.assignedStoreIds?.[0] !== '*' && cashier.assignedStoreIds?.[0]) ||
+                    (cashier.locations?.[0] !== '*' && cashier.locations?.[0]) ||
+                    (db.locations?.[0]?.id || 'loc-01');
+  }
+
+  // Section 15.8 / Specification Section 4: Store Access Check
+  const { canUserAccessStore } = require('./storeManager');
+  if (cashier.role !== 'OWNER' && cashier.role !== 'SUPER_ADMIN') {
+    if (!canUserAccessStore(cashier, targetStoreId)) {
+      return {
+        ok: false,
+        code: 403,
+        error: `Access Denied: Cashier ${cashier.fullName} is not authorized to open shifts or operate registers at store "${targetStoreId}".`
+      };
+    }
+  }
+
+  // Section 2 & 6: Prevent simultaneous duplicate shifts for the same user in the same store
+  const existingStoreShift = db.shifts.find(
+    s => s.cashierUserId === cashier.id &&
+         (s.storeId === targetStoreId || s.locationId === targetStoreId) &&
+         s.status === 'ACTIVE'
+  );
+  if (existingStoreShift) {
+    return {
+      ok: false,
+      code: 409,
+      error: `Cashier ${cashier.fullName} already has an active shift (#${existingStoreShift.id}) in store "${targetStoreId}". Please close it before opening a new shift.`,
+      activeShiftId: existingStoreShift.id
+    };
+  }
+
+  // Identify or auto-assign the register within the target store
   let register = null;
   if (registerId) {
-    register = db.registers.find(r => r.id === registerId);
+    register = (db.registers || []).find(r => r.id === registerId && (r.locationId === targetStoreId || r.storeId === targetStoreId));
   }
-
-  // If register not found or belongs to another organization, find one in cashier's organization
-  if (!register || (register.organizationId && register.organizationId !== cashierOrgId)) {
-    register = db.registers.find(r => (r.organizationId || cashierOrgId) === cashierOrgId);
-  }
-
-  // If still no register exists for this organization, auto-create one for cashier's store
   if (!register) {
-    const userStore = (db.locations || []).find(l => (l.organizationId || cashierOrgId) === cashierOrgId) || {
-      id: `store-${cashierOrgId.slice(-6)}`,
+    register = (db.registers || []).find(r => (r.locationId === targetStoreId || r.storeId === targetStoreId));
+  }
+  if (!register) {
+    const userStore = (db.locations || []).find(l => l.id === targetStoreId) || {
+      id: targetStoreId,
       name: `${cashier.fullName}'s Store`,
       organizationId: cashierOrgId
     };
     register = {
-      id: `reg-${userStore.id}-01`,
+      id: `reg-${targetStoreId.replace(/[^a-zA-Z0-9]/g, '')}-01`,
       organizationId: cashierOrgId,
       locationId: userStore.id,
       storeId: userStore.id,
       registerCode: 'REG-01',
-      name: `${userStore.name} Main Register 01`,
+      name: `${userStore.name} Register 01`,
       status: 'CLOSED',
       currentShiftId: null,
       currentCashierId: null
     };
     if (!db.registers) db.registers = [];
     db.registers.push(register);
-    saveDb();
-  }
-
-  // Section 15.8 Location Access Check: Cashier must be authorized for this store
-  const targetStoreId = register.locationId || register.storeId || 'loc-1';
-  const { canUserAccessStore } = require('./storeManager');
-  if (cashier.role !== 'OWNER' && cashier.role !== 'SUPER_ADMIN') {
-    if (!canUserAccessStore(cashier, targetStoreId)) {
-      return {
-        ok: false,
-        error: `Access Denied: Cashier ${cashier.fullName} is not authorized to open shifts or operate registers at store "${targetStoreId}".`
-      };
-    }
-  }
-
-  // Security Rule 13.8: Cashier cannot have multiple simultaneous shifts
-  const existingCashierShift = db.shifts.find(
-    s => s.cashierUserId === cashier.id && s.status === 'ACTIVE'
-  );
-  if (existingCashierShift) {
-    return {
-      ok: false,
-      error: `Cashier ${cashier.fullName} already has an active shift (#${existingCashierShift.id}) on register ${existingCashierShift.registerId}. Please close it before opening a new shift.`,
-      activeShiftId: existingCashierShift.id
-    };
-  }
-
-  // Security Rule 13.8: Register cannot have multiple simultaneous shifts
-  const existingRegisterShift = db.shifts.find(
-    s => s.registerId === register.id && s.status === 'ACTIVE'
-  );
-  if (existingRegisterShift) {
-    return {
-      ok: false,
-      error: `Register ${register.registerCode} already has an active shift (#${existingRegisterShift.id}). It must be closed before a new shift can begin.`,
-      activeShiftId: existingRegisterShift.id
-    };
-  }
-
-  // If register was marked OPEN but had no active shift in db, heal it
-  if (register.status === 'OPEN') {
-    register.status = 'CLOSED';
-    register.currentShiftId = null;
-    register.currentCashierId = null;
   }
 
   const shiftId = 'shift-' + Date.now().toString().slice(-6) + '-' + generateUuid().slice(0, 4);
+  const posSessionId = 'sess-' + Date.now().toString(36) + '-' + generateUuid().slice(0, 6);
   const floatUsd = formatCurrency(openingFloatUsd);
   const floatKhr = Math.round(Number(openingFloatKhr) || 0);
   const totalOpeningUsd = formatCurrency(floatUsd + (floatKhr / rate));
@@ -116,10 +169,11 @@ function openShift({
   const store = (db.locations || []).find(l => l.id === targetStoreId);
   const newShift = {
     id: shiftId,
-    businessId: register.organizationId || db.organization?.id || 'org-loops-001',
-    organizationId: register.organizationId || db.organization?.id || 'org-loops-001',
+    posSessionId,
+    businessId: register.organizationId || cashierOrgId,
+    organizationId: register.organizationId || cashierOrgId,
     storeId: targetStoreId,
-    storeName: store?.name || 'Sisowath Flagship Store',
+    storeName: store?.name || targetStoreId,
     registerId: register.id,
     registerCode: register.registerCode,
     employeeId: cashier.id,
@@ -128,6 +182,8 @@ function openShift({
     cashierEmail: cashier.email,
     openedAt: new Date().toISOString(),
     closedAt: null,
+    closedByUserId: null,
+    closedByName: null,
     exchangeRateSnapshot: rate,
     exchangeRateAtOpen: rate,
     openingFloatUsd: floatUsd,
@@ -147,7 +203,7 @@ function openShift({
         action: 'SHIFT_OPENED',
         by: cashier.fullName,
         timestamp: new Date().toISOString(),
-        details: `Shift opened with float: $${floatUsd} USD + ${floatKhr.toLocaleString()} KHR`
+        details: `Shift opened with float: ${floatUsd} USD + ${floatKhr.toLocaleString()} KHR`
       }
     ]
   };
@@ -163,11 +219,12 @@ function openShift({
     action: 'SHIFT_OPENED',
     userId: cashier.id,
     userName: cashier.fullName,
-    details: `Shift #${shiftId} opened on ${register.registerCode} by ${cashier.fullName}`,
+    details: `Shift #${shiftId} (Session ${posSessionId}) opened in store ${targetStoreId} by ${cashier.fullName}`,
     timestamp: new Date().toISOString()
   });
 
   saveDb();
+  syncShiftToSqlite(newShift, false);
   return { ok: true, shift: newShift, register };
 }
 
@@ -309,41 +366,49 @@ function getActiveShift(registerId, cashierUserId, organizationId = null, storeI
   const db = loadDb();
   let shift = null;
 
-  // 1. Check if the specified cashier has an active shift
-  if (cashierUserId) {
+  // 1. Strict Cashier-and-Store Scoped Session (Section 2 & 3)
+  if (cashierUserId && storeId) {
+    shift = db.shifts.find(s =>
+      s.cashierUserId === cashierUserId &&
+      (s.storeId === storeId || s.locationId === storeId) &&
+      s.status === 'ACTIVE'
+    );
+  } else if (cashierUserId) {
+    // If cashierUserId is provided without storeId, find any active shift for this cashier
     shift = db.shifts.find(s => s.cashierUserId === cashierUserId && s.status === 'ACTIVE');
-  }
-  // 2. Check if the specified register has an active shift
-  if (!shift && registerId && registerId !== 'reg-01') {
-    shift = db.shifts.find(s => s.registerId === registerId && s.status === 'ACTIVE');
-  }
-  // 3. Check if the store has an active shift
-  if (!shift && storeId) {
+  } else if (registerId && storeId) {
+    shift = db.shifts.find(s =>
+      s.registerId === registerId &&
+      (s.storeId === storeId || s.locationId === storeId) &&
+      s.status === 'ACTIVE'
+    );
+  } else if (storeId) {
     shift = db.shifts.find(s => (s.storeId === storeId || s.locationId === storeId) && s.status === 'ACTIVE');
-  }
-  // 4. Check if the organization has an active shift
-  if (!shift && organizationId) {
-    shift = db.shifts.find(s => s.status === 'ACTIVE' && (s.organizationId || s.businessId || 'org-loops-001') === organizationId);
-  }
-  // 5. Check if registerId matches regardless of 'reg-01'
-  if (!shift && registerId) {
+  } else if (registerId) {
     shift = db.shifts.find(s => s.registerId === registerId && s.status === 'ACTIVE');
   }
-  // 6. Graceful fallback: If ANY active shift exists in the database, return it
-  if (!shift) {
-    shift = db.shifts.find(s => s.status === 'ACTIVE') || null;
-  }
 
-  // Enforce tenant boundary only if organizationId is explicitly provided and doesn't match
-  if (shift && organizationId) {
-    const shiftOrg = shift.organizationId || shift.businessId || 'org-loops-001';
-    if (shiftOrg !== organizationId && organizationId !== 'org-loops-001') {
-      shift = null;
-    }
-  }
+  // Calculate userActiveShifts for multi-store visibility
+  const userActiveShifts = cashierUserId
+    ? (db.shifts || [])
+        .filter(s => s.cashierUserId === cashierUserId && s.status === 'ACTIVE')
+        .map(s => ({
+          shiftId: s.id,
+          posSessionId: s.posSessionId,
+          storeId: s.storeId,
+          storeName: s.storeName,
+          registerId: s.registerId,
+          openedAt: s.openedAt
+        }))
+    : [];
 
   if (!shift) {
-    return { hasActiveShift: false, shift: null, summary: null };
+    return {
+      hasActiveShift: false,
+      shift: null,
+      summary: null,
+      userActiveShifts
+    };
   }
 
   const details = getShiftDetails(shift.id);
@@ -352,7 +417,8 @@ function getActiveShift(registerId, cashierUserId, organizationId = null, storeI
     hasActiveShift: true,
     shift: details.shift,
     summary: details.summary,
-    register: reg
+    register: reg,
+    userActiveShifts
   };
 }
 
@@ -361,45 +427,52 @@ function getActiveShift(registerId, cashierUserId, organizationId = null, storeI
 // ----------------------------------------------------------------------------
 function closeShift({
   shiftId,
+  storeId,
+  registerId,
   countedCashUsd = 0,
   countedCashKhr = 0,
   closingNotes = '',
-  closedByUserId,
-  registerId
-}) {
+  closedByUserId
+}, authUser = null) {
   const db = loadDb();
   let shift = null;
 
   if (shiftId) {
     shift = db.shifts.find(s => s.id === shiftId && s.status === 'ACTIVE');
   }
-  if (!shift && registerId) {
-    shift = db.shifts.find(s => s.registerId === registerId && s.status === 'ACTIVE');
+  if (!shift && closedByUserId && storeId) {
+    shift = db.shifts.find(s =>
+      s.cashierUserId === closedByUserId &&
+      (s.storeId === storeId || s.locationId === storeId) &&
+      s.status === 'ACTIVE'
+    );
   }
   if (!shift && closedByUserId) {
     shift = db.shifts.find(s => s.cashierUserId === closedByUserId && s.status === 'ACTIVE');
   }
-  if (!shift) {
-    // If only one active shift exists, resolve it
-    shift = db.shifts.find(s => s.status === 'ACTIVE');
-  }
 
+  // Never fall back to arbitrary active shifts! Shift isolation requires explicit target
   if (!shift) {
-    // If all shifts are closed, ensure all registers are set to CLOSED
-    let cleaned = false;
-    (db.registers || []).forEach(r => {
-      if (r.status === 'OPEN') {
-        r.status = 'CLOSED';
-        r.currentShiftId = null;
-        r.currentCashierId = null;
-        cleaned = true;
-      }
-    });
-    if (cleaned) saveDb();
     return { ok: false, error: 'Active shift not found or already closed' };
   }
 
-  const details = getShiftDetails(shiftId);
+  const closedByUser = (closedByUserId ? db.users.find(u => u.id === closedByUserId) : null) || authUser;
+
+  // Authorization Check (Section 5): Opener or authorized manager/owner only
+  if (closedByUser) {
+    const isOpener = shift.cashierUserId === closedByUser.id;
+    const isAuthorizedManager = ['OWNER', 'SUPER_ADMIN', 'POS_ADMIN', 'STORE_MANAGER'].includes(closedByUser.role) ||
+                                Boolean(closedByUser.permissions?.canManageShifts);
+    if (!isOpener && !isAuthorizedManager) {
+      return {
+        ok: false,
+        code: 403,
+        error: `Access Denied: Only the cashier who opened this shift (${shift.cashierName}) or an authorized manager may close it.`
+      };
+    }
+  }
+
+  const details = getShiftDetails(shift.id);
   const rate = shift.exchangeRateAtOpen || getExchangeRate();
 
   const countedUsd = formatCurrency(countedCashUsd);
@@ -419,11 +492,9 @@ function closeShift({
   if (hasDiscrepancy && (!closingNotes || closingNotes.trim().length === 0)) {
     return {
       ok: false,
-      error: `Cash discrepancy detected (${diffTotalUsd >= 0 ? '+' : ''}$${diffTotalUsd}). Closing notes explaining the discrepancy are required by business policy.`
+      error: `Cash discrepancy detected (${diffTotalUsd >= 0 ? '+' : ''}${diffTotalUsd}). Closing notes explaining the discrepancy are required by business policy.`
     };
   }
-
-  const closedByUser = db.users.find(u => u.id === closedByUserId) || { fullName: shift.cashierName };
 
   shift.closedAt = new Date().toISOString();
   shift.countedCashUsd = countedUsd;
@@ -436,33 +507,43 @@ function closeShift({
   shift.cashDifferenceKhr = diffKhr;
   shift.cashOverShort = diffTotalUsd;
   shift.closingNotes = closingNotes || '';
-  shift.closedByUserId = closedByUser.id || shift.cashierUserId;
-  shift.closedByName = closedByUser.fullName || shift.cashierName;
+  shift.closedByUserId = closedByUser?.id || shift.cashierUserId;
+  shift.closedByName = closedByUser?.fullName || shift.cashierName;
   shift.status = 'CLOSED';
 
   shift.auditTrail = shift.auditTrail || [];
   shift.auditTrail.push({
     action: 'SHIFT_CLOSED',
-    by: closedByUser.fullName || shift.cashierName,
+    by: shift.closedByName,
     timestamp: new Date().toISOString(),
-    details: `Shift closed. Counted: $${countedUsd} USD + ${countedKhr.toLocaleString()} KHR. Discrepancy: $${diffTotalUsd}.`
+    details: `Shift closed. Counted: ${countedUsd} USD + ${countedKhr.toLocaleString()} KHR. Discrepancy: ${diffTotalUsd}.`
   });
 
-  // Update register
+  // Check if register has any remaining active shifts
   const register = db.registers.find(r => r.id === shift.registerId);
   if (register) {
-    register.status = 'CLOSED';
-    register.currentShiftId = null;
-    register.currentCashierId = null;
+    const otherActive = db.shifts.find(s => s.registerId === register.id && s.id !== shift.id && s.status === 'ACTIVE');
+    if (!otherActive) {
+      register.status = 'CLOSED';
+      register.currentShiftId = null;
+      register.currentCashierId = null;
+    } else {
+      register.currentShiftId = otherActive.id;
+      register.currentCashierId = otherActive.cashierUserId;
+    }
   }
 
   // Queue SHIFT_CLOSED Z-Report event into outbox for Loops Finance
   const zReportPayload = {
     shiftId: shift.id,
+    posSessionId: shift.posSessionId,
+    storeId: shift.storeId,
     registerId: shift.registerId,
     registerCode: register?.registerCode || 'REG-01',
     cashierUserId: shift.cashierUserId,
     cashierName: shift.cashierName,
+    closedByUserId: shift.closedByUserId,
+    closedByName: shift.closedByName,
     openedAt: shift.openedAt,
     closedAt: shift.closedAt,
     durationHours: details.summary.durationHours,
@@ -504,13 +585,14 @@ function closeShift({
   db.auditLog.unshift({
     id: generateUuid(),
     action: 'SHIFT_CLOSED',
-    userId: closedByUser.id || shift.cashierUserId,
-    userName: closedByUser.fullName || shift.cashierName,
-    details: `Shift #${shift.id} closed on ${register?.registerCode || 'REG-01'}. Counted: $${countedTotalUsd}, Discrepancy: $${diffTotalUsd}`,
+    userId: shift.closedByUserId,
+    userName: shift.closedByName,
+    details: `Shift #${shift.id} closed on ${register?.registerCode || 'REG-01'} by ${shift.closedByName}. Counted: ${countedTotalUsd}, Discrepancy: ${diffTotalUsd}`,
     timestamp: new Date().toISOString()
   });
 
   saveDb();
+  syncShiftToSqlite(shift, true);
 
   return {
     ok: true,
@@ -876,7 +958,26 @@ function getManagerShiftDashboard(organizationId = null) {
   };
 }
 
+
+function getUserActiveShifts(userId) {
+  if (!userId) return [];
+  const db = loadDb();
+  return (db.shifts || [])
+    .filter(s => s.cashierUserId === userId && s.status === 'ACTIVE')
+    .map(s => ({
+      shiftId: s.id,
+      posSessionId: s.posSessionId,
+      storeId: s.storeId,
+      storeName: s.storeName,
+      registerId: s.registerId,
+      openedAt: s.openedAt,
+      cashierName: s.cashierName
+    }));
+}
+
 module.exports = {
+  getUserActiveShifts,
+  syncShiftToSqlite,
   openShift,
   getShiftDetails,
   getActiveShift,

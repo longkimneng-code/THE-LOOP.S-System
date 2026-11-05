@@ -4,6 +4,7 @@ import Icon from './Icon';
 export default function InventoryManagement({
   balances = [],
   ledger = [],
+  locations = [],
   onOpenReceiveModal,
   onOpenTransferModal,
   onOpenExportModal,
@@ -11,9 +12,13 @@ export default function InventoryManagement({
 }) {
   const [subtab, setSubtab] = useState('balances');
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedLocationId, setSelectedLocationId] = useState('ALL');
   const [ledgerTypeFilter, setLedgerTypeFilter] = useState('ALL');
 
   const filteredBalances = (balances || []).filter((b) => {
+    if (selectedLocationId !== 'ALL' && b.locationId !== selectedLocationId) {
+      return false;
+    }
     const q = searchQuery.toLowerCase();
     return (
       (b.sku && b.sku.toLowerCase().includes(q)) ||
@@ -24,6 +29,9 @@ export default function InventoryManagement({
   });
 
   const filteredLedger = (ledger || []).filter((m) => {
+    if (selectedLocationId !== 'ALL' && m.locationId !== selectedLocationId) {
+      return false;
+    }
     return ledgerTypeFilter === 'ALL' || m.type === ledgerTypeFilter;
   });
 
@@ -87,19 +95,39 @@ export default function InventoryManagement({
       {subtab === 'balances' && (
         <div className="glass-panel rounded-2xl overflow-hidden border border-white/10 shadow-lg">
           <div className="p-3.5 border-b border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 bg-studio-900/60">
-            <div className="relative w-full sm:w-80">
-              <input
-                type="text"
-                placeholder="Filter by SKU, Product or Location..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="bg-studio-900 border border-white/10 rounded-lg pl-8 pr-3 py-1.5 text-xs text-white focus:outline-none focus:border-gold-500 w-full shadow-sm"
-              />
-              <span className="absolute left-2.5 top-2 text-studio-400 pointer-events-none">
-                <Icon name="search" size={13} />
-              </span>
+            <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto flex-1">
+              <div className="relative w-full sm:w-72">
+                <input
+                  type="text"
+                  placeholder="Filter by SKU, Product or Location..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="bg-studio-900 border border-white/10 rounded-lg pl-8 pr-3 py-1.5 text-xs text-white focus:outline-none focus:border-gold-500 w-full shadow-sm"
+                />
+                <span className="absolute left-2.5 top-2 text-studio-400 pointer-events-none">
+                  <Icon name="search" size={13} />
+                </span>
+              </div>
+
+              {/* Store / Facility Filter Dropdown */}
+              <div className="flex items-center space-x-1.5 bg-studio-900 border border-white/10 rounded-lg px-2.5 py-1 text-xs">
+                <Icon name="locations" size={13} className="text-gold-400" />
+                <span className="text-[10px] font-mono text-studio-400 uppercase font-bold">Store:</span>
+                <select
+                  value={selectedLocationId}
+                  onChange={(e) => setSelectedLocationId(e.target.value)}
+                  className="bg-studio-900 text-white text-xs font-mono focus:outline-none cursor-pointer border-none outline-none"
+                >
+                  <option value="ALL">All Stores & Locations</option>
+                  {(locations || []).map((loc) => (
+                    <option key={loc.id} value={loc.id}>
+                      {loc.name} ({loc.code})
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
-            <span className="text-[11px] font-mono text-studio-400">
+            <span className="text-[11px] font-mono text-studio-400 whitespace-nowrap">
               Formula: <strong className="text-white">Available Stock = On-Hand − Reserved</strong>
             </span>
           </div>
@@ -190,24 +218,44 @@ export default function InventoryManagement({
       {subtab === 'ledger' && (
         <div className="glass-panel rounded-2xl overflow-hidden border border-white/10 shadow-lg">
           <div className="p-3.5 border-b border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-studio-900/60">
-            <div className="flex items-center space-x-2">
-              <span className="text-xs font-mono text-studio-400">Filter Event:</span>
-              <select
-                value={ledgerTypeFilter}
-                onChange={(e) => setLedgerTypeFilter(e.target.value)}
-                className="bg-studio-900 border border-white/10 rounded-lg px-2.5 py-1 text-xs text-white focus:outline-none focus:border-gold-500 font-mono cursor-pointer"
-              >
-                <option value="ALL">All Event Types</option>
-                <option value="OPENING_STOCK">OPENING_STOCK</option>
-                <option value="RECEIVE_STOCK">RECEIVE_STOCK</option>
-                <option value="SALE_OUT">SALE_OUT</option>
-                <option value="CUSTOMER_RETURN">CUSTOMER_RETURN</option>
-                <option value="STOCK_TRANSFER_IN">STOCK_TRANSFER_IN</option>
-                <option value="STOCK_TRANSFER_OUT">STOCK_TRANSFER_OUT</option>
-                <option value="STOCK_ADJUSTMENT">STOCK_ADJUSTMENT</option>
-              </select>
+            <div className="flex flex-wrap items-center gap-2.5">
+              <div className="flex items-center space-x-2">
+                <span className="text-xs font-mono text-studio-400">Filter Event:</span>
+                <select
+                  value={ledgerTypeFilter}
+                  onChange={(e) => setLedgerTypeFilter(e.target.value)}
+                  className="bg-studio-900 border border-white/10 rounded-lg px-2.5 py-1 text-xs text-white focus:outline-none focus:border-gold-500 font-mono cursor-pointer"
+                >
+                  <option value="ALL">All Event Types</option>
+                  <option value="OPENING_STOCK">OPENING_STOCK</option>
+                  <option value="RECEIVE_STOCK">RECEIVE_STOCK</option>
+                  <option value="SALE_OUT">SALE_OUT</option>
+                  <option value="CUSTOMER_RETURN">CUSTOMER_RETURN</option>
+                  <option value="STOCK_TRANSFER_IN">STOCK_TRANSFER_IN</option>
+                  <option value="STOCK_TRANSFER_OUT">STOCK_TRANSFER_OUT</option>
+                  <option value="STOCK_ADJUSTMENT">STOCK_ADJUSTMENT</option>
+                </select>
+              </div>
+
+              {/* Store Filter in Ledger */}
+              <div className="flex items-center space-x-1.5 bg-studio-900 border border-white/10 rounded-lg px-2.5 py-1 text-xs">
+                <Icon name="locations" size={13} className="text-gold-400" />
+                <span className="text-[10px] font-mono text-studio-400 uppercase font-bold">Store:</span>
+                <select
+                  value={selectedLocationId}
+                  onChange={(e) => setSelectedLocationId(e.target.value)}
+                  className="bg-studio-900 text-white text-xs font-mono focus:outline-none cursor-pointer border-none outline-none"
+                >
+                  <option value="ALL">All Stores</option>
+                  {(locations || []).map((loc) => (
+                    <option key={loc.id} value={loc.id}>
+                      {loc.name} ({loc.code})
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
-            <span className="text-[11px] font-mono text-studio-400">
+            <span className="text-[11px] font-mono text-studio-400 whitespace-nowrap">
               Immutable Append-Only Audit Trail
             </span>
           </div>

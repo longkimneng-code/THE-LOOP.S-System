@@ -169,7 +169,19 @@ function calculateEligibleRevenue(organizationId, periodMonth, storeId = null) {
             const items = JSON.parse(o.items_json);
             items.forEach(it => {
               const q = Number(it.quantity || 1);
-              const costMinor = it.costMinor !== undefined ? it.costMinor : (it.cost ? it.cost * 100 : 0);
+              let costMinor = it.costMinor !== undefined ? it.costMinor : (it.cost ? it.cost * 100 : 0);
+              if (!costMinor && (it.sku || it.productId)) {
+                const prodRow = db.prepare(`
+                  SELECT COALESCE(pv.cost_minor, p.cost_minor, 0) as cost_minor
+                  FROM product_variants pv
+                  LEFT JOIN products p ON pv.product_id = p.id
+                  WHERE pv.sku = ? OR pv.product_id = ? OR p.id = ? OR p.code = ?
+                  LIMIT 1
+                `).get(it.sku, it.productId, it.productId, it.sku);
+                if (prodRow && prodRow.cost_minor) {
+                  costMinor = prodRow.cost_minor;
+                }
+              }
               const lineCost = roundMoney((q * costMinor) / 100.0);
               actualProductCost = roundMoney(actualProductCost + lineCost);
             });

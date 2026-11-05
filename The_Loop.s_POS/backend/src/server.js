@@ -579,12 +579,16 @@ const server = http.createServer(async (req, res) => {
       return sendJson(res, 200, result);
     }
 
-    // 3. Product Catalog (Tenant Scoped)
+    // 3. Product Catalog (Tenant Scoped & Store-Location Stock Aware)
     if ((pathname === '/api/catalog' || pathname === '/api/catalog/products') && req.method === 'GET') {
       const currentUser = getRequestUser(req);
       const db = loadDb();
       const defaultOrgId = db.organization?.id || 'org-6e9ed3cf';
       const orgId = currentUser?.organizationId || searchParams.get('organizationId') || defaultOrgId;
+      const storeId = searchParams.get('storeId') || searchParams.get('locationId') || 'loc-01';
+      if (currentUser && storeId && !canUserAccessStore(currentUser, storeId)) {
+        return sendJson(res, 403, { ok: false, error: `Access Denied: You are not authorized to access catalog for store "${storeId}".` });
+      }
       try {
         await syncCatalogFromStock();
       } catch (e) {
@@ -593,9 +597,48 @@ const server = http.createServer(async (req, res) => {
       const refreshedDb = loadDb();
       const org = (refreshedDb.organizations || []).find(o => o.id === orgId) || (refreshedDb.organization?.id === orgId ? refreshedDb.organization : { id: orgId, name: 'Business Catalog' });
       const locations = (refreshedDb.locations || []).filter(l => (l.organizationId || defaultOrgId) === orgId || l.organizationId === 'org-loops-001' || !l.organizationId);
-      const products = (refreshedDb.products || []).filter(p => (p.organizationId || defaultOrgId) === orgId || p.organizationId === 'org-loops-001' || !p.organizationId);
+      const baseProducts = (refreshedDb.products || []).filter(p => (p.organizationId || defaultOrgId) === orgId || p.organizationId === 'org-loops-001' || !p.organizationId);
+
+      let sqlDb = null;
+      try {
+        const { getDatabase } = require('../../../shared/database/connection');
+        sqlDb = getDatabase();
+      } catch (e) {}
+
+      const products = baseProducts.map(prod => {
+        const variants = (prod.variants || []).map(v => {
+          let locOnHand = v.onHand || 0;
+          if (sqlDb) {
+            try {
+              const balRow = sqlDb.prepare('SELECT on_hand, reserved FROM stock_balances WHERE sku = ? AND location_id = ?').get(v.sku, storeId);
+              if (balRow) {
+                locOnHand = Number(balRow.on_hand) || 0;
+              } else {
+                locOnHand = 0;
+              }
+            } catch (err) {}
+          }
+          const available = Math.max(0, locOnHand - (v.reserved || 0));
+          return {
+            ...v,
+            storeId,
+            onHand: locOnHand,
+            available
+          };
+        });
+
+        const totalAvailable = variants.reduce((s, vr) => s + (vr.available || 0), 0);
+        return {
+          ...prod,
+          storeId,
+          variants,
+          available: totalAvailable
+        };
+      });
+
       return sendJson(res, 200, {
         organization: org,
+        selectedStoreId: storeId,
         locations: locations.length > 0 ? locations : refreshedDb.locations,
         products: products.length > 0 ? products : refreshedDb.products
       });
@@ -787,7 +830,12 @@ const server = http.createServer(async (req, res) => {
       const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
       const sevenDaysAgo = new Date(Date.now() - 7 * 86400000).toISOString().split('T')[0];
 
-      const userOrg = currentUser?.organizationId || 'org-loops-001';
+      const orgWithOrders = (db.organizations || []).slice().reverse().find(o => (db.orders || []).some(ord => ord.organizationId === o.id));
+      const userOrg = currentUser?.organizationId ||
+        searchParams.get('organizationId') ||
+        req.headers['x-organization-id'] ||
+        db.organization?.id ||
+        (orgWithOrders ? orgWithOrders.id : 'org-6e9ed3cf');
 
       let filtered = (db.orders || []).filter(ord => {
         // Multi-tenant organization isolation
@@ -890,8 +938,27 @@ const server = http.createServer(async (req, res) => {
       const org = (db.organizations || []).find(o => o.id === orgId) || db.organization || {};
 
       const orgOrders = (db.orders || []).filter(o => (o.organizationId || 'org-loops-001') === orgId);
-      const today = new Date().toISOString().split('T')[0];
-      const todayOrders = orgOrders.filter(o => (o.createdAt || '').startsWith(today));
+      const activeShift = (db.shifts || []).find(s => s.status === 'ACTIVE' && (s.organizationId || s.businessId || 'org-loops-001') === orgId);
+      const activeShiftId = activeShift?.id;
+
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const day = String(now.getDate()).padStart(2, '0');
+      const localTodayStr = `${year}-${month}-${day}`;
+      const utcTodayStr = now.toISOString().split('T')[0];
+
+      const todayOrders = orgOrders.filter(o => {
+        // Active shift orders are always counted for live session telemetry
+        if (activeShiftId && o.shiftId === activeShiftId) return true;
+
+        const d = new Date(o.createdAt);
+        const orderLocalDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        const orderUtcDate = (o.createdAt || '').split('T')[0];
+        if (orderLocalDate === localTodayStr || orderUtcDate === utcTodayStr) return true;
+
+        return (now.getTime() - d.getTime()) <= 24 * 3600 * 1000;
+      });
 
       const todaySalesUsd = todayOrders.reduce((sum, o) => sum + (o.status !== 'CANCELLED' ? Number(o.totalAmount || 0) : 0), 0);
       const todaySalesKhr = todayOrders.reduce((sum, o) => sum + (o.status !== 'CANCELLED' ? Number(o.khrTotal || 0) : 0), 0);
@@ -908,8 +975,6 @@ const server = http.createServer(async (req, res) => {
 
       const totalGrossSalesUsd = orgOrders.reduce((sum, o) => sum + (o.status !== 'CANCELLED' ? Number(o.totalAmount || 0) : 0), 0);
       const totalGrossSalesKhr = orgOrders.reduce((sum, o) => sum + (o.status !== 'CANCELLED' ? Number(o.khrTotal || 0) : 0), 0);
-
-      const activeShift = (db.shifts || []).find(s => s.status === 'ACTIVE' && (s.organizationId || s.businessId || 'org-loops-001') === orgId);
 
       // Low stock / out of stock items for this business
       const lowStockProducts = [];
@@ -928,10 +993,58 @@ const server = http.createServer(async (req, res) => {
         });
       });
 
-      const recentOrdersList = orgOrders.slice().reverse().slice(0, 10).map(o => ({
-        ...o,
-        linesCount: (db.orderLines || []).filter(l => l.orderId === o.id).length
-      }));
+      // Product Sales Breakdown: compute items sold today and total volume
+      const productSalesMap = {};
+      const todayOrderIds = new Set(todayOrders.map(o => o.id));
+      const allOrgOrderIds = new Set(orgOrders.map(o => o.id));
+
+      (db.orderLines || []).forEach(line => {
+        if (allOrgOrderIds.has(line.orderId)) {
+          const key = line.variantSku || line.productId || line.itemTitle;
+          if (!productSalesMap[key]) {
+            productSalesMap[key] = {
+              sku: line.variantSku || '',
+              name: line.itemTitle || 'Retail Item',
+              todayQuantity: 0,
+              totalQuantity: 0,
+              todayRevenue: 0,
+              totalRevenue: 0,
+              unitPrice: Number(line.unitPrice) || 0
+            };
+          }
+          const qty = Number(line.quantity) || 1;
+          const lineTotal = Number(line.lineTotal) || (line.unitPrice * qty);
+
+          productSalesMap[key].totalQuantity += qty;
+          productSalesMap[key].totalRevenue += lineTotal;
+
+          if (todayOrderIds.has(line.orderId)) {
+            productSalesMap[key].todayQuantity += qty;
+            productSalesMap[key].todayRevenue += lineTotal;
+          }
+        }
+      });
+
+      const todayProductsSold = Object.values(productSalesMap)
+        .filter(p => p.todayQuantity > 0)
+        .sort((a, b) => b.todayQuantity - a.todayQuantity);
+
+      const topProductsAllTime = Object.values(productSalesMap)
+        .sort((a, b) => b.totalQuantity - a.totalQuantity);
+
+      const recentOrdersList = orgOrders.slice().reverse().slice(0, 10).map(o => {
+        const orderLines = (db.orderLines || []).filter(l => l.orderId === o.id);
+        const orderPayments = (db.payments || []).filter(p => p.orderId === o.id);
+        const orderRefunds = (db.refunds || []).filter(r => r.originalOrderId === o.id);
+        return {
+          ...o,
+          lines: orderLines,
+          payments: orderPayments,
+          refunds: orderRefunds,
+          linesCount: orderLines.length,
+          itemSummary: orderLines.map(l => `${l.itemTitle || l.variantSku} ×${l.quantity || 1}`).join(', ')
+        };
+      });
 
       return sendJson(res, 200, {
         kpi: {
@@ -955,6 +1068,8 @@ const server = http.createServer(async (req, res) => {
           expectedCash: activeShift?.expectedCash || 0
         },
         recentOrders: recentOrdersList,
+        todayProductsSold,
+        topProductsAllTime,
         lowStockAlerts: lowStockProducts.slice(0, 8)
       });
     }
@@ -1059,7 +1174,7 @@ const server = http.createServer(async (req, res) => {
       }
       const result = openShift(body, currentUser);
       if (!result.ok) {
-        const statusCode = (result.error && (result.error.includes('Access Denied') || result.error.includes('not authorized'))) ? 403 : 400;
+        const statusCode = result.code || ((result.error && (result.error.includes('Access Denied') || result.error.includes('not authorized'))) ? 403 : 400);
         return sendJson(res, statusCode, result);
       }
       broadcastSse('SHIFT_OPENED', result.shift);
@@ -1080,8 +1195,11 @@ const server = http.createServer(async (req, res) => {
       if (!body.closedByUserId && currentUser?.id) {
         body.closedByUserId = currentUser.id;
       }
-      const result = closeShift(body);
-      if (!result.ok) return sendJson(res, 400, result);
+      const result = closeShift(body, currentUser);
+      if (!result.ok) {
+        const statusCode = result.code || ((result.error && (result.error.includes('Access Denied') || result.error.includes('not authorized'))) ? 403 : 400);
+        return sendJson(res, statusCode, result);
+      }
       broadcastSse('SHIFT_CLOSED', result.zReport);
       return sendJson(res, 200, result);
     }

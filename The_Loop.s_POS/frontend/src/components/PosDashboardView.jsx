@@ -12,7 +12,9 @@ import {
   Receipt,
   User,
   ArrowUpRight,
-  ShieldAlert
+  ShieldAlert,
+  Package,
+  Layers
 } from 'lucide-react';
 
 export default function PosDashboardView() {
@@ -68,6 +70,8 @@ export default function PosDashboardView() {
   const shift = stats?.shift || {};
   const recentOrders = stats?.recentOrders || [];
   const lowStock = stats?.lowStockAlerts || [];
+  const todayProductsSold = stats?.todayProductsSold || [];
+  const topProductsAllTime = stats?.topProductsAllTime || [];
 
   return (
     <div className="flex-1 overflow-y-auto bg-obsidian-950 p-6 space-y-6">
@@ -235,7 +239,22 @@ export default function PosDashboardView() {
                         {new Date(ord.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       </td>
                       <td className="py-2.5 text-slate-200 font-sans">{ord.customerName || 'Walk-in Patron'}</td>
-                      <td className="py-2.5 text-slate-400">{ord.linesCount || 1} item(s)</td>
+                      <td className="py-2.5 text-slate-300">
+                        {ord.lines && ord.lines.length > 0 ? (
+                          <div className="space-y-0.5">
+                            {ord.lines.map((l, idx) => (
+                              <div key={idx} className="flex items-center space-x-1.5 text-[11px]">
+                                <span className="text-slate-100 font-medium truncate max-w-[130px]">
+                                  {l.itemTitle || l.productName || l.variantSku}
+                                </span>
+                                <span className="text-brass-400 font-mono text-[10px]">×{l.quantity || 1}</span>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <span className="text-slate-400 font-sans">{ord.itemSummary || `${ord.linesCount || 1} item(s)`}</span>
+                        )}
+                      </td>
                       <td className="py-2.5 text-right font-bold text-slate-100">
                         ${Number(ord.totalAmount).toFixed(2)}
                       </td>
@@ -304,6 +323,61 @@ export default function PosDashboardView() {
             </span>
           </div>
         </div>
+      </div>
+
+      {/* Product Sales & Commercial Velocity Breakdown */}
+      <div className="bg-obsidian-900 border border-obsidian-800 rounded-xl p-5 shadow-sm space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <Package className="w-4 h-4 text-brass-400" />
+            <h3 className="text-sm font-semibold text-slate-200">
+              Product Sales & Commercial Item Breakdown
+            </h3>
+            <span className="text-[10px] bg-brass-500/10 text-brass-400 font-mono px-2 py-0.5 rounded border border-brass-500/20">
+              {todayProductsSold.length > 0 ? "Today's Sold Items" : "Top Products All-Time"}
+            </span>
+          </div>
+          <div className="text-xs text-slate-400 font-mono">
+            Total Velocity: <strong className="text-slate-200">{(todayProductsSold.length > 0 ? todayProductsSold : topProductsAllTime).reduce((s, p) => s + (p.todayQuantity || p.totalQuantity || 0), 0)} units sold</strong>
+          </div>
+        </div>
+
+        {(todayProductsSold.length > 0 ? todayProductsSold : topProductsAllTime).length === 0 ? (
+          <div className="p-8 text-center text-slate-500 text-xs border border-dashed border-obsidian-800 rounded-xl">
+            No product sales recorded yet. Once checkout completes, products sold and revenue will display here.
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3.5">
+            {(todayProductsSold.length > 0 ? todayProductsSold : topProductsAllTime).map((prod, idx) => (
+              <div
+                key={idx}
+                className="bg-obsidian-950/80 border border-obsidian-800 rounded-xl p-3.5 hover:border-brass-500/40 transition space-y-2"
+              >
+                <div className="flex items-start justify-between">
+                  <div className="min-w-0 pr-2">
+                    <h4 className="text-xs font-bold text-slate-100 truncate">{prod.name}</h4>
+                    <div className="text-[10px] font-mono text-slate-500 truncate">SKU: {prod.sku}</div>
+                  </div>
+                  <span className="px-2 py-0.5 rounded bg-brass-500/15 text-brass-400 font-mono font-bold text-xs border border-brass-500/30 shrink-0">
+                    {prod.todayQuantity > 0 ? `${prod.todayQuantity} sold today` : `${prod.totalQuantity} total`}
+                  </span>
+                </div>
+
+                <div className="pt-2 border-t border-obsidian-800/80 flex items-center justify-between text-xs">
+                  <span className="text-slate-400 text-[11px]">Gross Revenue:</span>
+                  <div className="text-right">
+                    <span className="font-bold text-emerald-400 font-mono">
+                      ${(prod.todayRevenue > 0 ? prod.todayRevenue : prod.totalRevenue).toFixed(2)}
+                    </span>
+                    <div className="text-[10px] text-brass-400/80 font-mono">
+                      {Math.round((prod.todayRevenue > 0 ? prod.todayRevenue : prod.totalRevenue) * exchangeRate).toLocaleString()} ៛
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

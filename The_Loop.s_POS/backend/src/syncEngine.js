@@ -174,20 +174,9 @@ async function processOutboxRelay() {
       if (event.eventType === 'ORDER_COMPLETED') {
         const payload = event.payload;
 
-        // 3a. Dispatches to Stock Management (/api/sales)
+        // 3a. Stock Management is already synchronously decremented at checkout in orderEngine.js
+        // Acknowledge stock state without creating duplicate INV- sales
         let stockOk = true;
-        for (const item of payload.items) {
-          const stockRes = await httpRequest(`${STOCK_API_URL}/sales`, 'POST', {
-            sku: item.sku,
-            qty: item.quantity,
-            customerId: payload.customerName || 'WALK_IN',
-            method: payload.payments?.[0]?.method || 'CASH',
-            locationId: event.locationId || 'loc-1'
-          });
-          if (!stockRes.ok && stockRes.status !== 404) {
-            stockOk = false;
-          }
-        }
 
         // 3b. Dispatches to Loops Finance (/api/invoices)
         const financeRes = await httpRequest(`${FINANCE_API_URL}/invoices`, 'POST', {

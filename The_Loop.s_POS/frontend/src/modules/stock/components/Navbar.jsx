@@ -95,33 +95,6 @@ export default function Navbar({
             </div>
           </div>
 
-          {/* Store Selector Pill */}
-          <div className="flex items-center space-x-1 pl-2.5 sm:pl-3.5 border-l border-obsidian-800">
-            <div className="flex items-center space-x-2 bg-[#111522] hover:bg-[#171D2D] border border-[#232838] hover:border-brass-500/40 rounded-xl px-3 py-2 transition-colors shadow-xs">
-              <Icon name="locations" size={14} className="text-brass-400 flex-shrink-0" />
-              <span className="text-[10px] font-mono text-brass-400 uppercase font-bold">Store:</span>
-              <select
-                value={activeLocationId}
-                onChange={(e) => onLocationChange(e.target.value)}
-                style={{ backgroundColor: '#111522', color: '#F1F5F9' }}
-                className="bg-[#111522] text-slate-200 text-xs font-mono focus:outline-none cursor-pointer max-w-[130px] sm:max-w-none border-none outline-none"
-                aria-label="Active Store Location"
-              >
-                {locations.length === 0 ? (
-                  <option value="" style={{ backgroundColor: '#0C0F17', color: '#FFFFFF' }} className="bg-[#0C0F17] text-white">No Store Configured</option>
-                ) : (
-                  locations.map((loc) => (
-                    <option key={loc.id} value={loc.id} style={{ backgroundColor: '#0C0F17', color: '#FFFFFF' }} className="bg-[#0C0F17] text-white">
-                      {loc.name} ({loc.code})
-                    </option>
-                  ))
-                )}
-              </select>
-            </div>
-          </div>
-
-
-
           {/* Universal Suite Clean Pills Switcher */}
           <div className="hidden sm:flex items-center space-x-2 bg-[#111522] hover:bg-[#171D2D] px-3 py-2 rounded-xl border border-[#232838] text-xs">
             <button

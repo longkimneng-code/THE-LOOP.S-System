@@ -34,6 +34,11 @@ export default function ProductCatalogGrid() {
   });
 
   const handleCardClick = (product) => {
+    const totalAvail = (product.variants || []).reduce((acc, v) => acc + (v.available || 0), 0);
+    if (totalAvail <= 0 && (product.variants || []).length > 0) {
+      alert(`Out of Stock: "${product.name}" is currently out of stock (0 available) at this store location. Cannot add to cart.`);
+      return;
+    }
     if (product.variants && product.variants.length > 1) {
       setSelectedProductForVariant(product);
     } else {
@@ -131,7 +136,11 @@ export default function ProductCatalogGrid() {
                 <button
                   key={product.id}
                   onClick={() => handleCardClick(product)}
-                  className="group relative flex flex-col justify-between p-3.5 rounded-xl bg-obsidian-900/90 hover:bg-obsidian-850 border border-obsidian-800 hover:border-obsidian-600 text-left transition-all shadow-sm hover:shadow-md active:scale-[0.98]"
+                  className={`group relative flex flex-col justify-between p-3.5 rounded-xl border text-left transition-all shadow-sm ${
+                    isOOS 
+                      ? 'bg-obsidian-950/80 border-rose-900/40 opacity-70 cursor-not-allowed' 
+                      : 'bg-obsidian-900/90 hover:bg-obsidian-850 border-obsidian-800 hover:border-obsidian-600 hover:shadow-md active:scale-[0.98]'
+                  }`}
                 >
                   {/* Top: Category & Availability Badge */}
                   <div className="flex items-start justify-between w-full mb-2">
@@ -183,6 +192,10 @@ export default function ProductCatalogGrid() {
                       <span className="flex items-center space-x-1 text-[11px] text-slate-400 bg-obsidian-800 px-2 py-0.5 rounded-md">
                         <Layers className="w-3 h-3 text-brass-500" />
                         <span>{variantCount} vars</span>
+                      </span>
+                    ) : isOOS ? (
+                      <span className="text-[11px] font-mono text-rose-400 font-medium">
+                        Out of stock
                       </span>
                     ) : (
                       <span className="text-[11px] text-slate-400 group-hover:text-slate-200">

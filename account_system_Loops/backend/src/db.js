@@ -1124,6 +1124,33 @@ function createExpense(expenseData) {
 
   db.expenses.unshift(exp);
 
+  // Deduct from Monthly Budget via Financial Allocation Engine with Capital Protection
+  try {
+    const { recordExpenseWithCapitalProtection } = require('../../../shared/financial/financialAllocationEngine');
+    const budgetCategory = exp.tier === 'PAYROLL_WAGES' ? 'EMPLOYEE_SALARIES' : 'OPERATING_EXPENSES';
+    const month = exp.expenseDate ? exp.expenseDate.slice(0, 7) : new Date().toISOString().slice(0, 7);
+    const budgetRes = recordExpenseWithCapitalProtection({
+      organizationId: orgId,
+      periodMonth: month,
+      categoryId: budgetCategory,
+      expenseCategory: exp.category,
+      amount: exp.amount,
+      description: `${exp.vendorPayee} — ${exp.category}`,
+      paymentDate: exp.expenseDate,
+      invoiceRef: exp.expenseNumber,
+      supplierName: exp.vendorPayee,
+      allowCapitalBorrowing: true
+    });
+    if (budgetRes && budgetRes.ok) {
+      exp.budgetCategory = budgetRes.categoryId || budgetCategory;
+      exp.budgetDeduction = budgetRes.budgetDeduction;
+      exp.remainingBudget = budgetRes.remainingBudget;
+      exp.capitalBorrowingRequired = budgetRes.capitalBorrowingRequired;
+    }
+  } catch (e) {
+    console.warn('[Finance] Budget deduction error:', e.message);
+  }
+
   // Auto-post expense journal entry
   // Map category to COA code
   let expenseAccountCode = '6050';
@@ -1693,7 +1720,25 @@ function getExecutiveDashboardData(orgId = null, filter = {}) {
   const cashNow = toDecimal(bankBalance + cashBalance);
   const customersOwe = toDecimal(balances['1100']?.balance || 0);
   const youOwe = toDecimal(balances['2010']?.balance || 0);
-  const stockValue = toDecimal(balances['1200']?.balance || 0);
+  // Live Dynamic Inventory Valuation: reflects physical stock in/out in real time
+  let stockValue = 0;
+  try {
+    const { getDatabase } = require('../../../shared/database/connection');
+    const sqlDb = getDatabase();
+    const valRow = sqlDb.prepare(`
+      SELECT SUM(sb.on_hand * COALESCE(NULLIF(pv.cost_minor, 0), NULLIF(p.cost_minor, 0), 0)) as totalValMinor
+      FROM stock_balances sb
+      JOIN product_variants pv ON sb.sku = pv.sku
+      LEFT JOIN products p ON pv.product_id = p.id
+    `).get();
+    if (valRow && valRow.totalValMinor !== null && valRow.totalValMinor !== undefined) {
+      stockValue = toDecimal(valRow.totalValMinor / 100);
+    } else {
+      stockValue = toDecimal(balances['1200']?.balance || 0);
+    }
+  } catch (e) {
+    stockValue = toDecimal(balances['1200']?.balance || 0);
+  }
 
   const pnl = calculatePnL({
     salesRevenue: balances['4010']?.balance || 0,

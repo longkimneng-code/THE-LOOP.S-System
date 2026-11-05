@@ -42,7 +42,7 @@
       "type": "ASSET",
       "normalSide": "DEBIT",
       "isSystemProtected": true,
-      "balance": 4820.81,
+      "balance": 5520.19,
       "debits": 0,
       "credits": 0
     },
@@ -103,7 +103,7 @@
       "type": "ASSET",
       "normalSide": "DEBIT",
       "isSystemProtected": true,
-      "balance": -299.799,
+      "balance": -613.02,
       "debits": 0,
       "credits": 0
     },
@@ -423,7 +423,7 @@
       "type": "REVENUE",
       "normalSide": "CREDIT",
       "isSystemProtected": true,
-      "balance": 760.02,
+      "balance": 1459.4,
       "debits": 0,
       "credits": 0
     },
@@ -463,7 +463,7 @@
       "type": "COGS",
       "normalSide": "DEBIT",
       "isSystemProtected": true,
-      "balance": 339.009,
+      "balance": 652.23,
       "debits": 0,
       "credits": 0
     },
@@ -708,7 +708,68 @@
     }
   ],
   "startupBudgets": [],
-  "startupBudgetItems": [],
+  "startupBudgetItems": [
+    {
+      "id": "sbi-1793853249182-1",
+      "budgetId": "bud-main",
+      "category": "Store Fit-out",
+      "classification": "CAPEX",
+      "phase": "PRE_LAUNCH",
+      "name": "Interior Store Renovation & Lighting",
+      "budgetedAmount": 1500,
+      "actualAmount": 1500,
+      "status": "PAID",
+      "notes": "Display counters, track lighting, and paint"
+    },
+    {
+      "id": "sbi-1793853249182-2",
+      "budgetId": "bud-main",
+      "category": "POS & Hardware",
+      "classification": "CAPEX",
+      "phase": "PRE_LAUNCH",
+      "name": "Touchscreen POS Register & Barcode Scanner",
+      "budgetedAmount": 800,
+      "actualAmount": 750,
+      "status": "PAID",
+      "notes": "Thermal receipt printer and wireless barcode gun"
+    },
+    {
+      "id": "sbi-1793853249182-3",
+      "budgetId": "bud-main",
+      "category": "Store Deposit",
+      "classification": "DEPOSIT",
+      "phase": "PRE_LAUNCH",
+      "name": "Commercial Lease Security Deposit",
+      "budgetedAmount": 1000,
+      "actualAmount": 1000,
+      "status": "PAID",
+      "notes": "Refundable security deposit for retail location"
+    },
+    {
+      "id": "sbi-1793853249182-4",
+      "budgetId": "bud-main",
+      "category": "Marketing",
+      "classification": "OPEX",
+      "phase": "PRE_LAUNCH",
+      "name": "Grand Opening Branding & Local Signage",
+      "budgetedAmount": 500,
+      "actualAmount": 350,
+      "status": "PAID",
+      "notes": "Social media ads and outdoor banner"
+    },
+    {
+      "id": "sbi-1793853249182-5",
+      "budgetId": "bud-main",
+      "category": "Buffer & Supplies",
+      "classification": "OPEX",
+      "phase": "PRE_LAUNCH",
+      "name": "Initial Packaging, Bags & Office Supplies",
+      "budgetedAmount": 300,
+      "actualAmount": 200,
+      "status": "PENDING",
+      "notes": "Branded tote bags and receipt rolls"
+    }
+  ],
   "shipments": [
     {
       "id": "ship-1793815708068",
@@ -743,7 +804,7 @@
       "unit_base_price_base": 4.87,
       "unit_weight_kg": 0.5,
       "unit_volume_cbm": 0.001,
-      "target_retail_price": 8.64,
+      "target_retail_price": 25,
       "imageUrl": "/uploads/40ac179a6f86e757.jpg",
       "category": "Accessories"
     },
@@ -760,7 +821,7 @@
       "unit_base_price_base": 2.4,
       "unit_weight_kg": 0.5,
       "unit_volume_cbm": 0.001,
-      "target_retail_price": 4.12,
+      "target_retail_price": 25,
       "imageUrl": "/uploads/4015969bdeb81768.jpg",
       "category": "Apparel"
     }
@@ -784,6 +845,114 @@
   ],
   "supplierBills": [],
   "expenses": [
+    {
+      "id": "exp-1793864471404",
+      "organizationId": "org-6e9ed3cf",
+      "expenseNumber": "EXP-2026-012",
+      "category": "Operating Expense",
+      "tier": "ADMIN_SOFTWARE",
+      "vendorPayee": "Vendor Payee",
+      "amount": 0,
+      "expenseDate": "2026-11-05",
+      "paymentMethod": "CASH",
+      "notes": ""
+    },
+    {
+      "id": "exp-1793864162806",
+      "organizationId": "org-6e9ed3cf",
+      "expenseNumber": "EXP-2026-011",
+      "category": "Operating Expense",
+      "tier": "ADMIN_SOFTWARE",
+      "vendorPayee": "Vendor Payee",
+      "amount": 0,
+      "expenseDate": "2026-11-05",
+      "paymentMethod": "CASH",
+      "notes": ""
+    },
+    {
+      "id": "exp-1793864162799",
+      "organizationId": "org-6e9ed3cf",
+      "expenseNumber": "EXP-2026-010",
+      "category": "Operating Expense",
+      "tier": "ADMIN_SOFTWARE",
+      "vendorPayee": "Vendor Payee",
+      "amount": 0,
+      "expenseDate": "2026-11-05",
+      "paymentMethod": "CASH",
+      "notes": ""
+    },
+    {
+      "id": "exp-1793864162785",
+      "organizationId": "org-6e9ed3cf",
+      "expenseNumber": "EXP-2026-009",
+      "category": "Operating Expense",
+      "tier": "ADMIN_SOFTWARE",
+      "vendorPayee": "Vendor Payee",
+      "amount": 0,
+      "expenseDate": "2026-11-05",
+      "paymentMethod": "CASH",
+      "notes": ""
+    },
+    {
+      "id": "exp-1793864122424",
+      "organizationId": "org-6e9ed3cf",
+      "expenseNumber": "EXP-2026-008",
+      "category": "Operating Expense",
+      "tier": "ADMIN_SOFTWARE",
+      "vendorPayee": "Vendor Payee",
+      "amount": 0,
+      "expenseDate": "2026-11-05",
+      "paymentMethod": "CASH",
+      "notes": ""
+    },
+    {
+      "id": "exp-1793864122415",
+      "organizationId": "org-6e9ed3cf",
+      "expenseNumber": "EXP-2026-007",
+      "category": "Operating Expense",
+      "tier": "ADMIN_SOFTWARE",
+      "vendorPayee": "Vendor Payee",
+      "amount": 0,
+      "expenseDate": "2026-11-05",
+      "paymentMethod": "CASH",
+      "notes": ""
+    },
+    {
+      "id": "exp-1793864122408",
+      "organizationId": "org-6e9ed3cf",
+      "expenseNumber": "EXP-2026-006",
+      "category": "Operating Expense",
+      "tier": "ADMIN_SOFTWARE",
+      "vendorPayee": "Vendor Payee",
+      "amount": 0,
+      "expenseDate": "2026-11-05",
+      "paymentMethod": "CASH",
+      "notes": ""
+    },
+    {
+      "id": "exp-1793864122392",
+      "organizationId": "org-6e9ed3cf",
+      "expenseNumber": "EXP-2026-005",
+      "category": "Operating Expense",
+      "tier": "ADMIN_SOFTWARE",
+      "vendorPayee": "Vendor Payee",
+      "amount": 0,
+      "expenseDate": "2026-11-05",
+      "paymentMethod": "CASH",
+      "notes": ""
+    },
+    {
+      "id": "exp-1793862001542",
+      "organizationId": "org-6e9ed3cf",
+      "expenseNumber": "EXP-2026-004",
+      "category": "Operating Expense",
+      "tier": "ADMIN_SOFTWARE",
+      "vendorPayee": "Vendor Payee",
+      "amount": 0,
+      "expenseDate": "2026-11-05",
+      "paymentMethod": "CASH",
+      "notes": ""
+    },
     {
       "id": "exp-1793816615644",
       "organizationId": "org-6e9ed3cf",
@@ -824,192 +993,493 @@
   "recurringBills": [],
   "invoices": [
     {
-      "id": "inv-1793818670215",
+      "id": "inv-1793853934204",
       "organizationId": "org-6e9ed3cf",
-      "invoiceNumber": "sale-1b9c693d",
-      "customerName": "Walk-in Retail Guest",
-      "invoiceDate": "2026-11-04",
-      "dueDate": "2026-11-04",
+      "invoiceNumber": "sale-369110a3",
+      "customerName": "Walk-in Customer",
+      "invoiceDate": "2026-11-05",
+      "dueDate": "2026-11-05",
+      "subtotal": 192.5,
+      "taxAmount": 0,
+      "discountAmount": 0,
+      "totalAmount": 192.5,
+      "landedCogsAmount": 23.38,
+      "status": "PAID",
+      "channel": "RETAIL_POS",
+      "notes": "Automatically synced from Stock Loops register (BeyondVER Main Branch)"
+    },
+    {
+      "id": "inv-1793853934195",
+      "organizationId": "org-6e9ed3cf",
+      "invoiceNumber": "sale-f38c571e",
+      "customerName": "Walk-in Customer",
+      "invoiceDate": "2026-11-05",
+      "dueDate": "2026-11-05",
+      "subtotal": 27.5,
+      "taxAmount": 0,
+      "discountAmount": 0,
+      "totalAmount": 27.5,
+      "landedCogsAmount": 3.34,
+      "status": "PAID",
+      "channel": "RETAIL_POS",
+      "notes": "Automatically synced from Stock Loops register (BeyondVER Main Branch)"
+    },
+    {
+      "id": "inv-1793853934187",
+      "organizationId": "org-6e9ed3cf",
+      "invoiceNumber": "sale-8efbcebb",
+      "customerName": "Walk-in Customer",
+      "invoiceDate": "2026-11-05",
+      "dueDate": "2026-11-05",
+      "subtotal": 27.5,
+      "taxAmount": 0,
+      "discountAmount": 0,
+      "totalAmount": 27.5,
+      "landedCogsAmount": 3.34,
+      "status": "PAID",
+      "channel": "RETAIL_POS",
+      "notes": "Automatically synced from Stock Loops register (BeyondVER Main Branch)"
+    },
+    {
+      "id": "inv-1793853934180",
+      "organizationId": "org-6e9ed3cf",
+      "invoiceNumber": "sale-8d240b10",
+      "customerName": "Walk-in Customer",
+      "invoiceDate": "2026-11-05",
+      "dueDate": "2026-11-05",
       "subtotal": 82.5,
       "taxAmount": 0,
       "discountAmount": 0,
       "totalAmount": 82.5,
-      "landedCogsAmount": 37.125,
+      "landedCogsAmount": 10.02,
       "status": "PAID",
       "channel": "RETAIL_POS",
       "notes": "Automatically synced from Stock Loops register (BeyondVER Main Branch)"
     },
     {
-      "id": "inv-1793818670211",
+      "id": "inv-1793853934172",
       "organizationId": "org-6e9ed3cf",
-      "invoiceNumber": "sale-1icxm28",
-      "customerName": "Walk-in Retail Guest",
-      "invoiceDate": "2026-11-04",
-      "dueDate": "2026-11-04",
-      "subtotal": 80.63,
-      "taxAmount": 0,
-      "discountAmount": 0,
-      "totalAmount": 80.63,
-      "landedCogsAmount": 36.2835,
-      "status": "PAID",
-      "channel": "RETAIL_POS",
-      "notes": "Automatically synced from Stock Loops register (BeyondVER Main Branch)"
-    },
-    {
-      "id": "inv-1793818670196",
-      "organizationId": "org-6e9ed3cf",
-      "invoiceNumber": "REG-01-20261104-1225",
+      "invoiceNumber": "sale-7748fa95",
       "customerName": "Walk-in Customer",
-      "invoiceDate": "2026-11-04",
-      "dueDate": "2026-11-04",
-      "subtotal": 75,
-      "taxAmount": 0,
-      "discountAmount": 0,
-      "totalAmount": 75,
-      "landedCogsAmount": 33,
-      "status": "PAID",
-      "channel": "RETAIL_POS",
-      "notes": "POS Register reg-loc01-01 Sale (#REG-01-20261104-1225)"
-    },
-    {
-      "id": "inv-1793818545881",
-      "organizationId": "org-6e9ed3cf",
-      "invoiceNumber": "REG-01-20261104-7558",
-      "customerName": "Walk-in Customer",
-      "invoiceDate": "2026-11-04",
-      "dueDate": "2026-11-04",
-      "subtotal": 25,
-      "taxAmount": 0,
-      "discountAmount": 0,
-      "totalAmount": 25,
-      "landedCogsAmount": 11,
-      "status": "PAID",
-      "channel": "RETAIL_POS",
-      "notes": "POS Register reg-loc01-01 Sale (#REG-01-20261104-7558)"
-    },
-    {
-      "id": "inv-1793818545879",
-      "organizationId": "org-6e9ed3cf",
-      "invoiceNumber": "sale-f0458ac4",
-      "customerName": "Walk-in Retail Guest",
-      "invoiceDate": "2026-11-04",
-      "dueDate": "2026-11-04",
+      "invoiceDate": "2026-11-05",
+      "dueDate": "2026-11-05",
       "subtotal": 27.5,
       "taxAmount": 0,
       "discountAmount": 0,
       "totalAmount": 27.5,
-      "landedCogsAmount": 12.375,
+      "landedCogsAmount": 5.81,
       "status": "PAID",
       "channel": "RETAIL_POS",
       "notes": "Automatically synced from Stock Loops register (BeyondVER Main Branch)"
     },
     {
-      "id": "inv-1793818545878",
+      "id": "inv-1793853934164",
       "organizationId": "org-6e9ed3cf",
-      "invoiceNumber": "sale-zphxva5",
-      "customerName": "Walk-in Retail Guest",
-      "invoiceDate": "2026-11-04",
-      "dueDate": "2026-11-04",
-      "subtotal": 26.88,
-      "taxAmount": 0,
-      "discountAmount": 0,
-      "totalAmount": 26.88,
-      "landedCogsAmount": 12.096,
-      "status": "PAID",
-      "channel": "RETAIL_POS",
-      "notes": "Automatically synced from Stock Loops register (BeyondVER Main Branch)"
-    },
-    {
-      "id": "inv-1793818399683",
-      "organizationId": "org-6e9ed3cf",
-      "invoiceNumber": "sale-9a1159a0",
-      "customerName": "Walk-in Retail Guest",
-      "invoiceDate": "2026-11-04",
-      "dueDate": "2026-11-04",
-      "subtotal": 27.5,
-      "taxAmount": 0,
-      "discountAmount": 0,
-      "totalAmount": 27.5,
-      "landedCogsAmount": 12.375,
-      "status": "PAID",
-      "channel": "RETAIL_POS",
-      "notes": "Automatically synced from Stock Loops register (BeyondVER Main Branch)"
-    },
-    {
-      "id": "inv-1793818399682",
-      "organizationId": "org-6e9ed3cf",
-      "invoiceNumber": "sale-fv2v1gc",
-      "customerName": "Walk-in Retail Guest",
-      "invoiceDate": "2026-11-04",
-      "dueDate": "2026-11-04",
-      "subtotal": 26.88,
-      "taxAmount": 0,
-      "discountAmount": 0,
-      "totalAmount": 26.88,
-      "landedCogsAmount": 12.096,
-      "status": "PAID",
-      "channel": "RETAIL_POS",
-      "notes": "Automatically synced from Stock Loops register (BeyondVER Main Branch)"
-    },
-    {
-      "id": "inv-1793818399676",
-      "organizationId": "org-6e9ed3cf",
-      "invoiceNumber": "REG-01-20261104-8385",
+      "invoiceNumber": "sale-79680263",
       "customerName": "Walk-in Customer",
-      "invoiceDate": "2026-11-04",
-      "dueDate": "2026-11-04",
-      "subtotal": 25,
+      "invoiceDate": "2026-11-05",
+      "dueDate": "2026-11-05",
+      "subtotal": 137.5,
       "taxAmount": 0,
       "discountAmount": 0,
-      "totalAmount": 25,
-      "landedCogsAmount": 11,
-      "status": "PAID",
-      "channel": "RETAIL_POS",
-      "notes": "POS Register reg-loc01-01 Sale (#REG-01-20261104-8385)"
-    },
-    {
-      "id": "inv-1793816743870",
-      "organizationId": "org-6e9ed3cf",
-      "invoiceNumber": "sale-g6qp33f",
-      "customerName": "Walk-in Retail Guest",
-      "invoiceDate": "2026-11-04",
-      "dueDate": "2026-11-04",
-      "subtotal": 188.13,
-      "taxAmount": 0,
-      "discountAmount": 0,
-      "totalAmount": 188.13,
-      "landedCogsAmount": 84.6585,
+      "totalAmount": 137.5,
+      "landedCogsAmount": 16.7,
       "status": "PAID",
       "channel": "RETAIL_POS",
       "notes": "Automatically synced from Stock Loops register (BeyondVER Main Branch)"
-    },
-    {
-      "id": "inv-1793816743859",
-      "organizationId": "org-6e9ed3cf",
-      "invoiceNumber": "REG-01-20261104-7138",
-      "customerName": "Walk-in Customer",
-      "invoiceDate": "2026-11-04",
-      "dueDate": "2026-11-04",
-      "subtotal": 175,
-      "taxAmount": 0,
-      "discountAmount": 0,
-      "totalAmount": 175,
-      "landedCogsAmount": 77,
-      "status": "PAID",
-      "channel": "RETAIL_POS",
-      "notes": "POS Register reg-loc01-01 Sale (#REG-01-20261104-7138)"
     }
   ],
   "journalEntries": [
     {
-      "id": "je-1793818670215-838",
+      "id": "je-1793864471404-111",
+      "organizationId": "org-6e9ed3cf",
+      "entryNumber": "JRN-2026-0021",
+      "accountingDate": "2026-11-05",
+      "status": "POSTED",
+      "sourceType": "EXPENSE",
+      "sourceId": "exp-1793864471404",
+      "memo": "Expense: Vendor Payee — Operating Expense",
+      "totalDebit": 0,
+      "totalCredit": 0,
+      "lines": [
+        {
+          "accountCode": "6050",
+          "accountName": "Administration & Software",
+          "debit": 0,
+          "credit": 0,
+          "memo": ""
+        },
+        {
+          "accountCode": "1020",
+          "accountName": "Bank Operating Account",
+          "debit": 0,
+          "credit": 0,
+          "memo": ""
+        }
+      ]
+    },
+    {
+      "id": "je-1793864162806-986",
+      "organizationId": "org-6e9ed3cf",
+      "entryNumber": "JRN-2026-0020",
+      "accountingDate": "2026-11-05",
+      "status": "POSTED",
+      "sourceType": "EXPENSE",
+      "sourceId": "exp-1793864162806",
+      "memo": "Expense: Vendor Payee — Operating Expense",
+      "totalDebit": 0,
+      "totalCredit": 0,
+      "lines": [
+        {
+          "accountCode": "6050",
+          "accountName": "Administration & Software",
+          "debit": 0,
+          "credit": 0,
+          "memo": ""
+        },
+        {
+          "accountCode": "1020",
+          "accountName": "Bank Operating Account",
+          "debit": 0,
+          "credit": 0,
+          "memo": ""
+        }
+      ]
+    },
+    {
+      "id": "je-1793864162800-871",
+      "organizationId": "org-6e9ed3cf",
+      "entryNumber": "JRN-2026-0019",
+      "accountingDate": "2026-11-05",
+      "status": "POSTED",
+      "sourceType": "EXPENSE",
+      "sourceId": "exp-1793864162799",
+      "memo": "Expense: Vendor Payee — Operating Expense",
+      "totalDebit": 0,
+      "totalCredit": 0,
+      "lines": [
+        {
+          "accountCode": "6050",
+          "accountName": "Administration & Software",
+          "debit": 0,
+          "credit": 0,
+          "memo": ""
+        },
+        {
+          "accountCode": "1020",
+          "accountName": "Bank Operating Account",
+          "debit": 0,
+          "credit": 0,
+          "memo": ""
+        }
+      ]
+    },
+    {
+      "id": "je-1793864162791-410",
+      "organizationId": "org-6e9ed3cf",
+      "entryNumber": "JRN-2026-0018",
+      "accountingDate": "2026-11-05",
+      "status": "POSTED",
+      "sourceType": "EXPENSE",
+      "sourceId": "exp-1793864162785",
+      "memo": "Expense: Vendor Payee — Operating Expense",
+      "totalDebit": 0,
+      "totalCredit": 0,
+      "lines": [
+        {
+          "accountCode": "6050",
+          "accountName": "Administration & Software",
+          "debit": 0,
+          "credit": 0,
+          "memo": ""
+        },
+        {
+          "accountCode": "1020",
+          "accountName": "Bank Operating Account",
+          "debit": 0,
+          "credit": 0,
+          "memo": ""
+        }
+      ]
+    },
+    {
+      "id": "je-1793864122424-894",
       "organizationId": "org-6e9ed3cf",
       "entryNumber": "JRN-2026-0017",
+      "accountingDate": "2026-11-05",
+      "status": "POSTED",
+      "sourceType": "EXPENSE",
+      "sourceId": "exp-1793864122424",
+      "memo": "Expense: Vendor Payee — Operating Expense",
+      "totalDebit": 0,
+      "totalCredit": 0,
+      "lines": [
+        {
+          "accountCode": "6050",
+          "accountName": "Administration & Software",
+          "debit": 0,
+          "credit": 0,
+          "memo": ""
+        },
+        {
+          "accountCode": "1020",
+          "accountName": "Bank Operating Account",
+          "debit": 0,
+          "credit": 0,
+          "memo": ""
+        }
+      ]
+    },
+    {
+      "id": "je-1793864122415-964",
+      "organizationId": "org-6e9ed3cf",
+      "entryNumber": "JRN-2026-0016",
+      "accountingDate": "2026-11-05",
+      "status": "POSTED",
+      "sourceType": "EXPENSE",
+      "sourceId": "exp-1793864122415",
+      "memo": "Expense: Vendor Payee — Operating Expense",
+      "totalDebit": 0,
+      "totalCredit": 0,
+      "lines": [
+        {
+          "accountCode": "6050",
+          "accountName": "Administration & Software",
+          "debit": 0,
+          "credit": 0,
+          "memo": ""
+        },
+        {
+          "accountCode": "1020",
+          "accountName": "Bank Operating Account",
+          "debit": 0,
+          "credit": 0,
+          "memo": ""
+        }
+      ]
+    },
+    {
+      "id": "je-1793864122408-176",
+      "organizationId": "org-6e9ed3cf",
+      "entryNumber": "JRN-2026-0015",
+      "accountingDate": "2026-11-05",
+      "status": "POSTED",
+      "sourceType": "EXPENSE",
+      "sourceId": "exp-1793864122408",
+      "memo": "Expense: Vendor Payee — Operating Expense",
+      "totalDebit": 0,
+      "totalCredit": 0,
+      "lines": [
+        {
+          "accountCode": "6050",
+          "accountName": "Administration & Software",
+          "debit": 0,
+          "credit": 0,
+          "memo": ""
+        },
+        {
+          "accountCode": "1020",
+          "accountName": "Bank Operating Account",
+          "debit": 0,
+          "credit": 0,
+          "memo": ""
+        }
+      ]
+    },
+    {
+      "id": "je-1793864122396-959",
+      "organizationId": "org-6e9ed3cf",
+      "entryNumber": "JRN-2026-0014",
+      "accountingDate": "2026-11-05",
+      "status": "POSTED",
+      "sourceType": "EXPENSE",
+      "sourceId": "exp-1793864122392",
+      "memo": "Expense: Vendor Payee — Operating Expense",
+      "totalDebit": 0,
+      "totalCredit": 0,
+      "lines": [
+        {
+          "accountCode": "6050",
+          "accountName": "Administration & Software",
+          "debit": 0,
+          "credit": 0,
+          "memo": ""
+        },
+        {
+          "accountCode": "1020",
+          "accountName": "Bank Operating Account",
+          "debit": 0,
+          "credit": 0,
+          "memo": ""
+        }
+      ]
+    },
+    {
+      "id": "je-1793862001544-553",
+      "organizationId": "org-6e9ed3cf",
+      "entryNumber": "JRN-2026-0013",
+      "accountingDate": "2026-11-05",
+      "status": "POSTED",
+      "sourceType": "EXPENSE",
+      "sourceId": "exp-1793862001542",
+      "memo": "Expense: Vendor Payee — Operating Expense",
+      "totalDebit": 0,
+      "totalCredit": 0,
+      "lines": [
+        {
+          "accountCode": "6050",
+          "accountName": "Administration & Software",
+          "debit": 0,
+          "credit": 0,
+          "memo": ""
+        },
+        {
+          "accountCode": "1020",
+          "accountName": "Bank Operating Account",
+          "debit": 0,
+          "credit": 0,
+          "memo": ""
+        }
+      ]
+    },
+    {
+      "id": "je-1793853934204-754",
+      "organizationId": "org-6e9ed3cf",
+      "entryNumber": "JRN-2026-0027",
       "accountingDate": "2026-11-04",
       "status": "POSTED",
       "sourceType": "SALE",
-      "sourceId": "inv-1793818670215",
-      "memo": "Sale sale-1b9c693d — Walk-in Retail Guest",
+      "sourceId": "inv-1793853934204",
+      "memo": "Sale sale-369110a3 — Walk-in Customer",
+      "totalDebit": 279.125,
+      "totalCredit": 279.125,
+      "lines": [
+        {
+          "accountCode": "1020",
+          "accountName": "Bank Operating Account",
+          "debit": 192.5,
+          "credit": 0,
+          "memo": ""
+        },
+        {
+          "accountCode": "4010",
+          "accountName": "Sales Revenue",
+          "debit": 0,
+          "credit": 192.5,
+          "memo": ""
+        },
+        {
+          "accountCode": "5010",
+          "accountName": "Landed Cost of Goods Sold",
+          "debit": 23.38,
+          "credit": 0,
+          "memo": ""
+        },
+        {
+          "accountCode": "1200",
+          "accountName": "Inventory Asset",
+          "debit": 0,
+          "credit": 23.38,
+          "memo": ""
+        }
+      ],
+      "date": "2026-11-04"
+    },
+    {
+      "id": "je-1793853934195-512",
+      "organizationId": "org-6e9ed3cf",
+      "entryNumber": "JRN-2026-0026",
+      "accountingDate": "2026-11-04",
+      "status": "POSTED",
+      "sourceType": "SALE",
+      "sourceId": "inv-1793853934195",
+      "memo": "Sale sale-f38c571e — Walk-in Customer",
+      "totalDebit": 39.875,
+      "totalCredit": 39.875,
+      "lines": [
+        {
+          "accountCode": "1020",
+          "accountName": "Bank Operating Account",
+          "debit": 27.5,
+          "credit": 0,
+          "memo": ""
+        },
+        {
+          "accountCode": "4010",
+          "accountName": "Sales Revenue",
+          "debit": 0,
+          "credit": 27.5,
+          "memo": ""
+        },
+        {
+          "accountCode": "5010",
+          "accountName": "Landed Cost of Goods Sold",
+          "debit": 3.34,
+          "credit": 0,
+          "memo": ""
+        },
+        {
+          "accountCode": "1200",
+          "accountName": "Inventory Asset",
+          "debit": 0,
+          "credit": 3.34,
+          "memo": ""
+        }
+      ],
+      "date": "2026-11-04"
+    },
+    {
+      "id": "je-1793853934187-809",
+      "organizationId": "org-6e9ed3cf",
+      "entryNumber": "JRN-2026-0025",
+      "accountingDate": "2026-11-04",
+      "status": "POSTED",
+      "sourceType": "SALE",
+      "sourceId": "inv-1793853934187",
+      "memo": "Sale sale-8efbcebb — Walk-in Customer",
+      "totalDebit": 39.875,
+      "totalCredit": 39.875,
+      "lines": [
+        {
+          "accountCode": "1020",
+          "accountName": "Bank Operating Account",
+          "debit": 27.5,
+          "credit": 0,
+          "memo": ""
+        },
+        {
+          "accountCode": "4010",
+          "accountName": "Sales Revenue",
+          "debit": 0,
+          "credit": 27.5,
+          "memo": ""
+        },
+        {
+          "accountCode": "5010",
+          "accountName": "Landed Cost of Goods Sold",
+          "debit": 3.34,
+          "credit": 0,
+          "memo": ""
+        },
+        {
+          "accountCode": "1200",
+          "accountName": "Inventory Asset",
+          "debit": 0,
+          "credit": 3.34,
+          "memo": ""
+        }
+      ],
+      "date": "2026-11-04"
+    },
+    {
+      "id": "je-1793853934180-756",
+      "organizationId": "org-6e9ed3cf",
+      "entryNumber": "JRN-2026-0024",
+      "accountingDate": "2026-11-04",
+      "status": "POSTED",
+      "sourceType": "SALE",
+      "sourceId": "inv-1793853934180",
+      "memo": "Sale sale-8d240b10 — Walk-in Customer",
       "totalDebit": 119.625,
       "totalCredit": 119.625,
       "lines": [
@@ -1030,7 +1500,7 @@
         {
           "accountCode": "5010",
           "accountName": "Landed Cost of Goods Sold",
-          "debit": 37.125,
+          "debit": 10.02,
           "credit": 0,
           "memo": ""
         },
@@ -1038,146 +1508,21 @@
           "accountCode": "1200",
           "accountName": "Inventory Asset",
           "debit": 0,
-          "credit": 37.125,
+          "credit": 10.02,
           "memo": ""
         }
-      ]
+      ],
+      "date": "2026-11-04"
     },
     {
-      "id": "je-1793818670211-77",
+      "id": "je-1793853934172-255",
       "organizationId": "org-6e9ed3cf",
-      "entryNumber": "JRN-2026-0016",
-      "accountingDate": "2026-11-04",
+      "entryNumber": "JRN-2026-0023",
+      "accountingDate": "2026-11-05",
       "status": "POSTED",
       "sourceType": "SALE",
-      "sourceId": "inv-1793818670211",
-      "memo": "Sale sale-1icxm28 — Walk-in Retail Guest",
-      "totalDebit": 116.9135,
-      "totalCredit": 116.9135,
-      "lines": [
-        {
-          "accountCode": "1020",
-          "accountName": "Bank Operating Account",
-          "debit": 80.63,
-          "credit": 0,
-          "memo": ""
-        },
-        {
-          "accountCode": "4010",
-          "accountName": "Sales Revenue",
-          "debit": 0,
-          "credit": 80.63,
-          "memo": ""
-        },
-        {
-          "accountCode": "5010",
-          "accountName": "Landed Cost of Goods Sold",
-          "debit": 36.2835,
-          "credit": 0,
-          "memo": ""
-        },
-        {
-          "accountCode": "1200",
-          "accountName": "Inventory Asset",
-          "debit": 0,
-          "credit": 36.2835,
-          "memo": ""
-        }
-      ]
-    },
-    {
-      "id": "je-1793818670196-339",
-      "organizationId": "org-6e9ed3cf",
-      "entryNumber": "JRN-2026-0015",
-      "accountingDate": "2026-11-04",
-      "status": "POSTED",
-      "sourceType": "SALE",
-      "sourceId": "inv-1793818670196",
-      "memo": "Sale REG-01-20261104-1225 — Walk-in Customer",
-      "totalDebit": 108,
-      "totalCredit": 108,
-      "lines": [
-        {
-          "accountCode": "1020",
-          "accountName": "Bank Operating Account",
-          "debit": 75,
-          "credit": 0,
-          "memo": ""
-        },
-        {
-          "accountCode": "4010",
-          "accountName": "Sales Revenue",
-          "debit": 0,
-          "credit": 75,
-          "memo": ""
-        },
-        {
-          "accountCode": "5010",
-          "accountName": "Landed Cost of Goods Sold",
-          "debit": 33,
-          "credit": 0,
-          "memo": ""
-        },
-        {
-          "accountCode": "1200",
-          "accountName": "Inventory Asset",
-          "debit": 0,
-          "credit": 33,
-          "memo": ""
-        }
-      ]
-    },
-    {
-      "id": "je-1793818545881-210",
-      "organizationId": "org-6e9ed3cf",
-      "entryNumber": "JRN-2026-0014",
-      "accountingDate": "2026-11-04",
-      "status": "POSTED",
-      "sourceType": "SALE",
-      "sourceId": "inv-1793818545881",
-      "memo": "Sale REG-01-20261104-7558 — Walk-in Customer",
-      "totalDebit": 36,
-      "totalCredit": 36,
-      "lines": [
-        {
-          "accountCode": "1020",
-          "accountName": "Bank Operating Account",
-          "debit": 25,
-          "credit": 0,
-          "memo": ""
-        },
-        {
-          "accountCode": "4010",
-          "accountName": "Sales Revenue",
-          "debit": 0,
-          "credit": 25,
-          "memo": ""
-        },
-        {
-          "accountCode": "5010",
-          "accountName": "Landed Cost of Goods Sold",
-          "debit": 11,
-          "credit": 0,
-          "memo": ""
-        },
-        {
-          "accountCode": "1200",
-          "accountName": "Inventory Asset",
-          "debit": 0,
-          "credit": 11,
-          "memo": ""
-        }
-      ]
-    },
-    {
-      "id": "je-1793818545879-756",
-      "organizationId": "org-6e9ed3cf",
-      "entryNumber": "JRN-2026-0013",
-      "accountingDate": "2026-11-04",
-      "status": "POSTED",
-      "sourceType": "SALE",
-      "sourceId": "inv-1793818545879",
-      "memo": "Sale sale-f0458ac4 — Walk-in Retail Guest",
+      "sourceId": "inv-1793853934172",
+      "memo": "Sale sale-7748fa95 — Walk-in Customer",
       "totalDebit": 39.875,
       "totalCredit": 39.875,
       "lines": [
@@ -1198,7 +1543,7 @@
         {
           "accountCode": "5010",
           "accountName": "Landed Cost of Goods Sold",
-          "debit": 12.375,
+          "debit": 5.81,
           "credit": 0,
           "memo": ""
         },
@@ -1206,27 +1551,28 @@
           "accountCode": "1200",
           "accountName": "Inventory Asset",
           "debit": 0,
-          "credit": 12.375,
+          "credit": 5.81,
           "memo": ""
         }
-      ]
+      ],
+      "date": "2026-11-05"
     },
     {
-      "id": "je-1793818545878-885",
+      "id": "je-1793853934165-26",
       "organizationId": "org-6e9ed3cf",
-      "entryNumber": "JRN-2026-0012",
-      "accountingDate": "2026-11-04",
+      "entryNumber": "JRN-2026-0022",
+      "accountingDate": "2026-11-05",
       "status": "POSTED",
       "sourceType": "SALE",
-      "sourceId": "inv-1793818545878",
-      "memo": "Sale sale-zphxva5 — Walk-in Retail Guest",
-      "totalDebit": 38.976,
-      "totalCredit": 38.976,
+      "sourceId": "inv-1793853934164",
+      "memo": "Sale sale-79680263 — Walk-in Customer",
+      "totalDebit": 199.375,
+      "totalCredit": 199.375,
       "lines": [
         {
           "accountCode": "1020",
           "accountName": "Bank Operating Account",
-          "debit": 26.88,
+          "debit": 137.5,
           "credit": 0,
           "memo": ""
         },
@@ -1234,13 +1580,13 @@
           "accountCode": "4010",
           "accountName": "Sales Revenue",
           "debit": 0,
-          "credit": 26.88,
+          "credit": 137.5,
           "memo": ""
         },
         {
           "accountCode": "5010",
           "accountName": "Landed Cost of Goods Sold",
-          "debit": 12.096,
+          "debit": 16.7,
           "credit": 0,
           "memo": ""
         },
@@ -1248,220 +1594,11 @@
           "accountCode": "1200",
           "accountName": "Inventory Asset",
           "debit": 0,
-          "credit": 12.096,
+          "credit": 16.7,
           "memo": ""
         }
-      ]
-    },
-    {
-      "id": "je-1793818399683-754",
-      "organizationId": "org-6e9ed3cf",
-      "entryNumber": "JRN-2026-0011",
-      "accountingDate": "2026-11-04",
-      "status": "POSTED",
-      "sourceType": "SALE",
-      "sourceId": "inv-1793818399683",
-      "memo": "Sale sale-9a1159a0 — Walk-in Retail Guest",
-      "totalDebit": 39.875,
-      "totalCredit": 39.875,
-      "lines": [
-        {
-          "accountCode": "1020",
-          "accountName": "Bank Operating Account",
-          "debit": 27.5,
-          "credit": 0,
-          "memo": ""
-        },
-        {
-          "accountCode": "4010",
-          "accountName": "Sales Revenue",
-          "debit": 0,
-          "credit": 27.5,
-          "memo": ""
-        },
-        {
-          "accountCode": "5010",
-          "accountName": "Landed Cost of Goods Sold",
-          "debit": 12.375,
-          "credit": 0,
-          "memo": ""
-        },
-        {
-          "accountCode": "1200",
-          "accountName": "Inventory Asset",
-          "debit": 0,
-          "credit": 12.375,
-          "memo": ""
-        }
-      ]
-    },
-    {
-      "id": "je-1793818399682-488",
-      "organizationId": "org-6e9ed3cf",
-      "entryNumber": "JRN-2026-0010",
-      "accountingDate": "2026-11-04",
-      "status": "POSTED",
-      "sourceType": "SALE",
-      "sourceId": "inv-1793818399682",
-      "memo": "Sale sale-fv2v1gc — Walk-in Retail Guest",
-      "totalDebit": 38.976,
-      "totalCredit": 38.976,
-      "lines": [
-        {
-          "accountCode": "1020",
-          "accountName": "Bank Operating Account",
-          "debit": 26.88,
-          "credit": 0,
-          "memo": ""
-        },
-        {
-          "accountCode": "4010",
-          "accountName": "Sales Revenue",
-          "debit": 0,
-          "credit": 26.88,
-          "memo": ""
-        },
-        {
-          "accountCode": "5010",
-          "accountName": "Landed Cost of Goods Sold",
-          "debit": 12.096,
-          "credit": 0,
-          "memo": ""
-        },
-        {
-          "accountCode": "1200",
-          "accountName": "Inventory Asset",
-          "debit": 0,
-          "credit": 12.096,
-          "memo": ""
-        }
-      ]
-    },
-    {
-      "id": "je-1793818399676-178",
-      "organizationId": "org-6e9ed3cf",
-      "entryNumber": "JRN-2026-0009",
-      "accountingDate": "2026-11-04",
-      "status": "POSTED",
-      "sourceType": "SALE",
-      "sourceId": "inv-1793818399676",
-      "memo": "Sale REG-01-20261104-8385 — Walk-in Customer",
-      "totalDebit": 36,
-      "totalCredit": 36,
-      "lines": [
-        {
-          "accountCode": "1020",
-          "accountName": "Bank Operating Account",
-          "debit": 25,
-          "credit": 0,
-          "memo": ""
-        },
-        {
-          "accountCode": "4010",
-          "accountName": "Sales Revenue",
-          "debit": 0,
-          "credit": 25,
-          "memo": ""
-        },
-        {
-          "accountCode": "5010",
-          "accountName": "Landed Cost of Goods Sold",
-          "debit": 11,
-          "credit": 0,
-          "memo": ""
-        },
-        {
-          "accountCode": "1200",
-          "accountName": "Inventory Asset",
-          "debit": 0,
-          "credit": 11,
-          "memo": ""
-        }
-      ]
-    },
-    {
-      "id": "je-1793816743870-587",
-      "organizationId": "org-6e9ed3cf",
-      "entryNumber": "JRN-2026-0008",
-      "accountingDate": "2026-11-04",
-      "status": "POSTED",
-      "sourceType": "SALE",
-      "sourceId": "inv-1793816743870",
-      "memo": "Sale sale-g6qp33f — Walk-in Retail Guest",
-      "totalDebit": 272.7885,
-      "totalCredit": 272.7885,
-      "lines": [
-        {
-          "accountCode": "1020",
-          "accountName": "Bank Operating Account",
-          "debit": 188.13,
-          "credit": 0,
-          "memo": ""
-        },
-        {
-          "accountCode": "4010",
-          "accountName": "Sales Revenue",
-          "debit": 0,
-          "credit": 188.13,
-          "memo": ""
-        },
-        {
-          "accountCode": "5010",
-          "accountName": "Landed Cost of Goods Sold",
-          "debit": 84.6585,
-          "credit": 0,
-          "memo": ""
-        },
-        {
-          "accountCode": "1200",
-          "accountName": "Inventory Asset",
-          "debit": 0,
-          "credit": 84.6585,
-          "memo": ""
-        }
-      ]
-    },
-    {
-      "id": "je-1793816743859-450",
-      "organizationId": "org-6e9ed3cf",
-      "entryNumber": "JRN-2026-0007",
-      "accountingDate": "2026-11-04",
-      "status": "POSTED",
-      "sourceType": "SALE",
-      "sourceId": "inv-1793816743859",
-      "memo": "Sale REG-01-20261104-7138 — Walk-in Customer",
-      "totalDebit": 252,
-      "totalCredit": 252,
-      "lines": [
-        {
-          "accountCode": "1020",
-          "accountName": "Bank Operating Account",
-          "debit": 175,
-          "credit": 0,
-          "memo": ""
-        },
-        {
-          "accountCode": "4010",
-          "accountName": "Sales Revenue",
-          "debit": 0,
-          "credit": 175,
-          "memo": ""
-        },
-        {
-          "accountCode": "5010",
-          "accountName": "Landed Cost of Goods Sold",
-          "debit": 77,
-          "credit": 0,
-          "memo": ""
-        },
-        {
-          "accountCode": "1200",
-          "accountName": "Inventory Asset",
-          "debit": 0,
-          "credit": 77,
-          "memo": ""
-        }
-      ]
+      ],
+      "date": "2026-11-05"
     },
     {
       "id": "je-1793816615644-166",
@@ -1562,7 +1699,7 @@
         {
           "accountCode": "1200",
           "accountName": "Inventory Asset",
-          "debit": 39.21,
+          "debit": 95.12,
           "credit": 0,
           "memo": ""
         },
@@ -1570,7 +1707,7 @@
           "accountCode": "1020",
           "accountName": "Bank Operating Account",
           "debit": 0,
-          "credit": 39.21,
+          "credit": 95.12,
           "memo": ""
         }
       ]

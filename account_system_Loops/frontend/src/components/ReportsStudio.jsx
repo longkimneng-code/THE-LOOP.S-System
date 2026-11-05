@@ -12,7 +12,13 @@ import {
   Building,
   DollarSign,
   Calculator,
-  RefreshCw
+  RefreshCw,
+  Plus,
+  Trash2,
+  Sparkles,
+  X,
+  Wallet,
+  AlertCircle
 } from 'lucide-react';
 import { api, formatMoney, formatPercent } from '../api';
 
@@ -40,6 +46,70 @@ export default function ReportsStudio({ mode, onShowToast, initialTab = 'pnl' })
   // What-if simulator state
   const [simCost, setSimCost] = useState('11.77');
   const [simPrice, setSimPrice] = useState('28.00');
+
+  // Budget management state
+  const [isBudgetModalOpen, setIsBudgetModalOpen] = useState(false);
+  const [budgetForm, setBudgetForm] = useState({
+    name: '',
+    category: 'Store Fit-out',
+    classification: 'CAPEX',
+    budgetedAmount: '',
+    actualAmount: '',
+    status: 'PLANNED',
+    notes: ''
+  });
+
+  const handleCreateBudgetItem = async (e) => {
+    e.preventDefault();
+    try {
+      await api.addBudgetItem({
+        name: budgetForm.name,
+        category: budgetForm.category,
+        classification: budgetForm.classification,
+        budgetedAmount: parseFloat(budgetForm.budgetedAmount) || 0,
+        actualAmount: parseFloat(budgetForm.actualAmount) || 0,
+        status: budgetForm.status,
+        notes: budgetForm.notes
+      });
+      setIsBudgetModalOpen(false);
+      setBudgetForm({
+        name: '',
+        category: 'Store Fit-out',
+        classification: 'CAPEX',
+        budgetedAmount: '',
+        actualAmount: '',
+        status: 'PLANNED',
+        notes: ''
+      });
+      const bgt = await api.getBudget();
+      setBudgetSummary(bgt);
+      if (onShowToast) onShowToast('Startup budget item added', 'success');
+    } catch (err) {
+      if (onShowToast) onShowToast('Failed to add item: ' + err.message, 'error');
+    }
+  };
+
+  const handleDeleteBudgetItem = async (id) => {
+    if (!window.confirm('Delete this startup budget item?')) return;
+    try {
+      await api.deleteBudgetItem(id);
+      const bgt = await api.getBudget();
+      setBudgetSummary(bgt);
+      if (onShowToast) onShowToast('Budget item deleted', 'success');
+    } catch (err) {
+      if (onShowToast) onShowToast('Failed to delete item: ' + err.message, 'error');
+    }
+  };
+
+  const handlePrefillBudget = async () => {
+    try {
+      const updated = await api.prefillBudget();
+      setBudgetSummary(updated);
+      if (onShowToast) onShowToast('Standard startup budget pre-filled against injected capital ($4,100.00)', 'success');
+    } catch (err) {
+      if (onShowToast) onShowToast('Failed to pre-fill budget: ' + err.message, 'error');
+    }
+  };
 
   const loadReports = async () => {
     setLoading(true);
@@ -617,87 +687,310 @@ export default function ReportsStudio({ mode, onShowToast, initialTab = 'pnl' })
               <div className="text-xs font-mono text-[#E5A93C] uppercase tracking-wider font-semibold">
                 Section 2 of Specification
               </div>
-              <h3 className="text-lg font-bold text-white">Initial Startup Budget & Spending Tracker</h3>
+              <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                <Wallet className="w-5 h-5 text-[#E5A93C]" />
+                Initial Startup Budget & Spending Tracker
+              </h3>
               <p className="text-xs text-slate-400 mt-1">
-                Monitors pre-launch Capital Expenditures (CAPEX) versus Operational Buffers (OPEX).
+                Monitors pre-launch Capital Expenditures (CAPEX) versus Operational Buffers (OPEX) funded by initial capital injections.
               </p>
             </div>
 
-            <div className="flex items-center gap-3">
-              <div className="text-right">
-                <span className="text-[10px] text-slate-400 uppercase">Total Budget:</span>
-                <div className="text-sm font-bold num-font text-white">{formatMoney(budgetSummary.totals?.overall?.budgeted || 0)}</div>
-              </div>
-              <div className="text-right">
-                <span className="text-[10px] text-slate-400 uppercase">Actual Spent:</span>
-                <div className="text-sm font-bold num-font text-[#E5A93C]">{formatMoney(budgetSummary.totals?.overall?.spent || 0)}</div>
-              </div>
-              <div className="text-right">
-                <span className="text-[10px] text-slate-400 uppercase">Remaining:</span>
-                <div className="text-sm font-bold num-font text-[#10B981]">{formatMoney(budgetSummary.totals?.overall?.variance || 0)}</div>
-              </div>
+            <div className="flex flex-wrap items-center gap-3">
+              <button
+                type="button"
+                onClick={handlePrefillBudget}
+                className="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-xs text-slate-300 font-medium border border-white/10 flex items-center gap-1.5 transition"
+                title="Pre-fill standard store setup against capital"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-[#E5A93C]" />
+                <span>Pre-fill Plan</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setIsBudgetModalOpen(true)}
+                className="px-3.5 py-1.5 rounded-lg bg-[#E5A93C] text-black font-bold text-xs hover:bg-[#F3C368] flex items-center gap-1.5 shadow-md shadow-[#E5A93C]/20 transition"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Add Budget Item</span>
+              </button>
             </div>
           </div>
 
-          {/* Budget Categories Table */}
-          <div className="overflow-x-auto">
-            <table className="w-full text-xs text-left">
-              <thead className="bg-[#111520] text-slate-400 border-b border-white/10 uppercase tracking-wider font-semibold">
-                <tr>
-                  <th className="py-3 px-4">Startup Item</th>
-                  <th className="py-3 px-3">Classification</th>
-                  <th className="py-3 px-3 text-right">Budgeted</th>
-                  <th className="py-3 px-3 text-right">Actual Spent</th>
-                  <th className="py-3 px-3 text-right">Remaining Variance</th>
-                  <th className="py-3 px-4 text-center">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-white/5">
-                {(budgetSummary.items || []).map((item) => {
-                  const variance = item.budgetedAmount - item.actualAmount;
-                  return (
-                    <tr key={item.id} className="hover:bg-white/5 transition">
-                      <td className="py-3 px-4">
-                        <div className="font-bold text-white">{item.name}</div>
-                        <div className="text-[10px] text-slate-400">{item.category} • {item.notes}</div>
-                      </td>
-                      <td className="py-3 px-3">
-                        <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold ${
-                          item.classification === 'CAPEX'
-                            ? 'bg-[#38BDF8]/20 text-[#38BDF8]'
-                            : item.classification === 'DEPOSIT'
-                            ? 'bg-purple-500/20 text-purple-300'
-                            : 'bg-amber-500/20 text-amber-300'
-                        }`}>
-                          {item.classification}
-                        </span>
-                      </td>
-                      <td className="py-3 px-3 text-right num-font font-medium text-slate-300">
-                        {formatMoney(item.budgetedAmount)}
-                      </td>
-                      <td className="py-3 px-3 text-right num-font font-bold text-white">
-                        {formatMoney(item.actualAmount)}
-                      </td>
-                      <td className={`py-3 px-3 text-right num-font font-bold ${
-                        variance >= 0 ? 'text-[#10B981]' : 'text-rose-400'
-                      }`}>
-                        {formatMoney(variance)}
-                      </td>
-                      <td className="py-3 px-4 text-center">
-                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                          item.status === 'PAID'
-                            ? 'bg-[#10B981]/20 text-[#10B981]'
-                            : 'bg-white/10 text-slate-300'
-                        }`}>
-                          {item.status}
-                        </span>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+          {/* Capital & Budget KPI Summary Strip */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="p-3.5 rounded-xl bg-white/[0.03] border border-white/10">
+              <span className="text-[10px] text-slate-400 uppercase font-mono block">Injected Capital Pool</span>
+              <div className="text-base font-bold num-font text-white mt-0.5">
+                {formatMoney(budgetSummary.totalInjectedCapital || 4100)}
+              </div>
+              <span className="text-[10px] text-emerald-400 font-mono mt-0.5 block">Equity Contribution</span>
+            </div>
+
+            <div className="p-3.5 rounded-xl bg-white/[0.03] border border-white/10">
+              <span className="text-[10px] text-slate-400 uppercase font-mono block">Allocated Budget</span>
+              <div className="text-base font-bold num-font text-[#E5A93C] mt-0.5">
+                {formatMoney(budgetSummary.totals?.overall?.budgeted || 0)}
+              </div>
+              <span className="text-[10px] text-slate-400 font-mono mt-0.5 block">Pre-launch Target</span>
+            </div>
+
+            <div className="p-3.5 rounded-xl bg-white/[0.03] border border-white/10">
+              <span className="text-[10px] text-slate-400 uppercase font-mono block">Actual Spent</span>
+              <div className="text-base font-bold num-font text-white mt-0.5">
+                {formatMoney(budgetSummary.totals?.overall?.spent || 0)}
+              </div>
+              <span className="text-[10px] text-amber-400 font-mono mt-0.5 block">Disbursed Funds</span>
+            </div>
+
+            <div className="p-3.5 rounded-xl bg-white/[0.03] border border-white/10">
+              <span className="text-[10px] text-slate-400 uppercase font-mono block">Remaining Variance</span>
+              <div className={`text-base font-bold num-font mt-0.5 ${(budgetSummary.totals?.overall?.variance || 0) >= 0 ? 'text-[#10B981]' : 'text-rose-400'}`}>
+                {formatMoney(budgetSummary.totals?.overall?.variance || 0)}
+              </div>
+              <span className="text-[10px] text-slate-400 font-mono mt-0.5 block">Unspent Budget</span>
+            </div>
           </div>
+
+          {/* Empty State Banner if no items */}
+          {(!budgetSummary.items || budgetSummary.items.length === 0) ? (
+            <div className="p-6 rounded-2xl bg-[#111520] border border-amber-500/20 text-center space-y-3">
+              <div className="w-10 h-10 rounded-xl bg-[#E5A93C]/10 text-[#E5A93C] flex items-center justify-center mx-auto">
+                <Wallet className="w-5 h-5" />
+              </div>
+              <div>
+                <h4 className="text-white font-bold text-sm">Startup Capital Injected ({formatMoney(budgetSummary.totalInjectedCapital || 4100)})</h4>
+                <p className="text-xs text-slate-400 mt-1 max-w-lg mx-auto">
+                  You have successfully injected capital into the business equity. Allocate it into pre-launch items (renovation, POS hardware, initial inventory, lease deposit) to monitor your startup runway.
+                </p>
+              </div>
+              <div className="flex items-center justify-center gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={handlePrefillBudget}
+                  className="px-4 py-2 rounded-lg bg-[#E5A93C] text-black font-bold text-xs hover:bg-[#F3C368] transition flex items-center gap-2 shadow"
+                >
+                  <Sparkles className="w-4 h-4" />
+                  Pre-fill Standard Retail Plan ({formatMoney(budgetSummary.totalInjectedCapital || 4100)})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsBudgetModalOpen(true)}
+                  className="px-4 py-2 rounded-lg bg-white/10 hover:bg-white/15 text-white font-medium text-xs transition flex items-center gap-1.5"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  Add Custom Item
+                </button>
+              </div>
+            </div>
+          ) : (
+            /* Budget Categories Table */
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs text-left">
+                <thead className="bg-[#111520] text-slate-400 border-b border-white/10 uppercase tracking-wider font-semibold font-mono">
+                  <tr>
+                    <th className="py-3 px-4">Startup Item</th>
+                    <th className="py-3 px-3">Classification</th>
+                    <th className="py-3 px-3 text-right">Budgeted</th>
+                    <th className="py-3 px-3 text-right">Actual Spent</th>
+                    <th className="py-3 px-3 text-right">Remaining Variance</th>
+                    <th className="py-3 px-4 text-center">Status</th>
+                    <th className="py-3 px-3 text-center">Action</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/5">
+                  {(budgetSummary.items || []).map((item) => {
+                    const variance = item.budgetedAmount - item.actualAmount;
+                    return (
+                      <tr key={item.id} className="hover:bg-white/5 transition">
+                        <td className="py-3 px-4">
+                          <div className="font-bold text-white">{item.name}</div>
+                          <div className="text-[10px] text-slate-400">{item.category} {item.notes ? `• ${item.notes}` : ''}</div>
+                        </td>
+                        <td className="py-3 px-3">
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold ${
+                            item.classification === 'CAPEX'
+                              ? 'bg-[#38BDF8]/20 text-[#38BDF8]'
+                              : item.classification === 'DEPOSIT'
+                              ? 'bg-purple-500/20 text-purple-300'
+                              : 'bg-amber-500/20 text-amber-300'
+                          }`}>
+                            {item.classification}
+                          </span>
+                        </td>
+                        <td className="py-3 px-3 text-right num-font font-medium text-slate-300">
+                          {formatMoney(item.budgetedAmount)}
+                        </td>
+                        <td className="py-3 px-3 text-right num-font font-bold text-white">
+                          {formatMoney(item.actualAmount)}
+                        </td>
+                        <td className={`py-3 px-3 text-right num-font font-bold ${
+                          variance >= 0 ? 'text-[#10B981]' : 'text-rose-400'
+                        }`}>
+                          {formatMoney(variance)}
+                        </td>
+                        <td className="py-3 px-4 text-center">
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                            item.status === 'PAID'
+                              ? 'bg-[#10B981]/20 text-[#10B981]'
+                              : item.status === 'PENDING'
+                              ? 'bg-amber-500/20 text-amber-300'
+                              : 'bg-white/10 text-slate-300'
+                          }`}>
+                            {item.status}
+                          </span>
+                        </td>
+                        <td className="py-3 px-3 text-center">
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteBudgetItem(item.id)}
+                            className="p-1 rounded text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 transition"
+                            title="Delete item"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* MODAL: ADD STARTUP BUDGET ITEM */}
+          {isBudgetModalOpen && (
+            <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+              <div className="glass-card-elevated w-full max-w-lg p-6 border border-white/20 animate-in fade-in space-y-4">
+                <div className="flex items-center justify-between pb-3 border-b border-white/10">
+                  <h3 className="font-bold text-white text-base flex items-center gap-2">
+                    <Plus className="w-4 h-4 text-[#E5A93C]" />
+                    Add Startup Budget Line Item
+                  </h3>
+                  <button
+                    type="button"
+                    onClick={() => setIsBudgetModalOpen(false)}
+                    className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+
+                <form onSubmit={handleCreateBudgetItem} className="space-y-3.5 text-xs">
+                  <div>
+                    <label className="block text-slate-300 font-medium mb-1">Item Name *</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. Interior Store Renovation & Lighting"
+                      value={budgetForm.name}
+                      onChange={(e) => setBudgetForm({ ...budgetForm, name: e.target.value })}
+                      className="w-full bg-[#111520] border border-white/10 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-[#E5A93C]"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-slate-300 font-medium mb-1">Category</label>
+                      <select
+                        value={budgetForm.category}
+                        onChange={(e) => setBudgetForm({ ...budgetForm, category: e.target.value })}
+                        className="w-full bg-[#111520] border border-white/10 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-[#E5A93C]"
+                      >
+                        <option value="Store Fit-out">Store Fit-out & Renovation</option>
+                        <option value="POS & Hardware">POS & Cash Register Hardware</option>
+                        <option value="Store Deposit">Store Lease / Security Deposit</option>
+                        <option value="Initial Inventory">Initial Inventory Buffer</option>
+                        <option value="Marketing">Pre-launch Marketing & Signs</option>
+                        <option value="Licenses & Legal">Licenses, Permits & Legal</option>
+                        <option value="Buffer & Supplies">Operational Supplies & Buffer</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-slate-300 font-medium mb-1">Classification</label>
+                      <select
+                        value={budgetForm.classification}
+                        onChange={(e) => setBudgetForm({ ...budgetForm, classification: e.target.value })}
+                        className="w-full bg-[#111520] border border-white/10 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-[#E5A93C]"
+                      >
+                        <option value="CAPEX">CAPEX (Capital Asset)</option>
+                        <option value="OPEX">OPEX (Operational Buffer)</option>
+                        <option value="DEPOSIT">DEPOSIT (Security Deposit)</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-slate-300 font-medium mb-1">Budgeted Amount ($) *</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        required
+                        placeholder="e.g. 1500"
+                        value={budgetForm.budgetedAmount}
+                        onChange={(e) => setBudgetForm({ ...budgetForm, budgetedAmount: e.target.value })}
+                        className="w-full bg-[#111520] border border-white/10 rounded-lg px-3 py-2 text-white font-mono focus:outline-none focus:border-[#E5A93C]"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-slate-300 font-medium mb-1">Actual Spent ($)</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        placeholder="e.g. 1500"
+                        value={budgetForm.actualAmount}
+                        onChange={(e) => setBudgetForm({ ...budgetForm, actualAmount: e.target.value })}
+                        className="w-full bg-[#111520] border border-white/10 rounded-lg px-3 py-2 text-white font-mono focus:outline-none focus:border-[#E5A93C]"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-slate-300 font-medium mb-1">Status</label>
+                      <select
+                        value={budgetForm.status}
+                        onChange={(e) => setBudgetForm({ ...budgetForm, status: e.target.value })}
+                        className="w-full bg-[#111520] border border-white/10 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-[#E5A93C]"
+                      >
+                        <option value="PLANNED">PLANNED</option>
+                        <option value="PENDING">PENDING</option>
+                        <option value="PAID">PAID</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-slate-300 font-medium mb-1">Notes / Supplier</label>
+                      <input
+                        type="text"
+                        placeholder="Optional notes or supplier..."
+                        value={budgetForm.notes}
+                        onChange={(e) => setBudgetForm({ ...budgetForm, notes: e.target.value })}
+                        className="w-full bg-[#111520] border border-white/10 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-[#E5A93C]"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end gap-2.5 pt-3 border-t border-white/10">
+                    <button
+                      type="button"
+                      onClick={() => setIsBudgetModalOpen(false)}
+                      className="px-4 py-2 rounded-lg bg-white/5 text-slate-300 hover:bg-white/10 transition"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="px-4 py-2 rounded-lg bg-[#E5A93C] text-black font-bold hover:bg-[#F3C368] transition"
+                    >
+                      Save Budget Item
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

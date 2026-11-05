@@ -299,6 +299,11 @@ function checkStaffPermission(tenant, requiredPermission = null, actionName = 'a
       return sendJson(res, 200, defaultInfo);
     }
 
+    if (pathname === '/api/settings' && req.method === 'GET') {
+      const defaultInfo = db.getBusinessInfo();
+      return sendJson(res, 200, defaultInfo.settings || {});
+    }
+
     if (pathname === '/api/settings' && req.method === 'PUT') {
       const tenant = getFinanceTenantContext(req);
       checkStaffPermission(tenant, 'UPDATE_SETTINGS', 'Update settings');
@@ -359,7 +364,7 @@ function checkStaffPermission(tenant, requiredPermission = null, actionName = 'a
     // ------------------------------------------------------------------------
     // 5. CAPITAL & EQUITY MANAGEMENT
     // ------------------------------------------------------------------------
-    if (pathname === '/api/capital' && req.method === 'GET') {
+    if ((pathname === '/api/capital' || pathname === '/api/capital/overview') && req.method === 'GET') {
       const tenant = getFinanceTenantContext(req);
       return sendJson(res, 200, db.getCapitalOverview(tenant.orgId));
     }
@@ -395,11 +400,31 @@ function checkStaffPermission(tenant, requiredPermission = null, actionName = 'a
       return sendJson(res, 200, db.getStartupBudgetSummary());
     }
 
+    if (pathname === '/api/budget/prefill' && req.method === 'POST') {
+      const summary = db.prefillStartupBudget();
+      return sendJson(res, 200, summary);
+    }
+
     if (pathname === '/api/budget/item' && req.method === 'POST') {
       const tenant = getFinanceTenantContext(req);
       const body = await parseJsonBody(req);
       const item = db.addStartupBudgetItem({ ...body, organizationId: tenant.orgId });
       return sendJson(res, 201, item);
+    }
+
+    const budgetItemMatch = pathname.match(/^\/api\/budget\/item\/([a-zA-Z0-9_-]+)$/);
+    if (budgetItemMatch && req.method === 'PUT') {
+      const id = budgetItemMatch[1];
+      const body = await parseJsonBody(req);
+      const updated = db.updateStartupBudgetItem(id, body);
+      if (!updated) return sendJson(res, 404, { error: 'Budget item not found' });
+      return sendJson(res, 200, updated);
+    }
+
+    if (budgetItemMatch && req.method === 'DELETE') {
+      const id = budgetItemMatch[1];
+      const ok = db.deleteStartupBudgetItem(id);
+      return sendJson(res, 200, { ok });
     }
 
     // ------------------------------------------------------------------------
@@ -1010,7 +1035,7 @@ function checkStaffPermission(tenant, requiredPermission = null, actionName = 'a
     // ------------------------------------------------------------------------
     // 11. GENERAL LEDGER & BALANCED JOURNALS
     // ------------------------------------------------------------------------
-    if ((pathname === '/api/ledger' || pathname === '/api/journals') && req.method === 'GET') {
+    if ((pathname === '/api/ledger' || pathname === '/api/journals' || pathname === '/api/journal' || pathname === '/api/journal-entries') && req.method === 'GET') {
       const tenant = getFinanceTenantContext(req);
       const entries = db.getJournalEntries({
         orgId: tenant.isDefaultOrg ? null : tenant.orgId,
@@ -1122,7 +1147,7 @@ function checkStaffPermission(tenant, requiredPermission = null, actionName = 'a
       return sendJson(res, 200, iv);
     }
 
-    if (pathname === '/api/reports/ap' && req.method === 'GET') {
+    if ((pathname === '/api/reports/ap' || pathname === '/api/reports/accounts-payable') && req.method === 'GET') {
       const tenant = getFinanceTenantContext(req);
       const ap = db.getAccountsPayableReport(tenant.orgId, {
         endDate: url.searchParams.get('endDate') || undefined,
@@ -1132,7 +1157,7 @@ function checkStaffPermission(tenant, requiredPermission = null, actionName = 'a
       return sendJson(res, 200, ap);
     }
 
-    if (pathname === '/api/reports/ar' && req.method === 'GET') {
+    if ((pathname === '/api/reports/ar' || pathname === '/api/reports/accounts-receivable') && req.method === 'GET') {
       const tenant = getFinanceTenantContext(req);
       const ar = db.getAccountsReceivableReport(tenant.orgId, {
         endDate: url.searchParams.get('endDate') || undefined,

@@ -25,7 +25,8 @@ export default function SalesHistoryView() {
     stores = [],
     currentStore,
     currentUser,
-    cashierUser
+    cashierUser,
+    authToken
   } = usePos();
 
   const activeUser = cashierUser || currentUser;
@@ -53,6 +54,7 @@ export default function SalesHistoryView() {
   const fetchHistory = async () => {
     try {
       setLoading(true);
+      const token = authToken || (typeof window !== 'undefined' ? localStorage.getItem('loops_auth_token') : null);
       const params = new URLSearchParams({
         search,
         storeId: storeFilter,
@@ -61,7 +63,9 @@ export default function SalesHistoryView() {
         paymentMethod: paymentFilter,
         currency: currencyFilter
       });
-      const res = await fetch(`/api/orders/history?${params.toString()}`);
+      const res = await fetch(`/api/orders/history?${params.toString()}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {}
+      });
       if (res.ok) {
         const data = await res.json();
         setOrders(data.orders || []);
@@ -325,8 +329,19 @@ export default function SalesHistoryView() {
                     <td className="py-3 px-4 font-sans text-slate-200">
                       {ord.customerName || 'Walk-in Patron'}
                     </td>
-                    <td className="py-3 px-4 text-slate-400">
-                      {(ord.lines || []).length || 1} item(s)
+                    <td className="py-3 px-4 text-slate-300">
+                      {(ord.lines && ord.lines.length > 0) ? (
+                        <div className="space-y-0.5">
+                          {ord.lines.map((l, idx) => (
+                            <div key={idx} className="flex items-center space-x-1.5 text-[11px]">
+                              <span className="text-slate-100 font-medium truncate max-w-[150px]">{l.itemTitle || l.productName || l.variantSku}</span>
+                              <span className="text-brass-400 font-mono text-[10px]">×{l.quantity || 1}</span>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <span className="text-slate-400 font-sans">{ord.linesCount || 1} item(s)</span>
+                      )}
                     </td>
                     <td className="py-3 px-4 text-right font-bold text-slate-100">
                       ${Number(ord.totalAmount).toFixed(2)}

@@ -1,5 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import Icon from './Icon';
+function limitTwoDecimals(val) {
+  if (val === '' || val === null || val === undefined) return '';
+  const str = val.toString();
+  if (str.includes('.')) {
+    const [intPart, decPart] = str.split('.');
+    return `${intPart}.${decPart.slice(0, 2)}`;
+  }
+  return str;
+}
+
 
 const DEFAULT_CATEGORIES = [
   'Electronics',
@@ -74,6 +84,7 @@ export default function NewProductModal({
   const [retail, setRetail] = useState('39.00');
   const [description, setDescription] = useState('');
   const [hasVariants, setHasVariants] = useState(false);
+  const [stockOnHand, setStockOnHand] = useState('0');
   
   // Structured variants array: each variant has its own title, SKU, cost, and retail price
   const [variantsList, setVariantsList] = useState([]);
@@ -104,6 +115,10 @@ export default function NewProductModal({
       setImageUrl(editingProduct.imageUrl || '');
       setCost(((editingProduct.costMinor || 0) / 100).toFixed(2));
       setRetail(((editingProduct.retailMinor || 0) / 100).toFixed(2));
+      const totalStock = editingProduct.variants && editingProduct.variants.length > 0
+        ? editingProduct.variants.reduce((sum, v) => sum + (v.onHand || 0), 0)
+        : (editingProduct.stockOnHand || editingProduct.onHand || 0);
+      setStockOnHand(totalStock.toString());
       setDescription(editingProduct.description || '');
       setHasVariants(!!editingProduct.hasVariants);
 
@@ -135,6 +150,7 @@ export default function NewProductModal({
       setImageUrl('');
       setCost('15.00');
       setRetail('39.00');
+      setStockOnHand('0');
       setDescription('');
       setHasVariants(false);
       setVariantsList([
@@ -264,11 +280,15 @@ export default function NewProductModal({
         title: v.title.trim() || `Variant ${i + 1}`,
         costMinor: Math.round(parseFloat(v.cost || cost || '0') * 100),
         retailMinor: Math.round(parseFloat(v.retail || retail || '0') * 100),
-        onHand: v.onHand || 0,
+        onHand: parseInt(v.onHand || 0, 10),
         rop: parseInt(v.rop || 5, 10),
         barcode: v.barcode || ''
       }));
     }
+
+    const totalOnHand = hasVariants
+      ? formattedVariants.reduce((sum, v) => sum + (parseInt(v.onHand || 0, 10)), 0)
+      : parseInt(stockOnHand || '0', 10);
 
     const payload = {
       code: cleanCode,
@@ -279,9 +299,19 @@ export default function NewProductModal({
       imageUrl: imageUrl.trim(),
       costMinor,
       retailMinor,
+      onHand: totalOnHand,
       description: description.trim(),
       hasVariants,
-      variants: formattedVariants
+      variants: hasVariants ? formattedVariants : [
+        {
+          sku: `${cleanCode}-STD`,
+          title: 'Default Standard',
+          costMinor,
+          retailMinor,
+          onHand: totalOnHand,
+          rop: 5
+        }
+      ]
     };
 
     onSave(payload, editingProduct?.id);
@@ -462,11 +492,11 @@ export default function NewProductModal({
             </div>
           </div>
 
-          {/* Base Pricing: Cost & Retail */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-3.5 bg-studio-900/50 rounded-xl border border-white/5">
+          {/* Base Pricing: Cost, Selling Price & Stock On Hand */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3.5 bg-studio-900/50 rounded-xl border border-white/5">
             <div>
               <label className="block font-mono text-studio-400 text-[11px] uppercase mb-1">
-                Base Unit Cost (COGS $ USD)
+                Base Unit Cost ($ USD)
               </label>
               <input
                 type="number"
@@ -474,14 +504,14 @@ export default function NewProductModal({
                 min="0"
                 placeholder="15.00"
                 value={cost}
-                onChange={(e) => setCost(e.target.value)}
+                onChange={(e) => setCost(limitTwoDecimals(e.target.value))}
                 className="w-full bg-studio-900 border border-white/10 rounded-lg p-2.5 font-mono text-white focus:outline-none focus:border-gold-500"
                 required
               />
             </div>
             <div>
               <label className="block font-mono text-studio-400 text-[11px] uppercase mb-1">
-                Base Selling Retail Price ($ USD)
+                Base Selling Price ($ USD)
               </label>
               <input
                 type="number"
@@ -489,9 +519,23 @@ export default function NewProductModal({
                 min="0"
                 placeholder="39.00"
                 value={retail}
-                onChange={(e) => setRetail(e.target.value)}
+                onChange={(e) => setRetail(limitTwoDecimals(e.target.value))}
                 className="w-full bg-studio-900 border border-white/10 rounded-lg p-2.5 font-mono text-white focus:outline-none focus:border-gold-500 font-bold text-gold-400"
                 required
+              />
+            </div>
+            <div>
+              <label className="block font-mono text-emerald-400 text-[11px] uppercase mb-1 font-bold">
+                Stock On Hand (Units)
+              </label>
+              <input
+                type="number"
+                step="1"
+                min="0"
+                placeholder="0"
+                value={stockOnHand}
+                onChange={(e) => setStockOnHand(e.target.value)}
+                className="w-full bg-studio-900 border border-emerald-500/30 rounded-lg p-2.5 font-mono text-emerald-400 font-bold focus:outline-none focus:border-emerald-500"
               />
             </div>
           </div>
@@ -656,7 +700,7 @@ export default function NewProductModal({
                         )}
                       </div>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-4 gap-2.5">
+                      <div className="grid grid-cols-1 sm:grid-cols-5 gap-2.5">
                         {/* Variant Title */}
                         <div className="sm:col-span-2">
                           <label className="block text-[10px] font-mono text-studio-400 mb-0.5">
@@ -703,19 +747,34 @@ export default function NewProductModal({
                           />
                         </div>
 
-                        {/* Variant Retail Price (Can Differ!) */}
-                        <div className="sm:col-span-2">
+                        {/* Variant Retail Price */}
+                        <div>
                           <label className="block text-[10px] font-mono text-gold-400 mb-0.5 font-bold">
-                            Selling Price ($ USD - Can Differ)
+                            Selling Price ($)
                           </label>
                           <input
                             type="number"
                             step="0.01"
                             min="0"
                             value={variant.retail}
-                            onChange={(e) => handleUpdateVariantField(index, 'retail', e.target.value)}
+                            onChange={(e) => handleUpdateVariantField(index, 'retail', limitTwoDecimals(e.target.value))}
                             className="w-full bg-studio-900 border border-gold-500/30 rounded px-2.5 py-1.5 font-mono text-xs text-gold-400 font-bold focus:outline-none focus:border-gold-500"
                             required
+                          />
+                        </div>
+
+                        {/* Variant Stock On Hand */}
+                        <div>
+                          <label className="block text-[10px] font-mono text-emerald-400 mb-0.5 font-bold">
+                            Stock (Units)
+                          </label>
+                          <input
+                            type="number"
+                            step="1"
+                            min="0"
+                            value={variant.onHand !== undefined ? variant.onHand : 0}
+                            onChange={(e) => handleUpdateVariantField(index, 'onHand', parseInt(e.target.value) || 0)}
+                            className="w-full bg-studio-900 border border-emerald-500/30 rounded px-2.5 py-1.5 font-mono text-xs text-emerald-400 font-bold focus:outline-none focus:border-emerald-500"
                           />
                         </div>
                       </div>

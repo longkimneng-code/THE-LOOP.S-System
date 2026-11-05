@@ -731,6 +731,7 @@ export default function App() {
           <InventoryManagement
             balances={balances}
             ledger={ledger}
+            locations={locations}
             onOpenReceiveModal={() => { setInitialReceiveSku(''); setIsReceiveOpen(true); }}
             onOpenTransferModal={() => setIsTransferOpen(true)}
             onOpenExportModal={() => setIsExportOpen(true)}

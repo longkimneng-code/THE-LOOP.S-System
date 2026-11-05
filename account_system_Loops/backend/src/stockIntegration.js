@@ -350,6 +350,8 @@ async function pushLandedCostsToStock(shipmentId = null, tenantContext = null) {
       const sku = item.skuCode;
       const unitLanded = Number(item.unit_landed_cost) || Number(item.unit_base_price_base) || Number(item.unit_base_price_fc) || 0;
       const unitCostMinor = Math.round(unitLanded * 100); // Stock Loops stores cents/minor
+      const targetRetailPrice = Number(item.target_retail_price) || 0;
+      const retailMinor = targetRetailPrice > 0 ? Math.round(targetRetailPrice * 100) : null;
       const itemCat = (item.category || '').trim();
 
       // Find product with this SKU
@@ -357,18 +359,52 @@ async function pushLandedCostsToStock(shipmentId = null, tenantContext = null) {
       if (targetProd) {
         const updatedVariants = targetProd.variants.map(v => {
           if (v.sku === sku) {
-            return { ...v, costMinor: unitCostMinor };
+            return {
+              ...v,
+              costMinor: unitCostMinor,
+              ...(retailMinor ? { retailMinor } : {})
+            };
           }
           return v;
         });
 
-        // Update product on Port 3000 with new landed cost and category
-        const updateRes = await requestStockLoops(`/products/${targetProd.id}`, 'PUT', {
+        // Update product on Port 3000 with user-specified landed cost AND selling price
+        const updatePayload = {
           ...targetProd,
           category: itemCat || targetProd.category || 'General',
           costMinor: unitCostMinor,
+          ...(retailMinor ? { retailMinor } : {}),
           variants: updatedVariants
-        }, token, orgId);
+        };
+        const updateRes = await requestStockLoops(`/products/${targetProd.id}`, 'PUT', updatePayload, token, orgId);
+
+        try {
+          const { getDatabase } = require('../../../shared/database/connection');
+          const sqlDb = getDatabase();
+          if (retailMinor) {
+            sqlDb.prepare(`
+              UPDATE product_variants 
+              SET cost_minor = ?, retail_minor = ? 
+              WHERE sku = ?
+            `).run(unitCostMinor, retailMinor, sku);
+            sqlDb.prepare(`
+              UPDATE products 
+              SET cost_minor = ?, retail_minor = ? 
+              WHERE code = ? OR id = (SELECT product_id FROM product_variants WHERE sku = ?)
+            `).run(unitCostMinor, retailMinor, sku, sku);
+          } else {
+            sqlDb.prepare(`
+              UPDATE product_variants 
+              SET cost_minor = ? 
+              WHERE sku = ?
+            `).run(unitCostMinor, sku);
+            sqlDb.prepare(`
+              UPDATE products 
+              SET cost_minor = ? 
+              WHERE code = ? OR id = (SELECT product_id FROM product_variants WHERE sku = ?)
+            `).run(unitCostMinor, sku, sku);
+          }
+        } catch (sqlErr) {}
 
         if (updateRes.ok) {
           totalUpdated++;
@@ -378,18 +414,21 @@ async function pushLandedCostsToStock(shipmentId = null, tenantContext = null) {
             category: itemCat || targetProd.category,
             newLandedCostUSD: unitLanded,
             costMinor: unitCostMinor,
+            sellingPriceUSD: targetRetailPrice > 0 ? targetRetailPrice : (targetProd.retailMinor / 100),
+            retailMinor: retailMinor || targetProd.retailMinor,
             status: 'UPDATED_ON_PORT_3000'
           });
         }
       } else {
-        // Auto-create product on Port 3000 if not present
+        // Auto-create product on Port 3000 with exact user-specified selling price
+        const finalRetailMinor = targetRetailPrice > 0 ? Math.round(targetRetailPrice * 100) : Math.round(unitLanded * 100);
         const createProdPayload = {
           code: item.skuCode || `IMP-${Math.floor(1000 + Math.random() * 9000)}`,
           name: item.productName || item.skuCode,
           category: itemCat || 'General',
           brand: shipment.shipment?.supplierName || 'Import Supplier',
           costMinor: unitCostMinor,
-          retailMinor: Math.round((Number(item.target_retail_price) || (unitLanded * 1.5)) * 100),
+          retailMinor: finalRetailMinor,
           imageUrl: item.imageUrl || '',
           description: `Imported via shipment ${shipment.shipment?.shipmentCode}`,
           hasVariants: true,
@@ -398,7 +437,7 @@ async function pushLandedCostsToStock(shipmentId = null, tenantContext = null) {
               sku: item.skuCode,
               title: item.variantName || 'Standard',
               costMinor: unitCostMinor,
-              retailMinor: Math.round((Number(item.target_retail_price) || (unitLanded * 1.5)) * 100),
+              retailMinor: finalRetailMinor,
               onHand: 0,
               reserved: 0,
               damaged: 0,
