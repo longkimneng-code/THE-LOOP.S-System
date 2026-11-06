@@ -75,6 +75,7 @@ const {
   getMonthlyDashboardData,
   recordExpenseWithCapitalProtection,
   processCapitalRepayment,
+  dismissCapitalBorrowing,
   recordLoopShareTransaction,
   executeMonthEndClosing,
   recordFinancialTransaction,
@@ -576,6 +577,52 @@ const server = http.createServer(async (req, res) => {
       const result = updateStore(storeId, body, currentUser?.fullName || 'Administrator', currentUser?.organizationId);
       if (!result.ok) return sendJson(res, result.forbidden ? 403 : 400, result);
       broadcastSse('STORE_UPDATED', result.store);
+      return sendJson(res, 200, result);
+    }
+
+    // 2f. Store Headquarters (HQ) Management
+    if (pathname === '/api/stores/hq' && req.method === 'GET') {
+      const currentUser = getRequestUser(req);
+      const dbState = loadDb();
+      const orgId = currentUser?.organizationId || dbState.organization?.id || 'org-6e9ed3cf';
+      const { getCurrentHq } = require('../../../shared/store/hqManager');
+      const result = getCurrentHq(orgId);
+      return sendJson(res, 200, result);
+    }
+
+    if (pathname === '/api/stores/switch-hq' && req.method === 'POST') {
+      const currentUser = getRequestUser(req);
+      if (!currentUser) return sendJson(res, 401, { ok: false, error: 'Authentication required' });
+      const body = await parseJsonBody(req);
+      const { switchHq } = require('../../../shared/store/hqManager');
+      const result = switchHq({
+        organizationId: currentUser.organizationId,
+        targetStoreId: body.targetStoreId || body.storeId,
+        user: currentUser
+      });
+      if (!result.ok) return sendJson(res, result.code || 400, result);
+      broadcastSse('STORE_HQ_CHANGED', result);
+      return sendJson(res, 200, result);
+    }
+
+    // 2g. Ecosystem Store Data Reset (Admin Backoffice -> Ecosystem)
+    if (pathname === '/api/ecosystem/reset-store-data/history' && req.method === 'GET') {
+      const currentUser = getRequestUser(req);
+      if (!currentUser) return sendJson(res, 401, { ok: false, error: 'Authentication required' });
+      const storeId = searchParams.get('storeId') || null;
+      const { getResetHistory } = require('../../../shared/store/storeResetEngine');
+      const history = getResetHistory(currentUser.organizationId, storeId);
+      return sendJson(res, 200, { ok: true, history });
+    }
+
+    if (pathname === '/api/ecosystem/reset-store-data' && req.method === 'POST') {
+      const currentUser = getRequestUser(req);
+      if (!currentUser) return sendJson(res, 401, { ok: false, error: 'Authentication required' });
+      const body = await parseJsonBody(req);
+      const { resetStoreData } = require('../../../shared/store/storeResetEngine');
+      const result = await resetStoreData({ ...body, user: currentUser });
+      if (!result.ok) return sendJson(res, result.code || 400, result);
+      broadcastSse('STORE_DATA_RESET', result);
       return sendJson(res, 200, result);
     }
 
@@ -1636,6 +1683,27 @@ const server = http.createServer(async (req, res) => {
       return sendJson(res, 200, result);
     }
 
+    // Capital Borrowing Dismissal (Decide Not to Pay)
+    if ((pathname === '/api/finance/capital/borrowing/dismiss' || pathname === '/api/capital/dismiss' || pathname === '/api/capital/borrowing/dismiss') && req.method === 'POST') {
+      const currentUser = getRequestUser(req);
+      if (currentUser && currentUser.role !== 'OWNER' && currentUser.role !== 'SUPER_ADMIN' && !currentUser.permissions?.manageCapital) {
+        return sendJson(res, 403, { ok: false, error: 'Permission denied: Only authorized administrators can dismiss capital borrowings.' });
+      }
+      const body = await parseJsonBody(req);
+      const targetOrg = currentUser?.organizationId || body.organizationId || 'org-loops-001';
+
+      const result = dismissCapitalBorrowing({
+        organizationId: targetOrg,
+        borrowingId: body.borrowingId,
+        performedBy: currentUser?.fullName || 'Administrator',
+        reason: body.reason || 'Decision not to pay'
+      });
+
+      if (!result.ok) return sendJson(res, 400, result);
+      broadcastSse('CAPITAL_BORROWING_DISMISSED', result);
+      return sendJson(res, 200, result);
+    }
+
     if ((pathname === '/api/finance/capital/inject' || pathname === '/api/capital/inject') && req.method === 'POST') {
       const currentUser = getRequestUser(req);
       if (currentUser && currentUser.role !== 'OWNER' && currentUser.role !== 'SUPER_ADMIN' && !currentUser.permissions?.injectCapital) {
@@ -1694,6 +1762,21 @@ const server = http.createServer(async (req, res) => {
       return sendJson(res, 200, { ok: true, borrowings: rows });
     }
 
+    if ((pathname === '/api/finance/capital/partners' || pathname === '/api/capital/partners') && req.method === 'GET') {
+      const currentUser = getRequestUser(req);
+      const targetOrg = currentUser?.organizationId || 'org-6e9ed3cf';
+      const dbSql = getDatabase();
+      const rows = dbSql.prepare(`
+        SELECT id, organization_id, partner_name as partnerName, partner_role as partnerRole, 
+               ownership_percentage as ownershipPercentage, total_invested as totalInvested, 
+               total_withdrawn as totalWithdrawn, current_equity as currentEquity, notes, created_at as createdAt
+        FROM capital_accounts
+        WHERE organization_id = ? OR organization_id = 'org-6e9ed3cf'
+        ORDER BY created_at ASC
+      `).all(targetOrg);
+      return sendJson(res, 200, { ok: true, partners: rows, accounts: rows });
+    }
+
     // =========================================================================
     // FEATURE 8: CONFIDENTIAL LOOP SHARE MANAGEMENT
     // =========================================================================
@@ -1702,16 +1785,24 @@ const server = http.createServer(async (req, res) => {
       if (currentUser && currentUser.role !== 'OWNER' && currentUser.role !== 'SUPER_ADMIN' && !currentUser.permissions?.viewLoopShare) {
         return sendJson(res, 403, { ok: false, error: 'Permission denied: Loop Share is confidential to business owners.' });
       }
-      const targetOrg = currentUser?.organizationId || 'org-loops-001';
+      const targetOrg = currentUser?.organizationId || 'org-6e9ed3cf';
       const dbSql = getDatabase();
       const rows = dbSql.prepare(`
         SELECT * FROM loop_share_ledger
-        WHERE organization_id = ?
+        WHERE organization_id = ? OR organization_id = 'org-6e9ed3cf' OR organization_id IS NULL
         ORDER BY date DESC, created_at DESC
       `).all(targetOrg);
 
-      const latest = rows[0]?.balance_after || 0.0;
-      return sendJson(res, 200, { ok: true, balance: latest, transactions: rows });
+      const netShare = dbSql.prepare(`
+        SELECT 
+          COALESCE(SUM(CASE WHEN transaction_type IN ('ALLOCATION', 'ADJUSTMENT_ADD') THEN amount ELSE 0 END), 0) -
+          COALESCE(SUM(CASE WHEN transaction_type IN ('DISTRIBUTION', 'WITHDRAWAL', 'PAYMENT', 'ADJUSTMENT_SUB') THEN amount ELSE 0 END), 0) as balance
+        FROM loop_share_ledger
+        WHERE organization_id = ? OR organization_id = 'org-6e9ed3cf' OR organization_id IS NULL
+      `).get(targetOrg);
+      const balance = Math.max(0, netShare?.balance || 0);
+
+      return sendJson(res, 200, { ok: true, balance, transactions: rows });
     }
 
     if ((pathname === '/api/finance/loop-share/transaction' || pathname === '/api/loop-share/transaction') && req.method === 'POST') {

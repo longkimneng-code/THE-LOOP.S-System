@@ -8,7 +8,8 @@ import {
   Cpu, 
   Users, 
   Bookmark,
-  Clock
+  Clock,
+  Boxes
 } from 'lucide-react';
 
 export default function PosNavigationTabs() {
@@ -17,9 +18,12 @@ export default function PosNavigationTabs() {
     setActiveTab, 
     hasPermission, 
     cashierUser, 
-    setIsRefundOpen
+    setIsRefundOpen,
+    setAppView
   } = usePos();
 
+  const isOwner = cashierUser?.role === 'OWNER';
+  const canAccessStock = isOwner || cashierUser?.role === 'SUPER_ADMIN' || cashierUser?.role === 'STOCK_ADMIN' || cashierUser?.role === 'STORE_MANAGER' || hasPermission('accessStockApp') || cashierUser?.appAccess?.stock;
   const canManageUsers = hasPermission('manageEmployees') || cashierUser?.role === 'SUPER_ADMIN' || cashierUser?.role === 'POS_ADMIN';
   const canViewReports = hasPermission('viewFinancialReports') || cashierUser?.role === 'SUPER_ADMIN' || cashierUser?.role === 'STORE_MANAGER';
   const canRefund = hasPermission('refundTransactions') || cashierUser?.role === 'SUPER_ADMIN' || cashierUser?.role === 'STORE_MANAGER';
@@ -94,8 +98,19 @@ export default function PosNavigationTabs() {
         })}
       </div>
 
-      {/* Quick Return Pill */}
+      {/* Quick Actions (Stock OS & Quick Return) */}
       <div className="flex items-center space-x-2 pl-3">
+        {canAccessStock && (
+          <button
+            onClick={() => setAppView('STOCK')}
+            className="flex items-center space-x-1.5 px-2.5 py-1 rounded-md text-xs font-semibold text-sky-400 bg-sky-500/10 hover:bg-sky-500/20 border border-sky-500/30 transition-all shadow-xs cursor-pointer"
+            title="Open Stock Management (Catalog, Warehouses, Balances)"
+          >
+            <Boxes className="w-3.5 h-3.5 text-sky-400" />
+            <span className="hidden sm:inline">Stock Management</span>
+            <span className="sm:hidden">Stock</span>
+          </button>
+        )}
         {canRefund && (
           <button
             onClick={() => setIsRefundOpen(true)}

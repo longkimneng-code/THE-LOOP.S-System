@@ -761,6 +761,7 @@ export default function App() {
             theme={theme}
             onToggleTheme={toggleTheme}
             onResetToScratch={handleResetData}
+            onRefresh={refreshAll}
             onAddAttribute={(name) => {
               setAttributes((prev) => [...prev, { id: 'attr-' + Date.now(), name, values: ['Default'] }]);
               showToast(`Attribute "${name}" added!`, 'emerald');

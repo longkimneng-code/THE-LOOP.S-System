@@ -45,6 +45,10 @@ export default function MonthlyRevenueAllocationView() {
   const authorizedStores = (stores || []).filter(s => assignedStoreIds.includes('*') || assignedStoreIds.includes(s.id));
   const [selectedStoreId, setSelectedStoreId] = useState('ALL');
 
+  // Brand / Store Name for display (e.g. BeyondVER Share)
+  const orgName = currentUser?.organizationName || 'BeyondVER';
+  const shareDisplayName = `${orgName} Share`;
+
   const [selectedMonth, setSelectedMonth] = useState(() => new Date().toISOString().slice(0, 7));
   const [subTab, setSubTab] = useState('live'); // 'live' | 'history'
   const [allocationData, setAllocationData] = useState(null);
@@ -60,12 +64,14 @@ export default function MonthlyRevenueAllocationView() {
   const [isCloseMonthOpen, setIsCloseMonthOpen] = useState(false);
   const [isPrintPreviewOpen, setIsPrintPreviewOpen] = useState(false);
   const [selectedBorrowing, setSelectedBorrowing] = useState(null);
+  const [showAllBorrowings, setShowAllBorrowings] = useState(false);
 
   // Forms
   const [injectForm, setInjectForm] = useState({ amount: '', notes: '' });
   const [withdrawForm, setWithdrawForm] = useState({ amount: '', notes: '' });
   const [planCategories, setPlanCategories] = useState([]);
   const [additionalReinvestmentPercent, setAdditionalReinvestmentPercent] = useState(0);
+  const [staffUsers, setStaffUsers] = useState([]);
   const [expenseForm, setExpenseForm] = useState({
     categoryId: 'OPERATING_EXPENSES',
     expenseCategory: 'Rent & Facilities',
@@ -74,6 +80,7 @@ export default function MonthlyRevenueAllocationView() {
     paymentDate: new Date().toISOString().slice(0, 10),
     invoiceRef: '',
     supplierName: '',
+    selectedEmployeeId: '',
     allowCapitalBorrowing: true
   });
   const [repayForm, setRepayForm] = useState({
@@ -92,11 +99,30 @@ export default function MonthlyRevenueAllocationView() {
     setTimeout(() => setToast(''), 3500);
   };
 
-  const fetchAllocationData = async () => {
+  useEffect(() => {
+    const fetchStaff = async () => {
+      try {
+        const token = authToken || (typeof window !== 'undefined' ? localStorage.getItem('loops_auth_token') : null);
+        const res = await fetch('/api/users', {
+          headers: token ? { Authorization: `Bearer ${token}` } : {}
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setStaffUsers(data.users || (Array.isArray(data) ? data : []));
+        }
+      } catch (e) {}
+    };
+    if (isExpenseOpen) {
+      fetchStaff();
+    }
+  }, [isExpenseOpen, authToken]);
+
+  const fetchAllocationData = async (targetMonth = null) => {
     setLoading(true);
+    const monthToFetch = targetMonth || selectedMonth;
     try {
       const token = authToken || (typeof window !== 'undefined' ? localStorage.getItem('loops_auth_token') : null);
-      const url = `/api/allocations/monthly?month=${selectedMonth}${selectedStoreId && selectedStoreId !== 'ALL' ? `&storeId=${selectedStoreId}` : ''}`;
+      const url = `/api/allocations/monthly?month=${monthToFetch}${selectedStoreId && selectedStoreId !== 'ALL' ? `&storeId=${selectedStoreId}` : ''}`;
       const res = await fetch(url, {
         headers: token ? { Authorization: `Bearer ${token}` } : {}
       });
@@ -104,7 +130,7 @@ export default function MonthlyRevenueAllocationView() {
         const data = await res.json();
         setAllocationData(data);
         if (data.plan?.categoriesConfig) {
-          setPlanCategories(data.plan.categoriesConfig);
+          setPlanCategories(data.plan.categoriesConfig.filter(c => c.id !== 'INVENTORY_REINVESTMENT'));
         }
         if (data.plan) {
           setAdditionalReinvestmentPercent(Number(data.plan.additional_reinvestment_percent || 0));
@@ -179,14 +205,15 @@ export default function MonthlyRevenueAllocationView() {
 
   const revenue = allocationData?.revenue || { totalSales: 0, collectedRevenue: 0, refunds: 0, eligibleRevenue: 0 };
   const budgets = allocationData?.budgets || [];
-  const capital = allocationData?.capital || { balance: 10000, borrowed: 0, repaid: 0, outstandingRepayment: 0, activeBorrowings: [] };
+  const capital = allocationData?.capital || { balance: 0, borrowed: 0, repaid: 0, outstandingRepayment: 0, activeBorrowings: [], allBorrowings: [] };
+  const isMonthClosed = allocationData?.plan?.status === 'CLOSED';
 
-  // Calculate simulated expense funding breakdown
-  const operatingBudget = budgets.find(b => b.category_id === 'OPERATING_EXPENSES') || {};
-  const currentAvailableOperating = Number(operatingBudget.remaining_balance || 0);
+  // Calculate simulated expense funding breakdown based on selected budget category
+  const selectedBudget = budgets.find(b => b.category_id === (expenseForm.categoryId || 'OPERATING_EXPENSES')) || {};
+  const currentAvailableBudget = Number(selectedBudget.remaining_balance || 0);
   const inputExpenseAmount = parseFloat(expenseForm.amount) || 0;
-  const simBudgetDeduction = Math.min(inputExpenseAmount, currentAvailableOperating);
-  const simCapitalBorrowing = Math.max(0, inputExpenseAmount - currentAvailableOperating);
+  const simBudgetDeduction = Math.min(inputExpenseAmount, currentAvailableBudget);
+  const simCapitalBorrowing = Math.max(0, inputExpenseAmount - currentAvailableBudget);
 
   const handleUpdatePlan = async (e) => {
     e.preventDefault();
@@ -258,6 +285,20 @@ export default function MonthlyRevenueAllocationView() {
     e.preventDefault();
     if (!selectedBorrowing || !repayForm.amount) return;
 
+    const repayNum = parseFloat(repayForm.amount) || 0;
+    const originCat = selectedBorrowing.budget_category_id || repayForm.sourceCategoryId || 'OPERATING_EXPENSES';
+    const fundingBudget = budgets.find(bg => bg.category_id === originCat);
+    const availableRepayBudget = Number(fundingBudget?.remaining_balance || 0);
+
+    if (repayNum > availableRepayBudget) {
+      alert(`Cannot repay advance: Insufficient funds in ${fundingBudget?.category_name || 'budget'}.\n\nAvailable: $${availableRepayBudget.toFixed(2)}\nRequired for repayment: $${repayNum.toFixed(2)}\n\nYou must allocate or receive additional funds into this budget before repaying.`);
+      return;
+    }
+
+    if (!window.confirm(`Confirm Capital Repayment?\n\nAmount: $${repayNum.toFixed(2)}\nFunded from: ${fundingBudget?.category_name || originCat} budget\nRestore to: Business Capital\n\nProceed with repayment?`)) {
+      return;
+    }
+
     try {
       const token = authToken || (typeof window !== 'undefined' ? localStorage.getItem('loops_auth_token') : null);
       const res = await fetch('/api/finance/capital/repay', {
@@ -268,8 +309,8 @@ export default function MonthlyRevenueAllocationView() {
         },
         body: JSON.stringify({
           borrowingId: selectedBorrowing.id,
-          amount: parseFloat(repayForm.amount),
-          sourceCategoryId: repayForm.sourceCategoryId,
+          amount: repayNum,
+          sourceCategoryId: originCat,
           notes: repayForm.notes
         })
       });
@@ -279,6 +320,32 @@ export default function MonthlyRevenueAllocationView() {
       showToast(`Repaid $${data.amountRepaid.toFixed(2)} to Capital Account!`);
       setIsRepayOpen(false);
       setSelectedBorrowing(null);
+      fetchAllocationData();
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
+  const handleDismissBorrowing = async (borrowing) => {
+    if (!window.confirm(`Decide NOT to pay borrowing advance ${borrowing.borrowing_ref} ($${Number(borrowing.outstanding_amount).toFixed(2)})?\n\nThis will dismiss the advance, remove it from active borrowings, and permanently record your decision in the financial audit history.`)) {
+      return;
+    }
+    try {
+      const token = authToken || (typeof window !== 'undefined' ? localStorage.getItem('loops_auth_token') : null);
+      const res = await fetch('/api/finance/capital/borrowing/dismiss', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify({
+          borrowingId: borrowing.id,
+          reason: 'Owner decision not to pay'
+        })
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) throw new Error(data.error || 'Failed to dismiss borrowing');
+      showToast(data.message || 'Borrowing marked as Decide Not to Pay!');
       fetchAllocationData();
     } catch (err) {
       alert(err.message);
@@ -304,9 +371,16 @@ export default function MonthlyRevenueAllocationView() {
       const data = await res.json();
       if (!res.ok || !data.ok) throw new Error(data.error || 'Failed to finalize month');
 
-      showToast(`Month ${selectedMonth} closed! Snapshot created. Next month ${data.nextMonth} opened.`);
       setIsCloseMonthOpen(false);
-      fetchAllocationData();
+      const closedMonth = selectedMonth;
+      if (data.nextMonth) {
+        setSelectedMonth(data.nextMonth);
+        showToast(`Month ${closedMonth} closed! Data reset and fresh plan opened for ${data.nextMonth}.`);
+        fetchAllocationData(data.nextMonth);
+      } else {
+        showToast(`Month ${closedMonth} closed successfully.`);
+        fetchAllocationData(closedMonth);
+      }
     } catch (err) {
       alert(err.message);
     }
@@ -328,8 +402,8 @@ export default function MonthlyRevenueAllocationView() {
         </div>
       )}
 
-      {/* Top Banner & Actions */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-obsidian-800">
+      {/* Top Banner & Control Actions Toolbar */}
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-obsidian-800">
         <div>
           <div className="flex items-center space-x-2">
             <h1 className="text-lg font-bold text-slate-100 font-display uppercase tracking-wider flex items-center space-x-2">
@@ -345,10 +419,11 @@ export default function MonthlyRevenueAllocationView() {
           </p>
         </div>
 
-        <div className="flex items-center space-x-2 flex-wrap">
+        {/* Action Controls Toolbar - Aligned Clean Layout */}
+        <div className="flex flex-wrap items-center gap-2">
           {/* Store Filter Selector (if authorized for multiple stores) */}
           {authorizedStores.length > 1 && (
-            <div className="flex items-center space-x-1.5 bg-obsidian-900 px-3 py-1.5 rounded-xl border border-obsidian-800 text-xs font-mono">
+            <div className="flex items-center space-x-1.5 bg-obsidian-900 px-2.5 py-1.5 rounded-xl border border-obsidian-800 text-xs font-mono">
               <Building2 className="w-3.5 h-3.5 text-brass-400" />
               <select
                 value={selectedStoreId}
@@ -366,13 +441,13 @@ export default function MonthlyRevenueAllocationView() {
           )}
 
           {/* Month Selector */}
-          <div className="flex items-center space-x-1.5 bg-obsidian-900 px-3 py-1.5 rounded-xl border border-obsidian-800 text-xs font-mono">
+          <div className="flex items-center space-x-1.5 bg-obsidian-900 px-2.5 py-1.5 rounded-xl border border-obsidian-800 text-xs font-mono">
             <Calendar className="w-3.5 h-3.5 text-brass-400" />
             <input
               type="month"
               value={selectedMonth}
               onChange={(e) => setSelectedMonth(e.target.value)}
-              className="bg-transparent text-slate-200 focus:outline-none"
+              className="bg-transparent text-slate-200 focus:outline-none cursor-pointer"
             />
           </div>
 
@@ -380,25 +455,25 @@ export default function MonthlyRevenueAllocationView() {
           <div className="flex items-center bg-obsidian-900 border border-obsidian-850 rounded-xl overflow-hidden p-0.5">
             <button
               onClick={() => handleExport('xlsx')}
-              className="px-2.5 py-1.5 hover:bg-emerald-500/20 text-emerald-400 text-xs font-mono flex items-center space-x-1 transition"
+              className="px-2 py-1.5 hover:bg-emerald-500/20 text-emerald-400 text-xs font-mono flex items-center space-x-1 transition"
               title="Export to Excel (.xlsx)"
             >
               <FileSpreadsheet className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Excel</span>
             </button>
-            <span className="text-obsidian-750">|</span>
+            <span className="text-obsidian-800">|</span>
             <button
               onClick={() => handleExport('docx')}
-              className="px-2.5 py-1.5 hover:bg-sky-500/20 text-sky-400 text-xs font-mono flex items-center space-x-1 transition"
+              className="px-2 py-1.5 hover:bg-sky-500/20 text-sky-400 text-xs font-mono flex items-center space-x-1 transition"
               title="Export to Word (.docx)"
             >
               <FileText className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Word</span>
             </button>
-            <span className="text-obsidian-750">|</span>
+            <span className="text-obsidian-800">|</span>
             <button
               onClick={() => setIsPrintPreviewOpen(true)}
-              className="px-2.5 py-1.5 hover:bg-rose-500/20 text-rose-400 text-xs font-mono flex items-center space-x-1 transition"
+              className="px-2 py-1.5 hover:bg-rose-500/20 text-rose-400 text-xs font-mono flex items-center space-x-1 transition"
               title="Print / Save PDF (Crystal Clear)"
             >
               <Printer className="w-3.5 h-3.5" />
@@ -408,31 +483,54 @@ export default function MonthlyRevenueAllocationView() {
 
           <button
             onClick={() => setIsExpenseOpen(true)}
-            className="flex items-center space-x-1.5 px-3 py-2 rounded-xl bg-obsidian-850 hover:bg-obsidian-800 text-slate-200 border border-obsidian-750 text-xs font-bold transition"
+            className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-obsidian-850 hover:bg-obsidian-800 text-slate-200 border border-obsidian-750 text-xs font-bold transition shadow-sm"
           >
-            <Plus className="w-4 h-4 text-brass-400" />
+            <Plus className="w-3.5 h-3.5 text-brass-400" />
             <span>Record Expense</span>
           </button>
 
           <button
             onClick={() => setIsConfigOpen(true)}
-            className="flex items-center space-x-1.5 px-3 py-2 rounded-xl bg-obsidian-850 hover:bg-obsidian-800 text-slate-200 border border-obsidian-750 text-xs font-bold transition"
+            className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-obsidian-850 hover:bg-obsidian-800 text-slate-200 border border-obsidian-750 text-xs font-bold transition shadow-sm"
           >
-            <Settings className="w-4 h-4 text-brass-400" />
+            <Settings className="w-3.5 h-3.5 text-brass-400" />
             <span>Configure Plan</span>
           </button>
 
-          <button
-            onClick={() => setIsCloseMonthOpen(true)}
-            className="flex items-center space-x-1.5 px-3 py-2 rounded-xl bg-brass-500 hover:bg-brass-400 text-obsidian-950 font-bold text-xs shadow-md shadow-brass-500/20 active:scale-95 transition"
-          >
-            <ShieldCheck className="w-4 h-4" />
-            <span>Close Month</span>
-          </button>
+          {isMonthClosed ? (
+            <div className="flex items-center gap-2">
+              <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 font-mono text-xs font-bold">
+                <Lock className="w-3.5 h-3.5 text-amber-400" />
+                <span>Finalized & Closed</span>
+              </span>
+              <button
+                onClick={() => {
+                  const [y, m] = selectedMonth.split('-').map(Number);
+                  let ny = y, nm = m + 1;
+                  if (nm > 12) { nm = 1; ny += 1; }
+                  const nextMonthKey = `${ny}-${String(nm).padStart(2, '0')}`;
+                  setSelectedMonth(nextMonthKey);
+                  fetchAllocationData(nextMonthKey);
+                }}
+                className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-brass-500 hover:bg-brass-400 text-obsidian-950 font-bold text-xs shadow-md shadow-brass-500/20 active:scale-95 transition"
+              >
+                <span>Go to Active Month</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          ) : canCloseMonth && (
+            <button
+              onClick={() => setIsCloseMonthOpen(true)}
+              className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-brass-500 hover:bg-brass-400 text-obsidian-950 font-bold text-xs shadow-md shadow-brass-500/20 active:scale-95 transition"
+            >
+              <ShieldCheck className="w-3.5 h-3.5" />
+              <span>Close Month</span>
+            </button>
+          )}
         </div>
       </div>
 
-      {/* Sub-Navigation Switcher: Active Live Month vs Loop Share vs Monthly Financial History */}
+      {/* Sub-Navigation Switcher: Active Live Month vs Store Share vs Monthly Financial History */}
       <div className="flex items-center gap-2 border-b border-obsidian-800 pb-2">
         <button
           onClick={() => setSubTab('live')}
@@ -456,7 +554,7 @@ export default function MonthlyRevenueAllocationView() {
             }`}
           >
             <Lock className="w-4 h-4" />
-            <span>Loop Share Management</span>
+            <span>{shareDisplayName} Management</span>
           </button>
         )}
 
@@ -475,6 +573,30 @@ export default function MonthlyRevenueAllocationView() {
 
       {subTab === 'live' ? (
         <>
+          {/* Closed Month Banner */}
+          {isMonthClosed && (
+            <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-between text-xs text-amber-200">
+              <div className="flex items-center gap-2">
+                <Lock className="w-4 h-4 text-amber-400" />
+                <span>This financial period (<strong>{selectedMonth}</strong>) is closed and finalized. Metrics are historical and immutable.</span>
+              </div>
+              <button
+                onClick={() => {
+                  const [y, m] = selectedMonth.split('-').map(Number);
+                  let ny = y, nm = m + 1;
+                  if (nm > 12) { nm = 1; ny += 1; }
+                  const nextMonthKey = `${ny}-${String(nm).padStart(2, '0')}`;
+                  setSelectedMonth(nextMonthKey);
+                  fetchAllocationData(nextMonthKey);
+                }}
+                className="px-2.5 py-1 rounded-lg bg-brass-500 hover:bg-brass-400 text-obsidian-950 font-bold text-[11px] transition flex items-center gap-1"
+              >
+                <span>Switch to Active Month</span>
+                <ArrowRight className="w-3 h-3" />
+              </button>
+            </div>
+          )}
+
           {/* MASTER METRICS: 3 Structured Cards (Sections 1-8) */}
           {/* Card 1: Eligible Revenue Collection Basis */}
           <div className="p-4 rounded-2xl bg-obsidian-900/90 border border-obsidian-800 space-y-3">
@@ -671,20 +793,20 @@ export default function MonthlyRevenueAllocationView() {
           <span>Live Real-Time Balances</span>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3.5">
           {budgets.map(b => {
-            const allocated = Number(b.allocated_amount || 0);
-            const carryForward = Number(b.opening_carry_forward || 0);
-            const available = Number(b.available_budget || 0);
-            const spent = Number(b.spent_amount || 0);
+            const isStock = b.category_id === 'INVENTORY_REINVESTMENT';
+            const allocated = isStock ? (allocationData?.metrics?.totalInventoryReinvestment ?? Number(b.allocated_amount || 0)) : Number(b.allocated_amount || 0);
+            const carryForward = isStock ? 0 : Number(b.opening_carry_forward || 0);
+            const available = isStock ? allocated : Number(b.available_budget || 0);
+            const spent = isStock ? (allocationData?.metrics?.actualInventoryPurchases ?? Number(b.spent_amount || 0)) : Number(b.spent_amount || 0);
             const borrowed = Number(b.borrowed_from_capital || 0);
-            const remaining = Number(b.remaining_balance || 0);
+            const remaining = isStock ? (allocationData?.metrics?.inventoryReserveBalance ?? Number(b.remaining_balance || 0)) : Number(b.remaining_balance || 0);
             const pctUsed = available > 0 ? Math.min(100, Math.round((spent / available) * 100)) : 0;
 
             const isOperating = b.category_id === 'OPERATING_EXPENSES';
             const isLoopShare = b.category_id === 'LOOP_SHARE';
             const isSalary = b.category_id === 'EMPLOYEE_SALARIES';
-            const isStock = b.category_id === 'INVENTORY_REINVESTMENT';
 
             return (
               <div
@@ -692,27 +814,27 @@ export default function MonthlyRevenueAllocationView() {
                 className="p-4 rounded-2xl bg-obsidian-900 border border-obsidian-800 hover:border-obsidian-750 transition-all space-y-3 flex flex-col justify-between"
               >
                 <div>
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <h3 className="font-bold text-sm text-slate-100 font-display">
-                        {b.category_name}
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <h3 className="font-bold text-sm text-slate-100 font-display truncate" title={isLoopShare ? `${shareDisplayName} (Profit Sharing)` : b.category_name}>
+                        {isLoopShare ? `${shareDisplayName} (Profit Sharing)` : b.category_name}
                       </h3>
-                      <div className="flex items-center space-x-1.5 mt-0.5">
-                        <span className="text-[10px] font-mono font-bold text-brass-400 bg-obsidian-800 px-1.5 py-0.5 rounded border border-obsidian-750">
-                          {b.allocation_type === 'PERCENT' ? `${b.allocation_value}%` : `$${b.allocation_value}`}
+                      <div className="flex items-center flex-wrap gap-1.5 mt-1">
+                        <span className="text-[10px] font-mono font-bold text-brass-400 bg-obsidian-800 px-2 py-0.5 rounded border border-obsidian-750 whitespace-nowrap">
+                          {isStock ? `COGS + ${additionalReinvestmentPercent}%` : (b.allocation_type === 'PERCENT' ? `${b.allocation_value}%` : `$${b.allocation_value}`)}
                         </span>
                         {isOperating && (
-                          <span className="text-[9px] font-mono text-sky-400 bg-sky-500/10 px-1.5 py-0.5 rounded border border-sky-500/20">
+                          <span className="text-[9px] font-mono text-sky-400 bg-sky-500/10 px-1.5 py-0.5 rounded border border-sky-500/20 whitespace-nowrap">
                             Auto Carry-Forward
                           </span>
                         )}
                         {isSalary && (
-                          <span className="text-[9px] font-mono text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20">
+                          <span className="text-[9px] font-mono text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20 whitespace-nowrap">
                             Owner Decision
                           </span>
                         )}
                         {isLoopShare && (
-                          <span className="text-[9px] font-mono text-rose-400 bg-rose-500/10 px-1.5 py-0.5 rounded border border-rose-500/20 flex items-center space-x-1">
+                          <span className="text-[9px] font-mono text-rose-400 bg-rose-500/10 px-1.5 py-0.5 rounded border border-rose-500/20 flex items-center space-x-1 whitespace-nowrap">
                             <Lock className="w-2.5 h-2.5" />
                             <span>Confidential</span>
                           </span>
@@ -720,7 +842,7 @@ export default function MonthlyRevenueAllocationView() {
                       </div>
                     </div>
 
-                    <div className="text-right">
+                    <div className="text-right shrink-0">
                       <div className="text-[10px] font-mono text-slate-500 uppercase">Remaining</div>
                       <div className={`text-base font-black font-mono ${remaining > 0 ? 'text-emerald-400' : 'text-slate-400'}`}>
                         ${remaining.toFixed(2)}
@@ -746,28 +868,52 @@ export default function MonthlyRevenueAllocationView() {
 
                   {/* Financial Breakdown Table */}
                   <div className="pt-2 border-t border-obsidian-800/80 space-y-1 text-xs text-slate-400 font-mono">
-                    <div className="flex justify-between">
-                      <span className="text-slate-500">New Allocation:</span>
-                      <span className="text-slate-300 font-semibold">${allocated.toFixed(2)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-slate-500">Carry-Forward:</span>
-                      <span className="text-sky-400">+${carryForward.toFixed(2)}</span>
-                    </div>
-                    {borrowed > 0 && (
-                      <div className="flex justify-between text-amber-400">
-                        <span>Capital Borrowed:</span>
-                        <span>+${borrowed.toFixed(2)}</span>
-                      </div>
+                    {isStock ? (
+                      <>
+                        <div className="flex justify-between">
+                          <span className="text-slate-500">COGS Allocation:</span>
+                          <span className="text-sky-300 font-semibold">${allocated.toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-slate-500">Purchases Deducted:</span>
+                          <span className="text-rose-400 font-semibold">-${spent.toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between font-bold pt-0.5 border-t border-obsidian-800/60">
+                          <span className="text-slate-400">Reserve Balance:</span>
+                          <span className="text-emerald-400">${remaining.toFixed(2)}</span>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="flex justify-between">
+                          <span className="text-slate-500">New Allocation:</span>
+                          <span className="text-slate-300 font-semibold">${allocated.toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-slate-500">Carry-Forward:</span>
+                          <span className="text-sky-400">+{carryForward.toFixed(2)}</span>
+                        </div>
+                        {borrowed > 0 ? (
+                          <div className="flex justify-between text-amber-400 font-bold pt-0.5 border-t border-obsidian-800/60">
+                            <span>Capital Borrowed:</span>
+                            <span>+${borrowed.toFixed(2)}</span>
+                          </div>
+                        ) : (
+                          <div className="flex justify-between font-bold pt-0.5 border-t border-obsidian-800/60">
+                            <span className="text-slate-400">Net Available:</span>
+                            <span className="text-emerald-400">${available.toFixed(2)}</span>
+                          </div>
+                        )}
+                      </>
                     )}
                   </div>
                 </div>
 
                 <div className="text-[10px] font-mono text-slate-500 pt-2 border-t border-obsidian-800/60">
-                  {isStock && 'Reserved for inventory restocking & supplier invoices'}
+                  {isStock && 'Reserved for inventory restocking & supplier invoices (Calculated from Section 2)'}
                   {isSalary && 'Designated for payroll & employee compensation'}
                   {isOperating && 'Operating overheads & utilities with balance rollover'}
-                  {isLoopShare && 'Founder & stakeholder profit-sharing balance'}
+                  {isLoopShare && `Founder & stakeholder profit-sharing pool for ${orgName}`}
                 </div>
               </div>
             );
@@ -790,41 +936,29 @@ export default function MonthlyRevenueAllocationView() {
             </div>
           </div>
 
-          <div className="flex items-center space-x-3">
-            {canInjectCapital && (
-              <button
-                onClick={() => setIsInjectCapitalOpen(true)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-obsidian-950 font-bold text-xs font-mono transition shadow-sm"
-                title="Inject Capital into Business Reserve"
-              >
-                <PlusCircle className="w-3.5 h-3.5" />
-                <span>Inject Capital</span>
-              </button>
-            )}
-            {canWithdrawCapital && (
-              <button
-                onClick={() => setIsWithdrawCapitalOpen(true)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-obsidian-800 hover:bg-obsidian-750 border border-obsidian-700 text-rose-300 font-bold text-xs font-mono transition"
-                title="Withdraw Capital / Owner Drawing"
-              >
-                <MinusCircle className="w-3.5 h-3.5" />
-                <span>Withdraw</span>
-              </button>
-            )}
-
-            <div className="text-right pl-3 border-l border-obsidian-800">
+          <div className="flex items-center space-x-6">
+            <div className="text-right">
               <div className="text-[10px] font-mono text-slate-400 uppercase">Capital Account Balance</div>
               <div className="text-lg font-black text-emerald-400 font-display">
-                ${capital.balance.toFixed(2)}
+                ${(capital.cashNow || capital.balance).toFixed(2)}
               </div>
             </div>
 
-            <div className="text-right pl-3 border-l border-obsidian-800">
+            <div className="text-right pl-6 border-l border-obsidian-800">
               <div className="text-[10px] font-mono text-slate-400 uppercase">Outstanding Repayment</div>
               <div className={`text-lg font-black font-display ${capital.outstandingRepayment > 0 ? 'text-rose-400' : 'text-slate-400'}`}>
                 ${capital.outstandingRepayment.toFixed(2)}
               </div>
             </div>
+
+            {capital.outstandingRepayment > 0 && (
+              <div className="text-right pl-6 border-l border-obsidian-800">
+                <div className="text-[10px] font-mono text-amber-400 uppercase font-semibold">Net Available Cash</div>
+                <div className="text-lg font-black text-amber-300 font-display">
+                  ${(capital.netLiquidCash !== undefined ? capital.netLiquidCash : Math.max(0, (capital.cashNow || capital.balance) - capital.outstandingRepayment)).toFixed(2)}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -863,25 +997,124 @@ export default function MonthlyRevenueAllocationView() {
                       <div className="text-[10px] font-mono text-slate-500 uppercase">Outstanding</div>
                       <div className="font-mono font-bold text-rose-400">${Number(b.outstanding_amount || 0).toFixed(2)}</div>
                     </div>
-                    {canRepayCapital && (
-                      <button
-                        onClick={() => {
-                          setSelectedBorrowing(b);
-                          setRepayForm({
-                            amount: Number(b.outstanding_amount || 0).toFixed(2),
-                            sourceCategoryId: 'OPERATING_EXPENSES',
-                            notes: `Repayment for ${b.borrowing_ref}`
-                          });
-                          setIsRepayOpen(true);
-                        }}
-                        className="px-3 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-obsidian-950 font-bold text-xs shadow-sm transition"
-                      >
-                        Repay
-                      </button>
-                    )}
+                    <div className="flex items-center gap-2">
+                      {canRepayCapital && (
+                        <button
+                          onClick={() => {
+                            setSelectedBorrowing(b);
+                            setRepayForm({
+                              amount: Number(b.outstanding_amount || 0).toFixed(2),
+                              sourceCategoryId: b.budget_category_id || 'OPERATING_EXPENSES',
+                              notes: `Repayment for ${b.borrowing_ref}`
+                            });
+                            setIsRepayOpen(true);
+                          }}
+                          className="px-3 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-obsidian-950 font-bold text-xs shadow-sm transition"
+                          title="Decide to pay back this capital borrowing"
+                        >
+                          Decide to Pay
+                        </button>
+                      )}
+
+                      {canRepayCapital && (
+                        <button
+                          onClick={() => handleDismissBorrowing(b)}
+                          className="px-3 py-1.5 rounded-lg bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 border border-rose-500/30 font-bold text-xs transition"
+                          title="Decide NOT to pay back this borrowing (dismisses advance and records decision in permanent history)"
+                        >
+                          Decide Not to Pay
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
               ))}
+            </div>
+          )}
+        </div>
+
+        {/* All Borrowing Advances History Ledger */}
+        <div className="pt-3 border-t border-obsidian-800 space-y-2">
+          <div className="flex items-center justify-between">
+            <div className="text-xs font-mono uppercase tracking-wider text-slate-400 font-semibold flex items-center gap-2">
+              <span>All Borrowings History Ledger ({capital.allBorrowings?.length || 0})</span>
+              <span className="text-[10px] text-slate-500 lowercase">(sorted by date & month)</span>
+            </div>
+            <button
+              onClick={() => setShowAllBorrowings(!showAllBorrowings)}
+              className="text-[11px] font-mono text-brass-400 hover:text-brass-300 transition"
+            >
+              {showAllBorrowings ? 'Hide History ▲' : 'Show All History ▼'}
+            </button>
+          </div>
+
+          {showAllBorrowings && (
+            <div className="overflow-x-auto rounded-xl border border-obsidian-800 bg-obsidian-950/70">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-obsidian-900 text-slate-400 font-mono text-[10px] uppercase border-b border-obsidian-800">
+                  <tr>
+                    <th className="py-2.5 px-3">Date & Month</th>
+                    <th className="py-2.5 px-3">Borrowing Ref</th>
+                    <th className="py-2.5 px-3">Reason / Description</th>
+                    <th className="py-2.5 px-3 text-right">Borrowed</th>
+                    <th className="py-2.5 px-3 text-right">Repaid</th>
+                    <th className="py-2.5 px-3 text-right">Outstanding</th>
+                    <th className="py-2.5 px-3 text-center">Decision Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-obsidian-850">
+                  {(capital.allBorrowings || []).length === 0 ? (
+                    <tr>
+                      <td colSpan="7" className="py-4 text-center text-slate-500 font-mono text-xs">
+                        No capital borrowings recorded yet.
+                      </td>
+                    </tr>
+                  ) : (
+                    (capital.allBorrowings || []).map(row => (
+                      <tr key={row.id} className="hover:bg-white/[0.02] transition">
+                        <td className="py-2 px-3 font-mono text-slate-300">
+                          <div>{row.date ? new Date(row.date).toISOString().slice(0, 10) : '-'}</div>
+                          <div className="text-[10px] text-slate-500 font-bold">{row.period_month || ''}</div>
+                        </td>
+                        <td className="py-2 px-3 font-mono font-bold text-slate-200">
+                          {row.borrowing_ref}
+                        </td>
+                        <td className="py-2 px-3 text-slate-300 max-w-xs truncate" title={row.reason}>
+                          {row.reason}
+                        </td>
+                        <td className="py-2 px-3 text-right font-mono text-slate-200 font-semibold">
+                          ${Number(row.amount || 0).toFixed(2)}
+                        </td>
+                        <td className="py-2 px-3 text-right font-mono text-emerald-400">
+                          ${Number(row.repaid_amount || 0).toFixed(2)}
+                        </td>
+                        <td className="py-2 px-3 text-right font-mono text-rose-400 font-bold">
+                          ${Number(row.outstanding_amount || 0).toFixed(2)}
+                        </td>
+                        <td className="py-2 px-3 text-center">
+                          {row.status === 'FULLY_REPAID' ? (
+                            <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                              Decided to Pay (Repaid)
+                            </span>
+                          ) : row.status === 'NOT_TO_PAY' ? (
+                            <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-amber-500/10 text-amber-300 border border-amber-500/20">
+                              Decided Not to Pay
+                            </span>
+                          ) : row.status === 'PARTIALLY_REPAID' ? (
+                            <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-sky-500/10 text-sky-400 border border-sky-500/20">
+                              Partially Repaid
+                            </span>
+                          ) : (
+                            <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-rose-500/10 text-rose-400 border border-rose-500/20">
+                              Pending Decision
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
             </div>
           )}
         </div>
@@ -898,34 +1131,165 @@ export default function MonthlyRevenueAllocationView() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-obsidian-950/80 backdrop-blur-sm p-4">
           <div className="w-full max-w-lg bg-obsidian-900 border border-obsidian-750 rounded-2xl shadow-2xl overflow-hidden p-6 space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-obsidian-800">
-              <h2 className="text-sm font-bold text-slate-100 uppercase tracking-wider font-display">
-                Record Operating Expense
-              </h2>
+              <div>
+                <h2 className="text-sm font-bold text-slate-100 uppercase tracking-wider font-display">
+                  Record Expense / Pay Employee
+                </h2>
+                <p className="text-[11px] text-slate-400">
+                  Deduct from monthly allocated budget with automatic capital overdraft protection.
+                </p>
+              </div>
               <button onClick={() => setIsExpenseOpen(false)} className="text-slate-400 hover:text-white">
                 <X className="w-4 h-4" />
               </button>
             </div>
 
             <form onSubmit={handleRecordExpenseSubmit} className="space-y-4 text-xs">
+              {/* Category / Budget Target Selector */}
               <div>
-                <label className="text-[11px] font-mono uppercase text-slate-400 font-semibold block mb-1">
-                  Expense Category
+                <label className="text-[11px] font-mono uppercase text-slate-400 font-semibold block mb-1.5">
+                  Expense Budget Source *
                 </label>
-                <select
-                  value={expenseForm.expenseCategory}
-                  onChange={(e) => setExpenseForm({ ...expenseForm, expenseCategory: e.target.value })}
-                  className="w-full bg-obsidian-950 border border-obsidian-750 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-brass-400 font-mono"
-                >
-                  <option value="Rent & Facilities">Rent & Facilities</option>
-                  <option value="Electricity & Utilities">Electricity & Utilities</option>
-                  <option value="Water & Sanitation">Water & Sanitation</option>
-                  <option value="Internet & Telecom">Internet & Telecom</option>
-                  <option value="Store Equipment & Maintenance">Store Equipment & Maintenance</option>
-                  <option value="Packaging & Office Supplies">Packaging & Office Supplies</option>
-                  <option value="Transportation & Logistics">Transportation & Logistics</option>
-                  <option value="Miscellaneous Overhead">Miscellaneous Overhead</option>
-                </select>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setExpenseForm(prev => ({
+                      ...prev,
+                      categoryId: 'EMPLOYEE_SALARIES',
+                      expenseCategory: 'Monthly Staff Salary',
+                      description: prev.supplierName ? `${prev.supplierName} — Staff Salary (${selectedMonth})` : `Staff Salary Payment (${selectedMonth})`
+                    }))}
+                    className={`p-3 rounded-xl border text-left transition flex flex-col justify-between ${
+                      expenseForm.categoryId === 'EMPLOYEE_SALARIES'
+                        ? 'bg-amber-500/10 border-amber-500/50 text-amber-300 ring-1 ring-amber-500/30'
+                        : 'bg-obsidian-950 border-obsidian-800 text-slate-400 hover:border-obsidian-750'
+                    }`}
+                  >
+                    <div className="font-bold flex items-center gap-1.5">
+                      <span>💼</span>
+                      <span>Staff Salary / Payroll</span>
+                    </div>
+                    <div className="text-[10px] font-mono opacity-80 mt-1">
+                      Funds from Employee Salaries Budget
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setExpenseForm(prev => ({
+                      ...prev,
+                      categoryId: 'OPERATING_EXPENSES',
+                      expenseCategory: 'Rent & Facilities',
+                      description: ''
+                    }))}
+                    className={`p-3 rounded-xl border text-left transition flex flex-col justify-between ${
+                      expenseForm.categoryId === 'OPERATING_EXPENSES'
+                        ? 'bg-sky-500/10 border-sky-500/50 text-sky-300 ring-1 ring-sky-500/30'
+                        : 'bg-obsidian-950 border-obsidian-800 text-slate-400 hover:border-obsidian-750'
+                    }`}
+                  >
+                    <div className="font-bold flex items-center gap-1.5">
+                      <span>🏢</span>
+                      <span>Operating Expense (OPEX)</span>
+                    </div>
+                    <div className="text-[10px] font-mono opacity-80 mt-1">
+                      Funds from Operating Overhead Budget
+                    </div>
+                  </button>
+                </div>
               </div>
+
+              {/* EMPLOYEE SALARY SPECIFIC FIELDS */}
+              {expenseForm.categoryId === 'EMPLOYEE_SALARIES' ? (
+                <div className="space-y-3 p-3.5 rounded-xl bg-obsidian-950 border border-obsidian-800">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-[11px] font-mono uppercase text-slate-400 font-semibold block mb-1">
+                        Select Employee / Staff Member *
+                      </label>
+                      <select
+                        value={expenseForm.selectedEmployeeId || ''}
+                        onChange={(e) => {
+                          const empId = e.target.value;
+                          const emp = staffUsers.find(u => String(u.id) === String(empId));
+                          const empName = emp ? (emp.fullName || emp.username) : '';
+                          setExpenseForm(prev => ({
+                            ...prev,
+                            selectedEmployeeId: empId,
+                            supplierName: empName,
+                            description: empName ? `${empName} — Staff Salary (${selectedMonth})` : prev.description
+                          }));
+                        }}
+                        required
+                        className="w-full bg-obsidian-900 border border-obsidian-750 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-amber-400 font-mono text-xs"
+                      >
+                        <option value="">-- Choose Staff Member --</option>
+                        {staffUsers.map(u => (
+                          <option key={u.id} value={u.id}>
+                            {u.fullName || u.username} ({u.role || 'Staff'})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="text-[11px] font-mono uppercase text-slate-400 font-semibold block mb-1">
+                        Compensation Type
+                      </label>
+                      <select
+                        value={expenseForm.expenseCategory}
+                        onChange={(e) => setExpenseForm({ ...expenseForm, expenseCategory: e.target.value })}
+                        className="w-full bg-obsidian-900 border border-obsidian-750 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-amber-400 font-mono text-xs"
+                      >
+                        <option value="Monthly Staff Salary">Monthly Staff Salary</option>
+                        <option value="Hourly Wages">Hourly Wages</option>
+                        <option value="Sales Commission">Sales Commission</option>
+                        <option value="Staff Performance Bonus">Staff Performance Bonus</option>
+                        <option value="Overtime Compensation">Overtime Compensation</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                /* OPERATING EXPENSE SPECIFIC FIELDS */
+                <div className="space-y-3 p-3.5 rounded-xl bg-obsidian-950 border border-obsidian-800">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-[11px] font-mono uppercase text-slate-400 font-semibold block mb-1">
+                        OPEX Category *
+                      </label>
+                      <select
+                        value={expenseForm.expenseCategory}
+                        onChange={(e) => setExpenseForm({ ...expenseForm, expenseCategory: e.target.value })}
+                        className="w-full bg-obsidian-900 border border-obsidian-750 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-sky-400 font-mono text-xs"
+                      >
+                        <option value="Rent & Facilities">Rent & Facilities</option>
+                        <option value="Electricity & Utilities">Electricity & Utilities</option>
+                        <option value="Water & Sanitation">Water & Sanitation</option>
+                        <option value="Internet & Telecom">Internet & Telecom</option>
+                        <option value="Store Equipment & Maintenance">Store Equipment & Maintenance</option>
+                        <option value="Packaging & Office Supplies">Packaging & Office Supplies</option>
+                        <option value="Transportation & Logistics">Transportation & Logistics</option>
+                        <option value="Miscellaneous Overhead">Miscellaneous Overhead</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="text-[11px] font-mono uppercase text-slate-400 font-semibold block mb-1">
+                        Vendor / Payee Name
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Electricité du Cambodge"
+                        value={expenseForm.supplierName || ''}
+                        onChange={(e) => setExpenseForm({ ...expenseForm, supplierName: e.target.value })}
+                        className="w-full bg-obsidian-900 border border-obsidian-750 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-sky-400 font-mono text-xs"
+                      >
+                      </input>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
@@ -935,6 +1299,7 @@ export default function MonthlyRevenueAllocationView() {
                   <input
                     type="number"
                     step="0.01"
+                    min="0.01"
                     required
                     placeholder="0.00"
                     value={expenseForm.amount}
@@ -958,12 +1323,12 @@ export default function MonthlyRevenueAllocationView() {
 
               <div>
                 <label className="text-[11px] font-mono uppercase text-slate-400 font-semibold block mb-1">
-                  Description / Payee *
+                  Description / Reference *
                 </label>
                 <input
                   type="text"
                   required
-                  placeholder="e.g. November Store Rent Payment to Landlord"
+                  placeholder={expenseForm.categoryId === 'EMPLOYEE_SALARIES' ? "e.g. Panha — November Staff Salary" : "e.g. November Store Rent Payment to Landlord"}
                   value={expenseForm.description}
                   onChange={(e) => setExpenseForm({ ...expenseForm, description: e.target.value })}
                   className="w-full bg-obsidian-950 border border-obsidian-750 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-brass-400"
@@ -973,25 +1338,37 @@ export default function MonthlyRevenueAllocationView() {
               {/* Dynamic Capital Protection Calculation Card */}
               {inputExpenseAmount > 0 && (
                 <div className="p-3.5 rounded-xl bg-obsidian-950 border border-obsidian-800 space-y-2">
-                  <div className="text-[10px] font-mono uppercase tracking-wider text-slate-400 font-bold">
-                    Automatic Funding Breakdown (Section 16 Rule)
+                  <div className="flex items-center justify-between text-[10px] font-mono uppercase tracking-wider text-slate-400 font-bold">
+                    <span>Funding Source & Capital Protection</span>
+                    <span className="text-brass-400">{expenseForm.categoryId === 'EMPLOYEE_SALARIES' ? 'Salaries Budget' : 'Operating Budget'}</span>
                   </div>
                   <div className="flex justify-between text-xs">
-                    <span className="text-slate-400">Available Operating Budget:</span>
-                    <span className="font-mono text-sky-400">${currentAvailableOperating.toFixed(2)}</span>
+                    <span className="text-slate-400">Available in Budget:</span>
+                    <span className="font-mono text-sky-400">${currentAvailableBudget.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between text-xs">
                     <span className="text-slate-400">Deducted from Budget:</span>
                     <span className="font-mono text-emerald-400 font-bold">-${simBudgetDeduction.toFixed(2)}</span>
                   </div>
                   {simCapitalBorrowing > 0 ? (
-                    <div className="flex justify-between text-xs pt-1 border-t border-obsidian-800 text-rose-400 font-bold">
-                      <span>Shortage Borrowed from Capital:</span>
-                      <span className="font-mono">+${simCapitalBorrowing.toFixed(2)}</span>
+                    <div className="pt-2 border-t border-obsidian-800 space-y-2">
+                      <div className="flex justify-between text-xs text-rose-400 font-bold">
+                        <span>Shortage Borrowed from Capital:</span>
+                        <span className="font-mono">+${simCapitalBorrowing.toFixed(2)}</span>
+                      </div>
+                      <label className="flex items-center space-x-2 text-[11px] text-amber-300 font-mono cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={expenseForm.allowCapitalBorrowing}
+                          onChange={(e) => setExpenseForm({ ...expenseForm, allowCapitalBorrowing: e.target.checked })}
+                          className="rounded border-obsidian-700 text-amber-500 focus:ring-0"
+                        />
+                        <span>Authorize advance borrowing from Business Capital</span>
+                      </label>
                     </div>
                   ) : (
                     <div className="text-[11px] font-mono text-emerald-400 pt-1 border-t border-obsidian-800">
-                      ✓ Expense fully funded by budget. Business capital untouched.
+                      ✓ Expense fully covered by designated budget. Business capital untouched.
                     </div>
                   )}
                 </div>
@@ -1001,7 +1378,7 @@ export default function MonthlyRevenueAllocationView() {
                 type="submit"
                 className="w-full py-2.5 rounded-xl bg-brass-500 hover:bg-brass-400 text-obsidian-950 font-bold text-xs shadow-md shadow-brass-500/20 active:scale-98 transition"
               >
-                Confirm & Record Expense
+                {expenseForm.categoryId === 'EMPLOYEE_SALARIES' ? 'Confirm & Disburse Salary' : 'Confirm & Record Expense'}
               </button>
             </form>
           </div>
@@ -1009,53 +1386,96 @@ export default function MonthlyRevenueAllocationView() {
       )}
 
       {/* REPAY CAPITAL MODAL */}
-      {isRepayOpen && selectedBorrowing && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-obsidian-950/80 backdrop-blur-sm p-4">
-          <div className="w-full max-w-md bg-obsidian-900 border border-obsidian-750 rounded-2xl shadow-2xl overflow-hidden p-6 space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-obsidian-800">
-              <h2 className="text-sm font-bold text-slate-100 uppercase tracking-wider font-display">
-                Repay Capital Advance
-              </h2>
-              <button onClick={() => setIsRepayOpen(false)} className="text-slate-400 hover:text-white">
-                <X className="w-4 h-4" />
-              </button>
-            </div>
+      {isRepayOpen && selectedBorrowing && (() => {
+        const originCat = selectedBorrowing.budget_category_id || repayForm.sourceCategoryId || 'OPERATING_EXPENSES';
+        const fundingBudget = budgets.find(bg => bg.category_id === originCat);
+        const availableRepayBudget = Number(fundingBudget?.remaining_balance || 0);
+        const repayNum = parseFloat(repayForm.amount) || 0;
+        const isRepayInsufficient = repayNum > availableRepayBudget;
 
-            <form onSubmit={handleRepaySubmit} className="space-y-4 text-xs">
-              <div className="p-3 rounded-xl bg-obsidian-950 border border-obsidian-800 space-y-1">
-                <div className="text-[10px] font-mono text-slate-500 uppercase">Borrowing Reference</div>
-                <div className="font-mono font-bold text-rose-400">{selectedBorrowing.borrowing_ref}</div>
-                <div className="text-[11px] text-slate-300">{selectedBorrowing.reason}</div>
-                <div className="text-xs font-mono font-bold text-slate-200 mt-1">
-                  Outstanding: ${Number(selectedBorrowing.outstanding_amount || 0).toFixed(2)}
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-obsidian-950/80 backdrop-blur-sm p-4">
+            <div className="w-full max-w-md bg-obsidian-900 border border-obsidian-750 rounded-2xl shadow-2xl overflow-hidden p-6 space-y-4">
+              <div className="flex items-center justify-between pb-3 border-b border-obsidian-800">
+                <h2 className="text-sm font-bold text-slate-100 uppercase tracking-wider font-display">
+                  Repay Capital Advance
+                </h2>
+                <button onClick={() => setIsRepayOpen(false)} className="text-slate-400 hover:text-white">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <form onSubmit={handleRepaySubmit} className="space-y-4 text-xs">
+                <div className="p-3 rounded-xl bg-obsidian-950 border border-obsidian-800 space-y-1">
+                  <div className="text-[10px] font-mono text-slate-500 uppercase">Borrowing Reference</div>
+                  <div className="font-mono font-bold text-rose-400">{selectedBorrowing.borrowing_ref}</div>
+                  <div className="text-[11px] text-slate-300">{selectedBorrowing.reason}</div>
+                  <div className="text-xs font-mono font-bold text-slate-200 mt-1">
+                    Outstanding Balance: ${Number(selectedBorrowing.outstanding_amount || 0).toFixed(2)}
+                  </div>
                 </div>
-              </div>
 
-              <div>
-                <label className="text-[11px] font-mono uppercase text-slate-400 font-semibold block mb-1">
-                  Repayment Amount ($) *
-                </label>
-                <input
-                  type="number"
-                  step="0.01"
-                  required
-                  max={selectedBorrowing.outstanding_amount}
-                  value={repayForm.amount}
-                  onChange={(e) => setRepayForm({ ...repayForm, amount: e.target.value })}
-                  className="w-full bg-obsidian-950 border border-obsidian-750 rounded-xl px-3 py-2 text-slate-200 font-mono font-bold focus:outline-none focus:border-emerald-400 text-sm"
-                />
-              </div>
+                {/* Allocation Funding Source Confirmation */}
+                <div className="p-3 rounded-xl bg-obsidian-950 border border-obsidian-800 space-y-1.5">
+                  <div className="text-[10px] font-mono text-slate-400 uppercase font-semibold">
+                    Repayment Funding Budget Source
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-slate-200">
+                      {fundingBudget?.category_name || (originCat === 'EMPLOYEE_SALARIES' ? 'Employee Salaries' : 'Operating Expenses')}
+                    </span>
+                    <span className={`text-xs font-mono font-bold ${availableRepayBudget > 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                      Available: ${availableRepayBudget.toFixed(2)}
+                    </span>
+                  </div>
+                  <p className="text-[10px] text-slate-400 leading-relaxed">
+                    This advance was borrowed by <strong>{fundingBudget?.category_name || originCat}</strong>. Repayment must be funded from this category's remaining budget.
+                  </p>
+                </div>
 
-              <button
-                type="submit"
-                className="w-full py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-obsidian-950 font-bold text-xs shadow-md shadow-emerald-500/20 active:scale-98 transition"
-              >
-                Execute Capital Repayment
-              </button>
-            </form>
+                <div>
+                  <label className="text-[11px] font-mono uppercase text-slate-400 font-semibold block mb-1">
+                    Repayment Amount ($) *
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    required
+                    max={selectedBorrowing.outstanding_amount}
+                    value={repayForm.amount}
+                    onChange={(e) => setRepayForm({ ...repayForm, amount: e.target.value })}
+                    className="w-full bg-obsidian-950 border border-obsidian-750 rounded-xl px-3 py-2 text-slate-200 font-mono font-bold focus:outline-none focus:border-emerald-400 text-sm"
+                  />
+                </div>
+
+                {isRepayInsufficient && (
+                  <div className="p-3 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-300 text-xs space-y-1">
+                    <div className="font-bold flex items-center gap-1.5">
+                      <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />
+                      <span>Insufficient Budget to Pay Back</span>
+                    </div>
+                    <p className="text-[11px] text-slate-300">
+                      The {fundingBudget?.category_name || 'selected'} budget only has <strong>${availableRepayBudget.toFixed(2)}</strong> available, which is not enough to pay back <strong>${repayNum.toFixed(2)}</strong>. You must allocate additional revenue to this budget before repaying.
+                    </p>
+                  </div>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={isRepayInsufficient || !repayForm.amount || repayNum <= 0}
+                  className={`w-full py-2.5 rounded-xl font-bold text-xs shadow-md transition ${
+                    isRepayInsufficient || !repayForm.amount || repayNum <= 0
+                      ? 'bg-obsidian-800 text-slate-500 border border-obsidian-750 cursor-not-allowed opacity-60'
+                      : 'bg-emerald-500 hover:bg-emerald-400 text-obsidian-950 shadow-emerald-500/20 active:scale-98'
+                  }`}
+                >
+                  {isRepayInsufficient ? 'Insufficient Budget to Pay Back' : 'Confirm & Execute Capital Repayment'}
+                </button>
+              </form>
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* INJECT CAPITAL MODAL */}
       {isInjectCapitalOpen && canInjectCapital && (

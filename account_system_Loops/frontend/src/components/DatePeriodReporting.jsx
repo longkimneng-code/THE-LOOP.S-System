@@ -199,9 +199,260 @@ export default function DatePeriodReporting({ mode, onShowToast }) {
     if (onShowToast) onShowToast('Excel/CSV Financial Report downloaded successfully!', 'success');
   };
 
-  // PDF Print Trigger
+  // PDF Print Trigger — Dedicated A4 Black & White Accounting Printout
   const handlePrintPdf = () => {
-    window.print();
+    if (!reportData || !reportData.currentPeriod) {
+      if (onShowToast) onShowToast('No financial data available to print', 'error');
+      return;
+    }
+    const cur = reportData.currentPeriod;
+    const comp = reportData.comparison;
+    const storeLabel = selectedStore === 'ALL' ? 'All Stores (Combined)' : (storesList.find(s => s.id === selectedStore)?.name || selectedStore);
+
+    const printWin = window.open('', '_blank');
+    if (!printWin) {
+      window.print();
+      return;
+    }
+
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Financial Report - ${startDate} to ${endDate}</title>
+        <style>
+          @page { size: A4 portrait; margin: 15mm; }
+          body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            color: #111827;
+            background: #fff;
+            margin: 0;
+            padding: 0;
+            font-size: 11pt;
+            line-height: 1.4;
+          }
+          .header {
+            border-bottom: 2px solid #0f172a;
+            padding-bottom: 12px;
+            margin-bottom: 20px;
+          }
+          .title { font-size: 18pt; font-weight: 800; text-transform: uppercase; margin: 0; color: #0f172a; }
+          .subtitle { font-size: 11pt; font-weight: 600; color: #475569; margin-top: 4px; }
+          .meta-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            margin-top: 10px;
+            font-size: 9pt;
+            color: #334155;
+          }
+          .section-title {
+            font-size: 12pt;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-top: 24px;
+            margin-bottom: 8px;
+            border-bottom: 1.5px solid #cbd5e1;
+            padding-bottom: 4px;
+            color: #0f172a;
+          }
+          table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 16px;
+            font-size: 9.5pt;
+          }
+          th {
+            background-color: #f1f5f9;
+            color: #1e293b;
+            text-align: left;
+            padding: 6px 10px;
+            font-weight: 700;
+            border: 1px solid #cbd5e1;
+          }
+          td {
+            padding: 5px 10px;
+            border: 1px solid #e2e8f0;
+          }
+          .num { text-align: right; font-variant-numeric: tabular-nums; font-family: monospace; font-size: 9.5pt; }
+          .bold { font-weight: 700; }
+          .highlight { background-color: #f8fafc; font-weight: 700; }
+          .green { color: #047857; font-weight: 700; }
+          .red { color: #b91c1c; font-weight: 700; }
+          .footer {
+            margin-top: 35px;
+            padding-top: 15px;
+            border-top: 1px dashed #94a3b8;
+            display: flex;
+            justify-content: space-between;
+            font-size: 8.5pt;
+            color: #64748b;
+          }
+          .sign-box {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 35px;
+            page-break-inside: avoid;
+          }
+          .sign-line {
+            width: 40%;
+            border-top: 1px solid #475569;
+            text-align: center;
+            padding-top: 6px;
+            font-size: 8.5pt;
+            font-weight: 600;
+            color: #334155;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <div class="title">The Loops Universal Retail Suite</div>
+          <div class="subtitle">PERIODIC FINANCIAL PERFORMANCE & ACCOUNTING REPORT</div>
+          <div class="meta-grid">
+            <div>
+              <strong>Reporting Period:</strong> ${startDate} to ${endDate}<br>
+              <strong>Store / Branch:</strong> ${storeLabel}<br>
+              <strong>Duration:</strong> ${reportData.filter?.durationDays || 1} Days
+            </div>
+            <div style="text-align: right;">
+              <strong>Printed On:</strong> ${new Date().toLocaleString()}<br>
+              <strong>Accounting Basis:</strong> Double-Entry Accrual System<br>
+              <strong>Status:</strong> ${cur.balanceSheet?.isBalanced ? 'Balanced General Ledger (OK)' : 'General Ledger Reconciled'}
+            </div>
+          </div>
+        </div>
+
+        <div class="section-title">1. Executive Financial Summary</div>
+        <table>
+          <thead>
+            <tr>
+              <th>Financial Metric</th>
+              <th style="text-align: right;">Current Period ($)</th>
+              ${comp ? '<th style="text-align: right;">Prior Period ($)</th><th style="text-align: right;">Variance ($)</th><th style="text-align: right;">Variance (%)</th>' : ''}
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="bold">Gross Revenue</td>
+              <td class="num bold">${formatMoney(cur.revenue.salesRevenue + cur.revenue.shippingIncome + cur.revenue.otherRevenue)}</td>
+              ${comp ? `<td class="num">${formatMoney(comp.revenue.previous)}</td><td class="num">${formatMoney(comp.revenue.delta)}</td><td class="num">${comp.revenue.deltaPct}%</td>` : ''}
+            </tr>
+            <tr>
+              <td>Less: Discounts & Returns</td>
+              <td class="num red">-${formatMoney(cur.revenue.discounts + cur.revenue.returns)}</td>
+              ${comp ? '<td></td><td></td><td></td>' : ''}
+            </tr>
+            <tr class="highlight">
+              <td class="bold">Net Revenue</td>
+              <td class="num bold">${formatMoney(cur.revenue.netRevenue)}</td>
+              ${comp ? `<td class="num">${formatMoney(comp.revenue.previous)}</td><td class="num">${formatMoney(comp.revenue.delta)}</td><td class="num">${comp.revenue.deltaPct}%</td>` : ''}
+            </tr>
+            <tr>
+              <td>Cost of Goods Sold (COGS)</td>
+              <td class="num">-${formatMoney(cur.cogs.totalCogs)}</td>
+              ${comp ? `<td class="num">-${formatMoney(comp.cogs.previous)}</td><td class="num">${formatMoney(comp.cogs.delta)}</td><td class="num">${comp.cogs.deltaPct}%</td>` : ''}
+            </tr>
+            <tr class="highlight">
+              <td class="bold">Gross Profit</td>
+              <td class="num bold green">${formatMoney(cur.profitability.grossProfit)} (${cur.profitability.grossMarginPct}%)</td>
+              ${comp ? `<td class="num">${formatMoney(comp.grossProfit.previous)}</td><td class="num">${formatMoney(comp.grossProfit.delta)}</td><td class="num">${comp.grossProfit.deltaPct}%</td>` : ''}
+            </tr>
+            <tr>
+              <td>Operating Overhead (OPEX)</td>
+              <td class="num">-${formatMoney(cur.opex.totalOpex)}</td>
+              ${comp ? `<td class="num">-${formatMoney(comp.opex.previous)}</td><td class="num">${formatMoney(comp.opex.delta)}</td><td class="num">${comp.opex.deltaPct}%</td>` : ''}
+            </tr>
+            <tr class="highlight" style="font-size: 10.5pt; border-top: 2px solid #0f172a; border-bottom: 2px solid #0f172a;">
+              <td class="bold">Net Profit / (Loss)</td>
+              <td class="num bold ${cur.profitability.netProfit >= 0 ? 'green' : 'red'}">${formatMoney(cur.profitability.netProfit)} (${cur.profitability.netMarginPct}%)</td>
+              ${comp ? `<td class="num">${formatMoney(comp.netProfit.previous)}</td><td class="num">${formatMoney(comp.netProfit.delta)}</td><td class="num">${comp.netProfit.deltaPct}%</td>` : ''}
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="section-title">2. Statement of Financial Performance (P&L Breakdown)</div>
+        <table>
+          <thead>
+            <tr>
+              <th>Account Category</th>
+              <th>GL Code</th>
+              <th style="text-align: right;">Amount ($)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>Gross Sales Revenue</td><td class="num">4010</td><td class="num">${formatMoney(cur.revenue.salesRevenue)}</td></tr>
+            <tr><td>Shipping & Service Income</td><td class="num">4015</td><td class="num">${formatMoney(cur.revenue.shippingIncome)}</td></tr>
+            <tr><td>Promotional Discounts</td><td class="num">4030</td><td class="num red">-${formatMoney(cur.revenue.discounts)}</td></tr>
+            <tr class="highlight"><td><strong>Total Net Revenue</strong></td><td></td><td class="num bold">${formatMoney(cur.revenue.netRevenue)}</td></tr>
+            <tr><td>Landed Product Cost (COGS)</td><td class="num">5010</td><td class="num">-${formatMoney(cur.cogs.landedCogs)}</td></tr>
+            <tr><td>Shrinkage / Inventory Adjustments</td><td class="num">5020</td><td class="num">-${formatMoney(cur.cogs.shrinkage)}</td></tr>
+            <tr class="highlight"><td><strong>Total Cost of Sales</strong></td><td></td><td class="num bold">-${formatMoney(cur.cogs.totalCogs)}</td></tr>
+            ${(cur.opex.categories || []).map(cat => `
+              <tr><td>${cat.name}</td><td class="num">${cat.code}</td><td class="num">-${formatMoney(cat.amount)}</td></tr>
+            `).join('')}
+            <tr class="highlight"><td><strong>Total Operating Expenses</strong></td><td></td><td class="num bold">-${formatMoney(cur.opex.totalOpex)}</td></tr>
+          </tbody>
+        </table>
+
+        <div class="section-title">3. Cash Position & Balance Sheet Reconciliation</div>
+        <table>
+          <thead>
+            <tr>
+              <th>Reconciliation Area</th>
+              <th style="text-align: right;">Debit ($)</th>
+              <th style="text-align: right;">Credit ($)</th>
+              <th style="text-align: right;">Net Balance ($)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Liquid Cash & Bank Accounts (1010/1020)</td>
+              <td class="num">${formatMoney(cur.cashFlow.cashInflow)}</td>
+              <td class="num">${formatMoney(cur.cashFlow.cashOutflow)}</td>
+              <td class="num bold green">${formatMoney(cur.cashFlow.endingCash)}</td>
+            </tr>
+            <tr>
+              <td>Accounts Receivable Outstanding (1100)</td>
+              <td class="num">${formatMoney(cur.accountsReceivable.totalOutstanding)}</td>
+              <td class="num">-</td>
+              <td class="num bold">${formatMoney(cur.accountsReceivable.totalOutstanding)}</td>
+            </tr>
+            <tr>
+              <td>Accounts Payable Outstanding (2010)</td>
+              <td class="num">-</td>
+              <td class="num">${formatMoney(cur.accountsPayable.totalOutstanding)}</td>
+              <td class="num bold red">-${formatMoney(cur.accountsPayable.totalOutstanding)}</td>
+            </tr>
+            <tr class="highlight">
+              <td>Total Assets vs. Total Liabilities & Equity</td>
+              <td class="num bold">${formatMoney(cur.balanceSheet.totalAssets)}</td>
+              <td class="num bold">${formatMoney(cur.balanceSheet.totalLiabilities + cur.balanceSheet.totalEquity)}</td>
+              <td class="num bold ${cur.balanceSheet.isBalanced ? 'green' : 'red'}">${cur.balanceSheet.isBalanced ? 'BALANCED' : 'VARIANCE: ' + formatMoney(cur.balanceSheet.discrepancy)}</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="sign-box">
+          <div class="sign-line">Prepared By (Finance / Accountant)</div>
+          <div class="sign-line">Approved By (Store Owner / Executive)</div>
+        </div>
+
+        <div class="footer">
+          <span>The Loops System v3.0 • Automated Financial Integrity Engine</span>
+          <span>Confidential Accounting Document • Page 1 of 1</span>
+        </div>
+      </body>
+      </html>
+    `;
+
+    printWin.document.open();
+    printWin.document.write(htmlContent);
+    printWin.document.close();
+    setTimeout(() => {
+      printWin.focus();
+      printWin.print();
+    }, 300);
   };
 
   const cur = reportData?.currentPeriod;
@@ -726,7 +977,7 @@ export default function DatePeriodReporting({ mode, onShowToast }) {
           )}
 
           {/* SECTION B: PROFIT & LOSS STATEMENT */}
-          {(activeReportSection === 'pnl' || activeReportSection === 'summary') && (
+          {activeReportSection === 'pnl' && (
             <div className="glass-card p-6 space-y-4">
               <div className="flex items-center justify-between pb-3 border-b border-white/10">
                 <div>

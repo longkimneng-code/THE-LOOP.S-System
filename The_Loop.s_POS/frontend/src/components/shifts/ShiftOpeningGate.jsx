@@ -111,22 +111,24 @@ export default function ShiftOpeningGate() {
 
         {/* Live Station Telemetry Grid */}
         <div className="grid grid-cols-2 gap-3 bg-obsidian-950/80 p-4 rounded-2xl border border-obsidian-800 text-xs font-mono">
-          <div className="space-y-1">
+          <div className="space-y-1 min-w-0">
             <div className="text-[10px] text-slate-500 uppercase">Logged-In Cashier</div>
-            <div className="font-semibold text-slate-200 flex items-center space-x-1.5">
-              <span className="w-2 h-2 rounded-full bg-emerald-400" />
-              <span>{cashierUser?.fullName || 'Cashier'}</span>
+            <div className="font-semibold text-slate-200 flex items-center space-x-1.5 truncate">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 shrink-0" />
+              <span className="truncate">{cashierUser?.fullName || 'Cashier'}</span>
             </div>
-            <div className="text-[10px] text-slate-400">ID: {cashierUser?.id || 'usr-01'}</div>
+            <div className="text-[10px] text-slate-400 font-mono">ID: {cashierUser?.id || 'usr-01'}</div>
           </div>
 
-          <div className="space-y-1">
+          <div className="space-y-1 min-w-0">
             <div className="text-[10px] text-slate-500 uppercase">Store & Register</div>
-            <div className="font-semibold text-slate-200 flex items-center space-x-1.5">
-              <Store className="w-3 h-3 text-brass-400 shrink-0" />
-              <span>{currentStore?.name ? `${currentStore.name} • ` : ''}{register?.name || 'Front Counter'}</span>
+            <div className="font-semibold text-slate-200 flex items-center space-x-1.5 truncate">
+              <Store className="w-3.5 h-3.5 text-brass-400 shrink-0" />
+              <span className="truncate">{currentStore?.name || 'Main Branch'}</span>
             </div>
-            <div className="text-[10px] text-slate-400">Code: {register?.code || 'REG-01'}</div>
+            <div className="text-[10px] text-slate-400 font-mono">
+              Terminal: <span className="text-slate-300 font-semibold">{register?.registerCode || register?.code || 'REG-01'}</span>
+            </div>
           </div>
 
           <div className="space-y-1 col-span-2 pt-2 border-t border-obsidian-850 flex items-center justify-between">

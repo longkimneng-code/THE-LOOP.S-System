@@ -77,7 +77,7 @@ export default function TerminalHeader() {
         </div>
 
         {/* Universal Ecosystem Switcher (Clean Backoffice Style) */}
-        <div className="hidden sm:flex items-center space-x-2 bg-[#111522] hover:bg-[#171D2D] px-2.5 py-1.5 rounded-xl border border-[#232838] text-xs">
+        <div className="flex items-center space-x-2 bg-[#111522] hover:bg-[#171D2D] px-2.5 py-1.5 rounded-xl border border-[#232838] text-xs">
           <button
             onClick={() => setAppView('STOCK')}
             className="flex items-center space-x-1 hover:text-sky-400 transition"

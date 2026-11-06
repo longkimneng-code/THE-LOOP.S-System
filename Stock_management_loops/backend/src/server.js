@@ -1920,6 +1920,8 @@ const server = http.createServer(async (req, res) => {
     if (pathname === '/api/settings' && req.method === 'GET') {
       const tenant = getTenantContext(req);
       const locs = ensureTenantLocation(db, tenant);
+      const { getCurrentHq } = require('../../../shared/store/hqManager');
+      const hqData = getCurrentHq(tenant.orgId);
       if (!tenant.isDefaultOrg && tenant.org) {
         return sendJson(res, 200, {
           settings: {
@@ -1933,15 +1935,41 @@ const server = http.createServer(async (req, res) => {
           attributes: db.attributes || [],
           categories: db.categories || [],
           isOnboarded: true,
-          locations: locs
+          locations: hqData.branches || locs,
+          currentHq: hqData.currentHq,
+          hqHistory: hqData.history
         });
       }
       return sendJson(res, 200, {
         settings: db.settings,
         attributes: db.attributes,
         categories: db.categories,
-        isOnboarded: !!db.settings?.isOnboarded && (db.locations || []).length > 0
+        isOnboarded: !!db.settings?.isOnboarded && (db.locations || []).length > 0,
+        locations: hqData.branches || db.locations,
+        currentHq: hqData.currentHq,
+        hqHistory: hqData.history
       });
+    }
+
+    // 9b. Store Headquarters (HQ) API
+    if (pathname === '/api/stores/hq' && req.method === 'GET') {
+      const tenant = getTenantContext(req);
+      const { getCurrentHq } = require('../../../shared/store/hqManager');
+      const result = getCurrentHq(tenant.orgId);
+      return sendJson(res, 200, result);
+    }
+
+    if (pathname === '/api/stores/switch-hq' && req.method === 'POST') {
+      const tenant = getTenantContext(req);
+      const body = await parseBody(req);
+      const { switchHq } = require('../../../shared/store/hqManager');
+      const result = switchHq({
+        organizationId: tenant.orgId,
+        targetStoreId: body.targetStoreId || body.storeId,
+        user: tenant.user || { id: 'usr-owner-83bbcc', role: 'OWNER', organizationId: tenant.orgId }
+      });
+      if (!result.ok) return sendJson(res, result.code || 400, result);
+      return sendJson(res, 200, result);
     }
 
     // Reset DB to clean scratch state

@@ -1,0 +1,66 @@
+{
+  "metadata": {
+    "storeId": "loc-zprdw9b",
+    "storeName": "BEYONDSISOWAT",
+    "storeCode": "SSW",
+    "organizationId": "org-6e9ed3cf",
+    "backedUpAt": "2026-11-05T08:14:44.746Z",
+    "performedBy": {
+      "id": "usr-owner-83bbcc",
+      "name": "long kimneng"
+    }
+  },
+  "sqliteRecords": {
+    "shifts": [
+      {
+        "id": "shift-484561-4ea1",
+        "organization_id": "org-6e9ed3cf",
+        "store_id": "loc-zprdw9b",
+        "register_id": "reg-ssw-01",
+        "cashier_id": "usr-6b13c38f",
+        "cashier_name": "panha",
+        "opened_at": "2026-11-05T08:14:44.562Z",
+        "closed_at": null,
+        "status": "OPEN",
+        "starting_cash_usd": 75,
+        "starting_cash_khr": 0,
+        "expected_cash_usd": 75,
+        "expected_cash_khr": 0,
+        "actual_cash_usd": 0,
+        "actual_cash_khr": 0,
+        "discrepancy_usd": 0,
+        "discrepancy_khr": 0,
+        "closing_note": "",
+        "cash_movements_json": "[]",
+        "created_at": "2026-11-05T08:14:44.562Z"
+      }
+    ],
+    "pos_orders": [],
+    "saved_orders": [],
+    "stock_balances": [
+      {
+        "id": "bal-loc-zprdw9b-BV-GEN-2723",
+        "organization_id": "org-6e9ed3cf",
+        "location_id": "loc-zprdw9b",
+        "sku": "BV-GEN-2723",
+        "on_hand": 0,
+        "reserved": 0,
+        "damaged": 0,
+        "rop": 5,
+        "updated_at": "2026-11-05 04:27:36"
+      },
+      {
+        "id": "bal-loc-zprdw9b-BV-GEN-5280",
+        "organization_id": "org-6e9ed3cf",
+        "location_id": "loc-zprdw9b",
+        "sku": "BV-GEN-5280",
+        "on_hand": 0,
+        "reserved": 0,
+        "damaged": 0,
+        "rop": 5,
+        "updated_at": "2026-11-05 04:50:22"
+      }
+    ],
+    "stock_ledger": []
+  }
+}

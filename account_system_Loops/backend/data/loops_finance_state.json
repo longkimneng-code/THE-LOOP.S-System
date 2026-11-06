@@ -42,7 +42,7 @@
       "type": "ASSET",
       "normalSide": "DEBIT",
       "isSystemProtected": true,
-      "balance": 5520.19,
+      "balance": 10409.19,
       "debits": 0,
       "credits": 0
     },
@@ -353,7 +353,7 @@
       "type": "EQUITY",
       "normalSide": "CREDIT",
       "isSystemProtected": true,
-      "balance": 4100,
+      "balance": 9100,
       "debits": 0,
       "credits": 0
     },
@@ -533,7 +533,7 @@
       "type": "OPERATING_EXPENSE",
       "normalSide": "DEBIT",
       "isSystemProtected": false,
-      "balance": 0,
+      "balance": 51,
       "debits": 0,
       "credits": 0
     },
@@ -543,7 +543,7 @@
       "type": "OPERATING_EXPENSE",
       "normalSide": "DEBIT",
       "isSystemProtected": false,
-      "balance": 0,
+      "balance": 50,
       "debits": 0,
       "credits": 0
     },
@@ -553,7 +553,7 @@
       "type": "OPERATING_EXPENSE",
       "normalSide": "DEBIT",
       "isSystemProtected": false,
-      "balance": 0,
+      "balance": 10,
       "debits": 0,
       "credits": 0
     },
@@ -674,15 +674,38 @@
       "organizationId": "org-6e9ed3cf",
       "partnerName": "Long Kimneng",
       "partnerRole": "Co-founder",
-      "ownershipPercentage": 100,
+      "ownershipPercentage": 80,
       "totalInvested": 4100,
       "totalWithdrawn": 0,
       "currentEquity": 4100,
       "notes": "",
       "createdAt": "2026-11-04T17:25:10.423Z"
+    },
+    {
+      "id": "cap-1793900155288-n2fp",
+      "organizationId": "org-6e9ed3cf",
+      "partnerName": "panha",
+      "partnerRole": "Co-founder",
+      "ownershipPercentage": 20,
+      "totalInvested": 5000,
+      "totalWithdrawn": 0,
+      "currentEquity": 5000,
+      "notes": "good",
+      "createdAt": "2026-11-05T17:35:55.288Z"
     }
   ],
   "capitalTransactions": [
+    {
+      "id": "ctx-1793900155288",
+      "organizationId": "org-6e9ed3cf",
+      "capitalAccountId": "cap-1793900155288-n2fp",
+      "partnerName": "panha",
+      "type": "INITIAL_INVESTMENT",
+      "amount": 5000,
+      "transactionDate": "2026-11-05",
+      "paymentMethod": "BANK_TRANSFER",
+      "notes": "good"
+    },
     {
       "id": "ctx-1793813175222",
       "organizationId": "org-6e9ed3cf",
@@ -845,6 +868,19 @@
   ],
   "supplierBills": [],
   "expenses": [
+    {
+      "id": "exp-1793865740054",
+      "organizationId": "org-6e9ed3cf",
+      "expenseNumber": "EXP-2026-013",
+      "category": "Payroll & Staff Wages",
+      "tier": "PAYROLL_WAGES",
+      "vendorPayee": "Panha",
+      "amount": 50,
+      "expenseDate": "2026-11-05",
+      "paymentMethod": "BANK_TRANSFER",
+      "notes": "",
+      "budgetCategory": "EMPLOYEE_SALARIES"
+    },
     {
       "id": "exp-1793864471404",
       "organizationId": "org-6e9ed3cf",
@@ -1090,6 +1126,149 @@
     }
   ],
   "journalEntries": [
+    {
+      "id": "je-1793937531450-450",
+      "organizationId": "org-6e9ed3cf",
+      "storeId": "loc-01",
+      "entryNumber": "JRN-2026-0026",
+      "accountingDate": "2026-11-05",
+      "status": "POSTED",
+      "sourceType": "EXPENSE",
+      "sourceId": "exp-e8a074fb-87f1-4c1f-98de-a88a1786fe37",
+      "memo": "Expense: Landlord — Rent & Facilities",
+      "totalDebit": 11,
+      "totalCredit": 11,
+      "lines": [
+        {
+          "accountCode": "6030",
+          "accountName": "Rent & Store Utilities",
+          "debit": 11,
+          "credit": 0,
+          "memo": ""
+        },
+        {
+          "accountCode": "1020",
+          "accountName": "Bank Operating Account",
+          "debit": 0,
+          "credit": 11,
+          "memo": ""
+        }
+      ]
+    },
+    {
+      "id": "je-1793937531449-503",
+      "organizationId": "org-6e9ed3cf",
+      "storeId": "loc-01",
+      "entryNumber": "JRN-2026-0025",
+      "accountingDate": "2026-11-05",
+      "status": "POSTED",
+      "sourceType": "EXPENSE",
+      "sourceId": "exp-b1839b00-5319-4fc5-86ac-796f4d7327c8",
+      "memo": "Expense: ss — Electricity & Utilities",
+      "totalDebit": 40,
+      "totalCredit": 40,
+      "lines": [
+        {
+          "accountCode": "6030",
+          "accountName": "Rent & Store Utilities",
+          "debit": 40,
+          "credit": 0,
+          "memo": ""
+        },
+        {
+          "accountCode": "1020",
+          "accountName": "Bank Operating Account",
+          "debit": 0,
+          "credit": 40,
+          "memo": ""
+        }
+      ]
+    },
+    {
+      "id": "je-1793937531443-606",
+      "organizationId": "org-6e9ed3cf",
+      "storeId": "loc-01",
+      "entryNumber": "JRN-2026-0024",
+      "accountingDate": "2026-11-05",
+      "status": "POSTED",
+      "sourceType": "EXPENSE",
+      "sourceId": "exp-47e07c01-54aa-4286-acd7-264f2a7e9e8e",
+      "memo": "Expense: buy equip — Store Equipment & Maintenance",
+      "totalDebit": 10,
+      "totalCredit": 10,
+      "lines": [
+        {
+          "accountCode": "6050",
+          "accountName": "Store Equipment & Maintenance",
+          "debit": 10,
+          "credit": 0,
+          "memo": ""
+        },
+        {
+          "accountCode": "1020",
+          "accountName": "Bank Operating Account",
+          "debit": 0,
+          "credit": 10,
+          "memo": ""
+        }
+      ]
+    },
+    {
+      "id": "je-1793900155289-992",
+      "organizationId": "org-6e9ed3cf",
+      "entryNumber": "JRN-2026-0023",
+      "accountingDate": "2026-11-05",
+      "status": "POSTED",
+      "sourceType": "CAPITAL",
+      "sourceId": "ctx-1793900155288",
+      "memo": "panha (Co-founder) — INITIAL INVESTMENT",
+      "totalDebit": 5000,
+      "totalCredit": 5000,
+      "lines": [
+        {
+          "accountCode": "1020",
+          "accountName": "Bank Operating Account",
+          "debit": 5000,
+          "credit": 0,
+          "memo": ""
+        },
+        {
+          "accountCode": "3010",
+          "accountName": "Owner Capital",
+          "debit": 0,
+          "credit": 5000,
+          "memo": ""
+        }
+      ]
+    },
+    {
+      "id": "je-1793865740083-523",
+      "organizationId": "org-6e9ed3cf",
+      "entryNumber": "JRN-2026-0022",
+      "accountingDate": "2026-11-05",
+      "status": "POSTED",
+      "sourceType": "EXPENSE",
+      "sourceId": "exp-1793865740054",
+      "memo": "Expense: Panha — Payroll & Staff Wages",
+      "totalDebit": 50,
+      "totalCredit": 50,
+      "lines": [
+        {
+          "accountCode": "6040",
+          "accountName": "Payroll & Staff Wages",
+          "debit": 50,
+          "credit": 0,
+          "memo": ""
+        },
+        {
+          "accountCode": "1020",
+          "accountName": "Bank Operating Account",
+          "debit": 0,
+          "credit": 50,
+          "memo": ""
+        }
+      ]
+    },
     {
       "id": "je-1793864471404-111",
       "organizationId": "org-6e9ed3cf",
@@ -1771,5 +1950,6 @@
   ],
   "totalContributed": 0,
   "totalWithdrawn": 0,
-  "netEquity": 0
+  "netEquity": 0,
+  "monthlyAllocations": []
 }

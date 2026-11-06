@@ -19,6 +19,7 @@ import {
   ArrowUpRight,
   UserPlus,
   Trash2,
+  Edit3,
   Lock,
   ShieldAlert
 } from 'lucide-react';
@@ -78,6 +79,16 @@ export default function AccountingSettings({ mode, onShowToast, currentUser }) {
     partnerRole: 'Co-founder',
     ownershipPercentage: '',
     initialInvestment: '',
+    notes: ''
+  });
+
+  // Edit Partner / Investor Modal
+  const [isEditPartnerModalOpen, setIsEditPartnerModalOpen] = useState(false);
+  const [editPartnerForm, setEditPartnerForm] = useState({
+    id: '',
+    partnerName: '',
+    partnerRole: 'Co-investor',
+    ownershipPercentage: '',
     notes: ''
   });
 
@@ -250,6 +261,47 @@ export default function AccountingSettings({ mode, onShowToast, currentUser }) {
         }
       }
     });
+  };
+
+  const handleOpenEditPartner = (partner) => {
+    if (!canManageCapital) {
+      onShowToast('Access denied: Only Business Owners and Executive Directors can edit investors.', 'error');
+      return;
+    }
+    setEditPartnerForm({
+      id: partner.id,
+      partnerName: partner.partnerName || '',
+      partnerRole: partner.partnerRole || 'Co-investor',
+      ownershipPercentage: partner.ownershipPercentage !== undefined ? String(partner.ownershipPercentage) : '',
+      notes: partner.notes || ''
+    });
+    setIsEditPartnerModalOpen(true);
+  };
+
+  const handleSaveEditPartner = async (e) => {
+    e.preventDefault();
+    if (!editPartnerForm.partnerName.trim()) {
+      onShowToast('Partner name cannot be empty.', 'error');
+      return;
+    }
+    const newPct = parseFloat(editPartnerForm.ownershipPercentage);
+    if (isNaN(newPct) || newPct < 0 || newPct > 100) {
+      onShowToast('Ownership percentage must be between 0% and 100%.', 'error');
+      return;
+    }
+    try {
+      await api.updateCapitalPartner(editPartnerForm.id, {
+        partnerName: editPartnerForm.partnerName.trim(),
+        partnerRole: editPartnerForm.partnerRole,
+        ownershipPercentage: newPct,
+        notes: editPartnerForm.notes
+      });
+      setIsEditPartnerModalOpen(false);
+      onShowToast(`Investor "${editPartnerForm.partnerName}" updated! All investor shares auto-rebalanced to exactly 100%.`, 'success');
+      loadAll();
+    } catch (err) {
+      onShowToast(err.message, 'error');
+    }
   };
 
   const handleDeletePartner = (partner) => {
@@ -537,6 +589,22 @@ export default function AccountingSettings({ mode, onShowToast, currentUser }) {
             </div>
           )}
 
+          {/* Total Equity Invariant Status Bar */}
+          <div className="flex items-center justify-between px-4 py-2.5 rounded-xl bg-obsidian-900 border border-white/10">
+            <div className="flex items-center space-x-2">
+              <span className="text-xs text-slate-400">Total Legal Equity Ownership:</span>
+              <span className="font-mono text-xs font-bold text-emerald-400">
+                {(capitalData?.accounts || []).reduce((s, a) => s + Number(a.ownershipPercentage || 0), 0).toFixed(2)}%
+              </span>
+              <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-bold">
+                100% INVARIANT ENFORCED
+              </span>
+            </div>
+            <span className="text-[11px] font-mono text-slate-400">
+              Proportional Dilution Active on All Equity Changes
+            </span>
+          </div>
+
           {/* Partner Equity Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {(capitalData.accounts || []).map((acc) => (
@@ -551,14 +619,24 @@ export default function AccountingSettings({ mode, onShowToast, currentUser }) {
                       {acc.ownershipPercentage}% Equity
                     </span>
                     {canManageCapital && (
-                      <button
-                        type="button"
-                        onClick={() => handleDeletePartner(acc)}
-                        className="p-1.5 rounded-lg bg-white/5 hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 border border-white/5 transition"
-                        title={`Remove investor ${acc.partnerName}`}
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => handleOpenEditPartner(acc)}
+                          className="p-1.5 rounded-lg bg-white/5 hover:bg-sky-500/20 text-slate-400 hover:text-sky-300 border border-white/5 transition"
+                          title={`Edit investor ${acc.partnerName}`}
+                        >
+                          <Edit3 className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeletePartner(acc)}
+                          className="p-1.5 rounded-lg bg-white/5 hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 border border-white/5 transition"
+                          title={`Remove investor ${acc.partnerName}`}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     )}
                   </div>
                 </div>
@@ -1105,6 +1183,120 @@ export default function AccountingSettings({ mode, onShowToast, currentUser }) {
                   className="px-4 py-2 rounded-lg bg-[#E5A93C] text-black font-bold hover:bg-[#F3C368]"
                 >
                   Continue & Review
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: EDIT INVESTOR / PARTNER */}
+      {isEditPartnerModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="glass-card-elevated w-full max-w-md p-6 border border-white/20 animate-in fade-in space-y-4">
+            <div className="flex items-start justify-between">
+              <div>
+                <h3 className="text-base font-bold text-white flex items-center gap-2">
+                  <Edit3 className="w-5 h-5 text-sky-400" />
+                  Edit Investor / Partner Details
+                </h3>
+                <p className="text-xs text-slate-400 mt-1">
+                  Update legal ownership percentage. Proportional dilution will automatically adjust all other investors to maintain exactly 100% total equity.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsEditPartnerModalOpen(false)}
+                className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-white/5"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveEditPartner} className="space-y-3.5 text-xs">
+              <div>
+                <label className="block text-slate-300 font-medium mb-1">
+                  Investor / Partner Full Name <span className="text-rose-400">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Michael Smith"
+                  value={editPartnerForm.partnerName}
+                  onChange={(e) => setEditPartnerForm({ ...editPartnerForm, partnerName: e.target.value })}
+                  className="w-full bg-[#111520] border border-white/10 rounded-lg p-2.5 text-white focus:border-sky-400 focus:outline-none"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-slate-300 font-medium mb-1">
+                    Title / Role <span className="text-rose-400">*</span>
+                  </label>
+                  <select
+                    value={editPartnerForm.partnerRole}
+                    onChange={(e) => setEditPartnerForm({ ...editPartnerForm, partnerRole: e.target.value })}
+                    className="w-full bg-[#111520] border border-white/10 rounded-lg p-2.5 text-white"
+                  >
+                    <option value="Co-founder">Co-founder</option>
+                    <option value="CEO">CEO</option>
+                    <option value="Managing Founder">Managing Founder</option>
+                    <option value="Managing Director">Managing Director</option>
+                    <option value="Co-investor">Co-investor</option>
+                    <option value="Angel Investor">Angel Investor</option>
+                    <option value="Venture Partner">Venture Partner</option>
+                    <option value="Principal Shareholder">Principal Shareholder</option>
+                    <option value="Silent Partner">Silent Partner</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-slate-300 font-medium mb-1">
+                    Ownership Equity (%)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    max="100"
+                    placeholder="e.g. 25"
+                    value={editPartnerForm.ownershipPercentage}
+                    onChange={(e) => setEditPartnerForm({ ...editPartnerForm, ownershipPercentage: e.target.value })}
+                    className="w-full bg-[#111520] border border-white/10 rounded-lg p-2.5 text-white num-font focus:border-sky-400 focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="p-2.5 rounded-lg bg-sky-500/10 border border-sky-500/20 text-[11px] text-sky-300">
+                <strong>Automatic Proportional Dilution:</strong> Modifying this share will automatically recalculate and rescale other active investors proportionally so total equity remains exactly 100.00%.
+              </div>
+
+              <div>
+                <label className="block text-slate-300 font-medium mb-1">
+                  Notes / Agreement Terms
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Updated shareholder agreement"
+                  value={editPartnerForm.notes}
+                  onChange={(e) => setEditPartnerForm({ ...editPartnerForm, notes: e.target.value })}
+                  className="w-full bg-[#111520] border border-white/10 rounded-lg p-2.5 text-white"
+                />
+              </div>
+
+              <div className="flex justify-end gap-2.5 pt-4 border-t border-white/10">
+                <button
+                  type="button"
+                  onClick={() => setIsEditPartnerModalOpen(false)}
+                  className="px-4 py-2 rounded-lg bg-white/5 text-slate-300 hover:bg-white/10"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 rounded-lg bg-sky-500 text-black font-bold hover:bg-sky-400"
+                >
+                  Save & Rebalance Equity
                 </button>
               </div>
             </form>

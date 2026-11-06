@@ -373,15 +373,24 @@ function checkStaffPermission(tenant, requiredPermission = null, actionName = 'a
       const tenant = getFinanceTenantContext(req);
       checkStaffPermission(tenant, 'MANAGE_CAPITAL', 'add an equity partner / investor');
       const body = await parseJsonBody(req);
-      const partner = db.addCapitalPartner({ ...body, organizationId: tenant.orgId });
+      const partner = db.addCapitalPartner({ ...body, organizationId: tenant.orgId }, tenant.user);
       return sendJson(res, 201, partner);
+    }
+
+    if (pathname.startsWith('/api/capital/partners/') && (req.method === 'PUT' || req.method === 'PATCH')) {
+      const tenant = getFinanceTenantContext(req);
+      checkStaffPermission(tenant, 'MANAGE_CAPITAL', 'update an equity partner / investor');
+      const partnerId = pathname.split('/')[4];
+      const body = await parseJsonBody(req);
+      const updated = db.updateCapitalPartner(partnerId, body, tenant.orgId, tenant.user);
+      return sendJson(res, 200, updated);
     }
 
     if (pathname.startsWith('/api/capital/partners/') && req.method === 'DELETE') {
       const tenant = getFinanceTenantContext(req);
       checkStaffPermission(tenant, 'MANAGE_CAPITAL', 'delete an equity partner / investor');
       const partnerId = pathname.split('/')[4];
-      const result = db.deleteCapitalPartner(partnerId, tenant.orgId);
+      const result = db.deleteCapitalPartner(partnerId, tenant.orgId, tenant.user);
       return sendJson(res, 200, result);
     }
 
@@ -996,7 +1005,7 @@ function checkStaffPermission(tenant, requiredPermission = null, actionName = 'a
     // ------------------------------------------------------------------------
     if (pathname === '/api/expenses' && req.method === 'GET') {
       const tenant = getFinanceTenantContext(req);
-      const { expenses, recurringBills } = db.getExpenses();
+      const { expenses, recurringBills } = db.getExpenses(tenant?.orgId);
       if (!tenant.isDefaultOrg) {
         const filteredExp = expenses.filter(e => e.organizationId === tenant.orgId || (!e.organizationId && !tenant.orgId));
         const filteredRec = recurringBills.filter(r => r.organizationId === tenant.orgId || (!r.organizationId && !tenant.orgId));
@@ -1294,6 +1303,20 @@ function checkStaffPermission(tenant, requiredPermission = null, actionName = 'a
       return sendJson(res, 200, result);
     }
 
+    if ((pathname === '/api/capital/dismiss' || pathname === '/api/finance/capital/borrowing/dismiss' || pathname === '/api/capital/borrowing/dismiss') && req.method === 'POST') {
+      const tenant = getFinanceTenantContext(req);
+      const body = await parseJsonBody(req);
+      const { dismissCapitalBorrowing } = require('../../../shared/financial/financialAllocationEngine');
+      const result = dismissCapitalBorrowing({
+        organizationId: tenant.orgId,
+        borrowingId: body.borrowingId,
+        performedBy: body.performedBy || 'Accountant',
+        reason: body.reason || 'Decision not to pay'
+      });
+      if (!result.ok) return sendJson(res, 400, result);
+      return sendJson(res, 200, result);
+    }
+
     if (pathname === '/api/capital/borrowings' && req.method === 'GET') {
       const tenant = getFinanceTenantContext(req);
       const { getDatabase } = require('../../../shared/database/connection');
@@ -1306,9 +1329,16 @@ function checkStaffPermission(tenant, requiredPermission = null, actionName = 'a
       const tenant = getFinanceTenantContext(req);
       const { getDatabase } = require('../../../shared/database/connection');
       const dbSql = getDatabase();
-      const rows = dbSql.prepare('SELECT * FROM loop_share_ledger WHERE organization_id = ? ORDER BY date DESC, created_at DESC').all(tenant.orgId);
-      const latest = rows[0]?.balance_after || 0.0;
-      return sendJson(res, 200, { ok: true, balance: latest, transactions: rows });
+      const rows = dbSql.prepare('SELECT * FROM loop_share_ledger WHERE organization_id = ? OR organization_id IS NULL ORDER BY date DESC, created_at DESC').all(tenant.orgId);
+      const netShare = dbSql.prepare(`
+        SELECT 
+          COALESCE(SUM(CASE WHEN transaction_type IN ('ALLOCATION', 'ADJUSTMENT_ADD') THEN amount ELSE 0 END), 0) -
+          COALESCE(SUM(CASE WHEN transaction_type IN ('DISTRIBUTION', 'WITHDRAWAL', 'PAYMENT', 'ADJUSTMENT_SUB') THEN amount ELSE 0 END), 0) as balance
+        FROM loop_share_ledger
+        WHERE organization_id = ? OR organization_id IS NULL
+      `).get(tenant.orgId);
+      const balance = Math.max(0, netShare?.balance || 0);
+      return sendJson(res, 200, { ok: true, balance, transactions: rows });
     }
 
     if (pathname === '/api/loop-share/transaction' && req.method === 'POST') {

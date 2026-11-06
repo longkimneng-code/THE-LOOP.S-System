@@ -13,6 +13,7 @@ import ImportHistoryView from './ImportHistoryView';
 import MonthlyRevenueAllocationView from './MonthlyRevenueAllocationView';
 import LoopShareManagementView from './LoopShareManagementView';
 import MonthlyFinancialHistoryView from './MonthlyFinancialHistoryView';
+import ResetStoreDataModal from './ResetStoreDataModal';
 import {
   LayoutDashboard,
   Users,
@@ -20,6 +21,8 @@ import {
   Cpu,
   Coins,
   ShieldCheck,
+  ShieldAlert,
+  Trash2,
   Globe,
   ShoppingCart,
   LogOut,
@@ -37,13 +40,18 @@ import {
   Award,
   Ship,
   PieChart,
-  History
+  History,
+  Boxes,
+  Package
 } from 'lucide-react';
 
 export default function AdminDashboardView() {
   const {
     currentUser,
     cashierUser,
+    stores,
+    currentStore,
+    loadStores,
     logout,
     setAppView,
     exchangeRate,
@@ -95,6 +103,7 @@ export default function AdminDashboardView() {
   const [rateFeedback, setRateFeedback] = useState(null);
   const [auditLogs, setAuditLogs] = useState([]);
   const [loadingAudit, setLoadingAudit] = useState(false);
+  const [isResetStoreModalOpen, setIsResetStoreModalOpen] = useState(false);
 
   const activeUser = currentUser || cashierUser;
 
@@ -245,8 +254,8 @@ export default function AdminDashboardView() {
       {/* 2. Admin Workspace: Navigation Sidebar + Active View Area */}
       <div className="flex flex-1 overflow-hidden">
         {/* Left Side Navigation Sidebar */}
-        <aside className="w-64 bg-obsidian-900/70 border-r border-obsidian-800/80 flex flex-col justify-between p-3 shrink-0">
-          <nav className="space-y-1.5">
+        <aside className="w-64 bg-obsidian-900/70 border-r border-obsidian-800/80 flex flex-col p-3 shrink-0 h-full overflow-hidden">
+          <nav className="space-y-1.5 flex-1 overflow-y-auto pr-1.5 select-none" style={{ scrollbarWidth: 'thin', scrollbarColor: '#334155 transparent' }}>
             <div className="px-3 py-2 text-[10px] font-mono tracking-widest text-slate-500 uppercase font-semibold">
               Management Modules
             </div>
@@ -385,11 +394,47 @@ export default function AdminDashboardView() {
               <span>Security Audit Trail</span>
             </button>
 
+            {canAccessStock && (
+              <div className="pt-2 border-t border-obsidian-800/60 mt-2 space-y-1">
+                <div className="px-3 py-1 text-[10px] font-mono tracking-widest text-sky-400 uppercase font-semibold flex items-center justify-between">
+                  <span>Stock Management</span>
+                  <ExternalLink className="w-3 h-3 text-sky-500" />
+                </div>
+
+                <button
+                  onClick={() => setAppView('STOCK', 'dashboard')}
+                  className="w-full flex items-center space-x-3 px-3 py-2 rounded-xl text-xs font-medium text-slate-300 hover:text-sky-300 hover:bg-sky-500/10 transition-all group text-left"
+                  title="Open Stock OS → Central Valuation Dashboard"
+                >
+                  <Building2 className="w-4 h-4 shrink-0 text-slate-500 group-hover:text-sky-400" />
+                  <span className="truncate">Stock Dashboard</span>
+                </button>
+
+                <button
+                  onClick={() => setAppView('STOCK', 'catalog')}
+                  className="w-full flex items-center space-x-3 px-3 py-2 rounded-xl text-xs font-medium text-slate-300 hover:text-sky-300 hover:bg-sky-500/10 transition-all group text-left"
+                  title="Open Stock OS → Product Master Catalog"
+                >
+                  <Package className="w-4 h-4 shrink-0 text-slate-500 group-hover:text-sky-400" />
+                  <span className="truncate">Product Catalog</span>
+                </button>
+
+                <button
+                  onClick={() => setAppView('STOCK', 'inventory')}
+                  className="w-full flex items-center space-x-3 px-3 py-2 rounded-xl text-xs font-medium text-slate-300 hover:text-sky-300 hover:bg-sky-500/10 transition-all group text-left"
+                  title="Open Stock OS → Warehouse Balances & Ledger"
+                >
+                  <Boxes className="w-4 h-4 shrink-0 text-slate-500 group-hover:text-sky-400" />
+                  <span className="truncate">Inventory Balances</span>
+                </button>
+              </div>
+            )}
+
             {canAccessFinance && (
               <div className="pt-2 border-t border-obsidian-800/60 mt-2 space-y-1">
-                <div className="px-3 py-1 text-[10px] font-mono tracking-widest text-slate-500 uppercase font-semibold flex items-center justify-between">
+                <div className="px-3 py-1 text-[10px] font-mono tracking-widest text-amber-400 uppercase font-semibold flex items-center justify-between">
                   <span>Account Shortcuts</span>
-                  <ExternalLink className="w-3 h-3 text-slate-600" />
+                  <ExternalLink className="w-3 h-3 text-amber-500" />
                 </div>
 
                 <button
@@ -423,7 +468,7 @@ export default function AdminDashboardView() {
           </nav>
 
           {/* Quick Footer Info */}
-          <div className="bg-obsidian-950/60 p-3 rounded-xl border border-obsidian-800 space-y-2">
+          <div className="bg-obsidian-950/60 p-3 rounded-xl border border-obsidian-800 space-y-2 mt-3 shrink-0">
             <div className="flex items-center justify-between text-[11px] font-mono text-slate-400">
               <span>Exchange Rate:</span>
               <span className="text-brass-400 font-bold">1$ = {exchangeRate.toLocaleString()}៛</span>
@@ -674,20 +719,18 @@ export default function AdminDashboardView() {
                     </p>
                     <div className="mt-3 text-[11px] font-mono text-sky-400 flex items-center space-x-1">
                       <span className={`w-2 h-2 rounded-full ${triadStatus?.stock?.online ? 'bg-sky-400' : 'bg-rose-500'}`} />
-                      <span>Port 5173 (API 3000)</span>
+                      <span>Unified In-App Suite • API 3000</span>
                     </div>
                   </div>
 
                   {canAccessStock ? (
-                    <a
-                      href={`http://localhost:5173?token=${encodeURIComponent(authToken || '')}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="w-full py-2.5 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs uppercase flex items-center justify-center space-x-2"
+                    <button
+                      onClick={() => setAppView('STOCK')}
+                      className="w-full py-2.5 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs uppercase flex items-center justify-center space-x-2 transition shadow-lg shadow-sky-600/20 active:scale-98"
                     >
-                      <span>Launch Stock App</span>
-                      <ExternalLink className="w-3.5 h-3.5" />
-                    </a>
+                      <span>Open Stock Management</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </button>
                   ) : (
                     <div className="p-2 rounded-xl bg-obsidian-950 border border-obsidian-800 text-[11px] text-slate-500 flex items-center space-x-2">
                       <Lock className="w-3.5 h-3.5 text-slate-600 shrink-0" />
@@ -708,26 +751,56 @@ export default function AdminDashboardView() {
                     </p>
                     <div className="mt-3 text-[11px] font-mono text-amber-400 flex items-center space-x-1">
                       <span className={`w-2 h-2 rounded-full ${triadStatus?.finance?.online ? 'bg-amber-400' : 'bg-rose-500'}`} />
-                      <span>Port 5174 (API 3001)</span>
+                      <span>Unified In-App Suite • API 3001</span>
                     </div>
                   </div>
 
                   {canAccessFinance ? (
-                    <a
-                      href={`http://localhost:5174?token=${encodeURIComponent(authToken || '')}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="w-full py-2.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs uppercase flex items-center justify-center space-x-2"
+                    <button
+                      onClick={() => setAppView('FINANCE')}
+                      className="w-full py-2.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs uppercase flex items-center justify-center space-x-2 transition shadow-lg shadow-amber-600/20 active:scale-98"
                     >
-                      <span>Launch Finance App</span>
-                      <ExternalLink className="w-3.5 h-3.5" />
-                    </a>
+                      <span>Open Loops Finance</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </button>
                   ) : (
                     <div className="p-2 rounded-xl bg-obsidian-950 border border-obsidian-800 text-[11px] text-slate-500 flex items-center space-x-2">
                       <Lock className="w-3.5 h-3.5 text-slate-600 shrink-0" />
                       <span>Access Restricted by Role</span>
                     </div>
                   )}
+                </div>
+              </div>
+
+              {/* Reset Store Data Section (Admin Backoffice -> Ecosystem -> Reset Store Data) */}
+              <div className="bg-obsidian-900 border border-crimson-500/25 rounded-2xl p-5 space-y-3 mt-6">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div className="space-y-1">
+                    <div className="flex items-center space-x-2">
+                      <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-crimson-400 px-2 py-0.5 rounded bg-crimson-500/10 border border-crimson-500/20">
+                        Operational State Control
+                      </span>
+                      <span className="text-xs text-slate-500 font-mono">Store Owner Access</span>
+                    </div>
+                    <h3 className="text-sm font-bold text-slate-100 flex items-center space-x-2">
+                      <ShieldAlert className="w-4 h-4 text-crimson-400" />
+                      <span>Reset Store Data</span>
+                    </h3>
+                    <p className="text-xs text-slate-400 max-w-xl">
+                      Reset the selected store's operational transactions, shifts, stock balances, and expenses to begin fresh as a newly registered store. Your login account, credentials, company registration, and master products remain 100% safe.
+                    </p>
+                  </div>
+
+                  <button
+                    onClick={() => {
+                      playBeep(440, 'triangle', 0.08);
+                      setIsResetStoreModalOpen(true);
+                    }}
+                    className="px-4 py-2.5 rounded-xl bg-crimson-600 hover:bg-crimson-500 text-white font-bold text-xs uppercase flex items-center space-x-2 shrink-0 shadow-lg shadow-crimson-600/20 transition-all active:scale-98 cursor-pointer"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Reset Store Data</span>
+                  </button>
                 </div>
               </div>
             </div>
@@ -792,6 +865,20 @@ export default function AdminDashboardView() {
               </div>
             </div>
           )}
+
+          {/* Reset Store Data Modal */}
+          <ResetStoreDataModal
+            isOpen={isResetStoreModalOpen}
+            onClose={() => setIsResetStoreModalOpen(false)}
+            stores={stores}
+            currentStoreId={currentStore?.id}
+            currentUser={currentUser || cashierUser}
+            authToken={authToken}
+            onResetSuccess={() => {
+              if (loadStores) loadStores();
+              playBeep(1200, 'sine', 0.15);
+            }}
+          />
         </main>
       </div>
     </div>

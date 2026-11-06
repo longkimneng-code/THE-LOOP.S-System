@@ -12,7 +12,8 @@
       "managerId": null,
       "managerName": "Unassigned",
       "isActive": true,
-      "createdAt": "2026-11-04T08:00:00.000Z"
+      "createdAt": "2026-11-04T08:00:00.000Z",
+      "isHq": true
     },
     {
       "id": "loc-zprdw9b",
@@ -26,7 +27,8 @@
       "managerName": "Unassigned",
       "isActive": true,
       "isDefault": false,
-      "createdAt": "2026-11-04T08:00:00.000Z"
+      "createdAt": "2026-11-04T08:00:00.000Z",
+      "isHq": false
     }
   ],
   "categories": [
@@ -146,7 +148,7 @@
           "barcode": "880730502876",
           "costMinor": 334,
           "retailMinor": 2500,
-          "onHand": 8,
+          "onHand": 5,
           "reserved": 0,
           "damaged": 0,
           "rop": 5
@@ -170,7 +172,7 @@
       "taxMinor": 1250,
       "totalMinor": 13750,
       "method": "CASH",
-      "status": "COMPLETED",
+      "status": "REFUNDED",
       "items": [
         {
           "sku": "BV-GEN-5280",
@@ -312,7 +314,7 @@
       "id": "bal-loc-01-BV-GEN-2723",
       "sku": "BV-GEN-2723",
       "locationId": "loc-01",
-      "onHand": 1,
+      "onHand": 0,
       "reserved": 0,
       "damaged": 0,
       "rop": 5
@@ -339,13 +341,30 @@
       "id": "bal-loc-zprdw9b-BV-GEN-5280",
       "sku": "BV-GEN-5280",
       "locationId": "loc-zprdw9b",
-      "onHand": 8,
+      "onHand": 0,
       "reserved": 0,
       "damaged": 0,
       "rop": 5
     }
   ],
   "ledger": [
+    {
+      "id": "mov-0siwpxe",
+      "timestamp": "2026-11-05 18:21:09",
+      "type": "CUSTOMER_RETURN",
+      "sku": "BV-GEN-5280",
+      "productCode": "BV-GEN-5280",
+      "productName": "glasses",
+      "variantTitle": "Standard",
+      "locationId": "loc-01",
+      "locationName": "BeyondVER Main Branch",
+      "delta": 5,
+      "balanceAfter": 5,
+      "unitCostMinor": 334,
+      "referenceNo": "RET-REG-01-20261105-4822",
+      "staff": "Store Manager",
+      "reason": "Customer return restocked into BeyondVER Main Branch."
+    },
     {
       "id": "mov-fiuv2ae",
       "timestamp": "2026-11-05 04:50:22",
@@ -692,5 +711,8 @@
       "supplierName": "LODA",
       "receivedAt": "2026-11-04T18:10:07.458Z"
     }
-  ]
+  ],
+  "stockMovements": [],
+  "transfers": [],
+  "adjustments": []
 }

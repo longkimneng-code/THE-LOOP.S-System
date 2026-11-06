@@ -325,8 +325,205 @@ function createCashTransfer({ fromAccountCode = '1010', toAccountCode = '1020', 
 }
 
 // 3. Capital & Equity
+function calculateProportionalEquityShares(accounts, modifiedId = null, targetPercentage = null) {
+  if (!accounts || accounts.length === 0) return [];
+
+  // Case A: Exactly 1 account exists — they always own 100% of company equity
+  if (accounts.length === 1) {
+    const acc = accounts[0];
+    return [{
+      id: acc.id,
+      partnerName: acc.partnerName,
+      previousPercentage: Number(acc.ownershipPercentage || 0),
+      newPercentage: 100.0
+    }];
+  }
+
+  // Case B: Adding a new account or modifying an existing account's target percentage
+  if (modifiedId && targetPercentage !== null) {
+    let targetPct = Math.round(Number(targetPercentage) * 100) / 100;
+    if (isNaN(targetPct) || targetPct < 0) targetPct = 0;
+    if (targetPct > 100) targetPct = 100;
+
+    const modifiedAcc = accounts.find(a => a.id === modifiedId);
+    const otherAccounts = accounts.filter(a => a.id !== modifiedId);
+
+    if (otherAccounts.length === 0) {
+      return [{
+        id: modifiedId,
+        partnerName: modifiedAcc?.partnerName || 'Investor',
+        previousPercentage: Number(modifiedAcc?.ownershipPercentage || 0),
+        newPercentage: 100.0
+      }];
+    }
+
+    const remainingPool = Math.round((100.0 - targetPct) * 100) / 100;
+    const sumOthersPrev = otherAccounts.reduce((sum, a) => sum + Number(a.ownershipPercentage || 0), 0);
+
+    const results = [];
+    results.push({
+      id: modifiedId,
+      partnerName: modifiedAcc?.partnerName || 'Investor',
+      previousPercentage: Number(modifiedAcc?.ownershipPercentage || 0),
+      newPercentage: targetPct
+    });
+
+    if (sumOthersPrev <= 0) {
+      // Distribute remainingPool equally among others
+      const equalShare = Math.floor((remainingPool / otherAccounts.length) * 100) / 100;
+      otherAccounts.forEach(a => {
+        results.push({
+          id: a.id,
+          partnerName: a.partnerName,
+          previousPercentage: Number(a.ownershipPercentage || 0),
+          newPercentage: equalShare
+        });
+      });
+    } else {
+      // Proportional dilution formula: prev * (100 - targetPct) / sumOthersPrev
+      otherAccounts.forEach(a => {
+        const prev = Number(a.ownershipPercentage || 0);
+        const diluted = (prev * remainingPool) / sumOthersPrev;
+        results.push({
+          id: a.id,
+          partnerName: a.partnerName,
+          previousPercentage: prev,
+          newPercentage: Math.round(diluted * 100) / 100
+        });
+      });
+    }
+
+    // Exact 100.00% rounding adjustment on the largest other shareholder
+    const currentSum = Math.round(results.reduce((s, r) => s + r.newPercentage, 0) * 100) / 100;
+    const diff = Math.round((100.0 - currentSum) * 100) / 100;
+    if (diff !== 0 && otherAccounts.length > 0) {
+      let largest = results.find(r => r.id === otherAccounts[0].id);
+      for (const r of results) {
+        if (r.id !== modifiedId && r.newPercentage > (largest?.newPercentage || 0)) {
+          largest = r;
+        }
+      }
+      if (largest) {
+        largest.newPercentage = Math.round((largest.newPercentage + diff) * 100) / 100;
+      }
+    }
+
+    return results;
+  }
+
+  // Case C: Removing an account or normalizing existing accounts to 100%
+  const sumPrev = accounts.reduce((sum, a) => sum + Number(a.ownershipPercentage || 0), 0);
+  const results = [];
+
+  if (sumPrev <= 0) {
+    const equalShare = Math.floor((100.0 / accounts.length) * 100) / 100;
+    accounts.forEach(a => {
+      results.push({
+        id: a.id,
+        partnerName: a.partnerName,
+        previousPercentage: Number(a.ownershipPercentage || 0),
+        newPercentage: equalShare
+      });
+    });
+  } else {
+    accounts.forEach(a => {
+      const prev = Number(a.ownershipPercentage || 0);
+      const rescaled = (prev * 100.0) / sumPrev;
+      results.push({
+        id: a.id,
+        partnerName: a.partnerName,
+        previousPercentage: prev,
+        newPercentage: Math.round(rescaled * 100) / 100
+      });
+    });
+  }
+
+  // Exact 100.00% rounding adjustment on largest shareholder
+  const currentSum = Math.round(results.reduce((s, r) => s + r.newPercentage, 0) * 100) / 100;
+  const diff = Math.round((100.0 - currentSum) * 100) / 100;
+  if (diff !== 0 && results.length > 0) {
+    let largest = results[0];
+    for (const r of results) {
+      if (r.newPercentage > largest.newPercentage) largest = r;
+    }
+    largest.newPercentage = Math.round((largest.newPercentage + diff) * 100) / 100;
+  }
+
+  return results;
+}
+
+function runAtomic(dbSync, fn) {
+  dbSync.exec('BEGIN');
+  try {
+    const res = fn();
+    dbSync.exec('COMMIT');
+    return res;
+  } catch (err) {
+    try { dbSync.exec('ROLLBACK'); } catch (_) {}
+    throw err;
+  }
+}
+
+function recordEquityAuditLog({ organizationId, action, user, trigger, changes }) {
+  try {
+    const { getDatabase } = require('../../../shared/database/connection');
+    const dbSync = getDatabase();
+    const auditId = `aud-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
+    const now = new Date().toISOString();
+    const details = JSON.stringify({
+      trigger,
+      changes,
+      totalEquity: 100.0,
+      timestamp: now
+    });
+
+    dbSync.prepare(`
+      INSERT INTO audit_logs (id, organization_id, action, user_id, user_name, details_json, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      auditId,
+      organizationId,
+      action,
+      user?.id || user?.userId || 'usr-system',
+      user?.fullName || user?.username || user?.role || 'Authorized Owner',
+      details,
+      now
+    );
+  } catch (err) {
+    console.warn('[Audit Log Error]', err.message);
+  }
+}
+
+function ensure100PercentEquity(orgId = null) {
+  const db = getDb();
+  const accounts = orgId ? (db.capitalAccounts || []).filter(a => isSameOrg(a.organizationId, orgId)) : (db.capitalAccounts || []);
+  if (!accounts || accounts.length === 0) return;
+
+  const sum = Math.round(accounts.reduce((s, a) => s + Number(a.ownershipPercentage || 0), 0) * 100) / 100;
+  if (sum !== 100.0) {
+    const shares = calculateProportionalEquityShares(accounts);
+    for (const s of shares) {
+      const acc = accounts.find(a => a.id === s.id);
+      if (acc) acc.ownershipPercentage = s.newPercentage;
+    }
+    saveMemoryDb();
+
+    try {
+      const { getDatabase } = require('../../../shared/database/connection');
+      const dbSync = getDatabase();
+      const updateStmt = dbSync.prepare('UPDATE capital_accounts SET ownership_percentage = ? WHERE id = ?');
+      runAtomic(dbSync, () => {
+        for (const s of shares) {
+          updateStmt.run(s.newPercentage, s.id);
+        }
+      });
+    } catch (e) {}
+  }
+}
+
 function getCapitalOverview(orgId = null) {
   const db = getDb();
+  ensure100PercentEquity(orgId);
   const accounts = orgId ? (db.capitalAccounts || []).filter(a => isSameOrg(a.organizationId, orgId)) : (db.capitalAccounts || []);
   const transactions = orgId ? (db.capitalTransactions || []).filter(t => isSameOrg(t.organizationId, orgId)) : (db.capitalTransactions || []);
   const totalContributed = accounts.reduce((sum, a) => sum + Number(a.totalInvested || 0), 0);
@@ -342,16 +539,26 @@ function getCapitalOverview(orgId = null) {
   };
 }
 
-function addCapitalPartner({ partnerName, partnerRole, ownershipPercentage = 0, initialInvestment = 0, notes = '', organizationId = null }) {
+function addCapitalPartner({ partnerName, partnerRole, ownershipPercentage = 0, initialInvestment = 0, notes = '', organizationId = null }, user = null) {
   const db = getDb();
   const orgId = organizationId || 'org-loops-001';
   const nameTrimmed = (partnerName || '').trim();
   if (!nameTrimmed) throw new Error('Partner/Investor name is required.');
 
   // Check if partner with same name already exists in this organization
-  const existing = (db.capitalAccounts || []).find(p => isSameOrg(p.organizationId, orgId) && p.partnerName.toLowerCase() === nameTrimmed.toLowerCase());
-  if (existing) {
+  const existingInOrg = (db.capitalAccounts || []).filter(p => isSameOrg(p.organizationId, orgId));
+  const duplicate = existingInOrg.find(p => p.partnerName.toLowerCase() === nameTrimmed.toLowerCase());
+  if (duplicate) {
     throw new Error(`An investor or partner named "${nameTrimmed}" already exists.`);
+  }
+
+  let enteredPct = Number(ownershipPercentage);
+  if (isNaN(enteredPct) || enteredPct < 0) enteredPct = 0;
+  if (enteredPct > 100) throw new Error('Ownership percentage cannot exceed 100%.');
+
+  // If this is the sole investor being created in the company, they own 100% of equity
+  if (existingInOrg.length === 0) {
+    enteredPct = 100.0;
   }
 
   const newPartner = {
@@ -359,7 +566,7 @@ function addCapitalPartner({ partnerName, partnerRole, ownershipPercentage = 0, 
     organizationId: orgId,
     partnerName: nameTrimmed,
     partnerRole: partnerRole || 'Co-investor',
-    ownershipPercentage: Number(ownershipPercentage) || 0,
+    ownershipPercentage: enteredPct,
     totalInvested: 0,
     totalWithdrawn: 0,
     currentEquity: 0,
@@ -369,6 +576,16 @@ function addCapitalPartner({ partnerName, partnerRole, ownershipPercentage = 0, 
 
   if (!db.capitalAccounts) db.capitalAccounts = [];
   db.capitalAccounts.push(newPartner);
+
+  // Proportional dilution of all existing investors to maintain exactly 100% total equity
+  const allAccounts = db.capitalAccounts.filter(p => isSameOrg(p.organizationId, orgId));
+  const shares = calculateProportionalEquityShares(allAccounts, newPartner.id, enteredPct);
+
+  for (const s of shares) {
+    const acc = db.capitalAccounts.find(a => a.id === s.id);
+    if (acc) acc.ownershipPercentage = s.newPercentage;
+  }
+  newPartner.ownershipPercentage = shares.find(s => s.id === newPartner.id)?.newPercentage ?? enteredPct;
 
   // If initial investment was specified > 0, record the initial investment transaction
   const initInv = Number(initialInvestment) || 0;
@@ -417,23 +634,48 @@ function addCapitalPartner({ partnerName, partnerRole, ownershipPercentage = 0, 
   try {
     const { getDatabase } = require('../../../shared/database/connection');
     const dbSync = getDatabase();
-    dbSync.prepare(`
+    
+    const insertPartnerStmt = dbSync.prepare(`
       INSERT OR REPLACE INTO capital_accounts 
       (id, organization_id, partner_name, partner_role, ownership_percentage, total_invested, total_withdrawn, current_equity, notes, created_at)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(
-      newPartner.id, orgId, newPartner.partnerName, newPartner.partnerRole, newPartner.ownershipPercentage, newPartner.totalInvested, newPartner.totalWithdrawn, newPartner.currentEquity, newPartner.notes, newPartner.createdAt
-    );
+    `);
+
+    const updateShareStmt = dbSync.prepare(`
+      UPDATE capital_accounts 
+      SET ownership_percentage = ? 
+      WHERE id = ?
+    `);
+
+    runAtomic(dbSync, () => {
+      insertPartnerStmt.run(
+        newPartner.id, orgId, newPartner.partnerName, newPartner.partnerRole, newPartner.ownershipPercentage, newPartner.totalInvested, newPartner.totalWithdrawn, newPartner.currentEquity, newPartner.notes, newPartner.createdAt
+      );
+      for (const s of shares) {
+        if (s.id !== newPartner.id) {
+          updateShareStmt.run(s.newPercentage, s.id);
+        }
+      }
+    });
   } catch (e) {
-    console.warn('SQLite capital_accounts insert:', e.message);
+    console.warn('SQLite capital_accounts atomic add:', e.message);
   }
+
+  recordEquityAuditLog({
+    organizationId: orgId,
+    action: 'EQUITY_RECALCULATION_ADD',
+    user,
+    trigger: `Added investor "${newPartner.partnerName}" with ${newPartner.ownershipPercentage}% equity. Diluted existing investors proportionally.`,
+    changes: shares
+  });
 
   return newPartner;
 }
 
-function deleteCapitalPartner(partnerId, organizationId = null) {
+function deleteCapitalPartner(partnerId, organizationId = null, user = null) {
   const db = getDb();
-  const idx = (db.capitalAccounts || []).findIndex(p => p.id === partnerId && isSameOrg(p.organizationId, organizationId));
+  const orgId = organizationId || 'org-loops-001';
+  const idx = (db.capitalAccounts || []).findIndex(p => p.id === partnerId && isSameOrg(p.organizationId, orgId));
   if (idx === -1) throw new Error('Partner/Investor account not found.');
 
   const partner = db.capitalAccounts[idx];
@@ -443,15 +685,134 @@ function deleteCapitalPartner(partnerId, organizationId = null) {
   }
 
   db.capitalAccounts.splice(idx, 1);
+
+  // Proportional redistribution of removed partner's equity among remaining partners so total remains 100%
+  const remainingInOrg = (db.capitalAccounts || []).filter(p => isSameOrg(p.organizationId, orgId));
+  let shares = [];
+  if (remainingInOrg.length > 0) {
+    shares = calculateProportionalEquityShares(remainingInOrg);
+    for (const s of shares) {
+      const acc = db.capitalAccounts.find(a => a.id === s.id);
+      if (acc) acc.ownershipPercentage = s.newPercentage;
+    }
+  }
+
   saveMemoryDb();
 
   try {
     const { getDatabase } = require('../../../shared/database/connection');
     const dbSync = getDatabase();
-    dbSync.prepare('DELETE FROM capital_accounts WHERE id = ?').run(partnerId);
-  } catch (e) {}
+    runAtomic(dbSync, () => {
+      dbSync.prepare('DELETE FROM capital_accounts WHERE id = ?').run(partnerId);
+      const updateShareStmt = dbSync.prepare('UPDATE capital_accounts SET ownership_percentage = ? WHERE id = ?');
+      for (const s of shares) {
+        updateShareStmt.run(s.newPercentage, s.id);
+      }
+    });
+  } catch (e) {
+    console.warn('SQLite capital_accounts atomic delete:', e.message);
+  }
+
+  recordEquityAuditLog({
+    organizationId: orgId,
+    action: 'EQUITY_RECALCULATION_REMOVE',
+    user,
+    trigger: `Removed investor "${partner.partnerName}" and redistributed equity proportionally among remaining investors.`,
+    changes: [
+      { id: partner.id, partnerName: partner.partnerName, previousPercentage: partner.ownershipPercentage, newPercentage: 0 },
+      ...shares
+    ]
+  });
 
   return { success: true, deletedId: partnerId, partnerName: partner.partnerName };
+}
+
+function updateCapitalPartner(partnerId, updateData = {}, organizationId = null, user = null) {
+  const db = getDb();
+  const orgId = organizationId || 'org-loops-001';
+  const partner = (db.capitalAccounts || []).find(p => p.id === partnerId && isSameOrg(p.organizationId, orgId));
+  if (!partner) throw new Error('Partner/Investor account not found.');
+
+  if (updateData.partnerName && updateData.partnerName.trim()) {
+    partner.partnerName = updateData.partnerName.trim();
+  }
+  if (updateData.partnerRole !== undefined) {
+    partner.partnerRole = updateData.partnerRole;
+  }
+  if (updateData.notes !== undefined) {
+    partner.notes = updateData.notes;
+  }
+  if (updateData.currentEquity !== undefined && !isNaN(Number(updateData.currentEquity))) {
+    partner.currentEquity = Number(updateData.currentEquity);
+  }
+
+  let shares = null;
+  if (updateData.ownershipPercentage !== undefined) {
+    let targetPct = Number(updateData.ownershipPercentage);
+    if (isNaN(targetPct) || targetPct < 0 || targetPct > 100) {
+      throw new Error('Ownership percentage must be between 0% and 100%.');
+    }
+
+    const allInOrg = db.capitalAccounts.filter(p => isSameOrg(p.organizationId, orgId));
+    shares = calculateProportionalEquityShares(allInOrg, partnerId, targetPct);
+
+    for (const s of shares) {
+      const acc = db.capitalAccounts.find(a => a.id === s.id);
+      if (acc) acc.ownershipPercentage = s.newPercentage;
+    }
+    partner.ownershipPercentage = shares.find(s => s.id === partnerId)?.newPercentage ?? targetPct;
+  }
+
+  saveMemoryDb();
+
+  try {
+    const { getDatabase } = require('../../../shared/database/connection');
+    const dbSync = getDatabase();
+
+    const updatePartnerStmt = dbSync.prepare(`
+      UPDATE capital_accounts
+      SET partner_name = ?, partner_role = ?, ownership_percentage = ?, notes = ?, current_equity = ?
+      WHERE id = ?
+    `);
+
+    const updateShareStmt = dbSync.prepare(`
+      UPDATE capital_accounts
+      SET ownership_percentage = ?
+      WHERE id = ?
+    `);
+
+    runAtomic(dbSync, () => {
+      updatePartnerStmt.run(
+        partner.partnerName,
+        partner.partnerRole || 'Co-investor',
+        partner.ownershipPercentage || 0,
+        partner.notes || '',
+        partner.currentEquity || 0,
+        partnerId
+      );
+      if (shares) {
+        for (const s of shares) {
+          if (s.id !== partnerId) {
+            updateShareStmt.run(s.newPercentage, s.id);
+          }
+        }
+      }
+    });
+  } catch (e) {
+    console.warn('SQLite capital_accounts atomic update:', e.message);
+  }
+
+  if (shares) {
+    recordEquityAuditLog({
+      organizationId: orgId,
+      action: 'EQUITY_RECALCULATION_UPDATE',
+      user,
+      trigger: `Updated investor "${partner.partnerName}" equity to ${partner.ownershipPercentage}%. Diluted/rebalanced other investors proportionally.`,
+      changes: shares
+    });
+  }
+
+  return partner;
 }
 
 function addCapitalTransaction({ partnerName, capitalAccountId, type, amount, notes, transactionDate, paymentMethod = 'BANK_TRANSFER', organizationId = null }) {
@@ -1098,11 +1459,64 @@ function finalizeShipmentLandedCost(shipmentId, overrideOrgId = null) {
 }
 
 // 6. Operating Expenses & Supplier Bills
-function getExpenses() {
+function getExpenses(organizationId = null) {
   const db = getDb();
+  let sqlExpenses = [];
+  try {
+    const { getDatabase } = require('../../../shared/database/connection');
+    const sqliteDb = getDatabase();
+    
+    // Ensure vendor_payee column exists if newly introduced
+    try { sqliteDb.exec("ALTER TABLE expenses ADD COLUMN vendor_payee TEXT;"); } catch (e) {}
+    try { sqliteDb.exec("ALTER TABLE expenses ADD COLUMN notes TEXT;"); } catch (e) {}
+
+    const query = organizationId
+      ? `SELECT * FROM expenses WHERE organization_id = ? ORDER BY date DESC, created_at DESC`
+      : `SELECT * FROM expenses ORDER BY date DESC, created_at DESC`;
+    const params = organizationId ? [organizationId] : [];
+    const rows = sqliteDb.prepare(query).all(...params);
+
+    sqlExpenses = rows.map(r => {
+      let payee = r.vendor_payee;
+      if (!payee) {
+        if (r.description && r.description.includes('—')) {
+          payee = r.description.split('—')[0].trim();
+        } else if (r.description && r.description.includes('-')) {
+          payee = r.description.split('-')[0].trim();
+        } else {
+          payee = r.category === 'Payroll & Staff Wages' ? 'Staff Payee' : (r.description || 'Vendor Payee');
+        }
+      }
+      return {
+        id: r.id,
+        organizationId: r.organization_id,
+        expenseNumber: r.expense_number,
+        category: r.category || 'Operating Expense',
+        tier: r.budget_category_id || (r.category === 'Payroll & Staff Wages' ? 'PAYROLL_WAGES' : 'OPERATING_EXPENSES'),
+        vendorPayee: payee,
+        amount: toDecimal((r.amount_minor || 0) / 100),
+        expenseDate: r.date || (r.created_at ? r.created_at.slice(0, 10) : new Date().toISOString().slice(0, 10)),
+        paymentMethod: r.payment_method || 'CASH',
+        notes: r.notes || r.description || ''
+      };
+    });
+  } catch (err) {
+    console.warn('[FinanceDB] getExpenses SQLite fetch error:', err.message);
+  }
+
+  // Merge JSON expenses with SQLite expenses, deduplicating by ID
+  const seenIds = new Set(sqlExpenses.map(e => e.id));
+  const merged = [...sqlExpenses];
+  for (const exp of (db.expenses || [])) {
+    if (!seenIds.has(exp.id)) {
+      seenIds.add(exp.id);
+      merged.push(exp);
+    }
+  }
+
   return {
-    expenses: db.expenses,
-    recurringBills: db.recurringBills
+    expenses: merged,
+    recurringBills: db.recurringBills || []
   };
 }
 
@@ -1425,7 +1839,7 @@ function getJournalEntries(filter = {}) {
   return entries;
 }
 
-function postJournalEntry({ sourceType, sourceId, memo, lines, accountingDate, organizationId }) {
+function postJournalEntry({ sourceType, sourceId, memo, lines, accountingDate, organizationId, storeId, locationId }) {
   const db = getDb();
   const orgId = organizationId || 'org-loops-001';
   const totalDebit = lines.reduce((sum, l) => sum + (Number(l.debit) || 0), 0);
@@ -1440,6 +1854,7 @@ function postJournalEntry({ sourceType, sourceId, memo, lines, accountingDate, o
   const entry = {
     id: `je-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
     organizationId: orgId,
+    storeId: storeId || locationId || 'loc-01',
     entryNumber: `JRN-${new Date().getFullYear()}-${String(db.journalEntries.length + 1).padStart(4, '0')}`,
     accountingDate: accountingDate || new Date().toISOString().split('T')[0],
     status: 'POSTED',
@@ -2210,8 +2625,8 @@ function calculatePeriodMetrics(startStr, endStr, targetStoreId, orgId) {
   const periodJournals = entriesInOrg.filter(j => {
     if (j.status === 'REVERSED' || j.reversedById) return false;
     if (targetStoreId && targetStoreId !== 'ALL') {
-      if (j.storeId && j.storeId !== targetStoreId) return false;
-      if (j.locationId && j.locationId !== targetStoreId) return false;
+      const entryStore = j.storeId || j.locationId || 'loc-01';
+      if (entryStore !== targetStoreId) return false;
     }
     return j.accountingDate >= startStr && j.accountingDate <= endStr;
   });
@@ -2520,7 +2935,11 @@ module.exports = {
   createCashTransfer,
   getCapitalOverview,
   addCapitalPartner,
+  updateCapitalPartner,
   deleteCapitalPartner,
+  calculateProportionalEquityShares,
+  ensure100PercentEquity,
+  recordEquityAuditLog,
   addCapitalTransaction,
   getStartupBudgetSummary,
   addStartupBudgetItem,

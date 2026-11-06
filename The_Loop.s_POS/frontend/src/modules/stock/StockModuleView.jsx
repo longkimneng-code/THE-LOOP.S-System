@@ -26,6 +26,8 @@ import Toast from './components/Toast';
 export default function App() {
   const getInitialStockTab = () => {
     if (typeof window !== 'undefined') {
+      const parts = window.location.pathname.toLowerCase().split('/').filter(Boolean);
+      if (parts[0] === 'stock' && parts[1]) return parts[1];
       const params = new URLSearchParams(window.location.search);
       const urlTab = params.get('tab');
       if (urlTab) return urlTab.toLowerCase();
@@ -49,6 +51,11 @@ export default function App() {
 
   useEffect(() => {
     const handlePopState = () => {
+      const parts = window.location.pathname.toLowerCase().split('/').filter(Boolean);
+      if (parts[0] === 'stock' && parts[1]) {
+        setActiveTabState(parts[1]);
+        return;
+      }
       const params = new URLSearchParams(window.location.search);
       const urlTab = params.get('tab');
       if (urlTab) setActiveTabState(urlTab.toLowerCase());
@@ -796,6 +803,7 @@ export default function App() {
             theme={theme}
             onToggleTheme={toggleTheme}
             onResetToScratch={handleResetData}
+            onRefresh={refreshAll}
             onAddAttribute={(name) => {
               setAttributes((prev) => [...prev, { id: 'attr-' + Date.now(), name, values: ['Default'] }]);
               showToast(`Attribute "${name}" added!`, 'emerald');

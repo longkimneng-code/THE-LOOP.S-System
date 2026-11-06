@@ -16,7 +16,7 @@ export default function Settings({
   onResetToScratch,
   onAddAttribute,
   onSaveToast
-}) {
+, onRefresh}) {
   const [newAttrName, setNewAttrName] = useState('');
   const [newCatName, setNewCatName] = useState('');
 
@@ -26,6 +26,60 @@ export default function Settings({
   const [locType, setLocType] = useState('STORE');
   const [locAddress, setLocAddress] = useState('');
   const [isSubmittingLoc, setIsSubmittingLoc] = useState(false);
+
+  // Store Headquarters (HQ) Management State
+  const [isChangeHqOpen, setIsChangeHqOpen] = useState(false);
+  const currentHq = locations.find(l => l.is_hq || l.isHq || l.is_default || l.isDefault) || locations[0];
+  const [selectedNewHqId, setSelectedNewHqId] = useState(locations.find(l => (l.is_hq || l.isHq || l.is_default || l.isDefault))?.id || locations[0]?.id || '');
+  const [isSubmittingHq, setIsSubmittingHq] = useState(false);
+  const [hqError, setHqError] = useState('');
+  const [showHqHistory, setShowHqHistory] = useState(false);
+  const [hqAuditLogs, setHqAuditLogs] = useState([]);
+
+  const fetchHqLogs = async () => {
+    try {
+      const res = await fetch('/api/stores/hq');
+      if (res.ok) {
+        const data = await res.json();
+        if (data.history) setHqAuditLogs(data.history);
+      }
+    } catch (e) {}
+  };
+
+  const handleSwitchHqSubmit = async (e) => {
+    if (e && e.preventDefault) e.preventDefault();
+    if (!selectedNewHqId || selectedNewHqId === currentHq?.id) return;
+
+    setIsSubmittingHq(true);
+    setHqError('');
+
+    try {
+      const token = typeof window !== 'undefined' ? localStorage.getItem('loops_auth_token') : null;
+      const res = await fetch('/api/stores/switch-hq', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify({ targetStoreId: selectedNewHqId })
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.ok) {
+        throw new Error(data.error || 'Failed to switch Headquarters');
+      }
+
+      if (onSaveToast) onSaveToast(data.message || 'Headquarters successfully updated!', 'emerald');
+      setIsChangeHqOpen(false);
+      fetchHqLogs();
+      if (onRefresh) onRefresh();
+    } catch (err) {
+      setHqError(err.message);
+    } finally {
+      setIsSubmittingHq(false);
+    }
+  };
+
 
   const handleAdd = () => {
     if (!newAttrName.trim()) return;
@@ -455,9 +509,10 @@ export default function Settings({
                     <span>Operational</span>
                   </span>
                   <div className="flex items-center space-x-1.5">
-                    {loc.isDefault ? (
-                      <span className="text-gold-400 font-bold bg-gold-500/10 px-1.5 py-0.5 rounded border border-gold-500/20">
-                        Default HQ
+                    {(loc.is_hq || loc.isHq || loc.is_default || loc.isDefault) ? (
+                      <span className="text-gold-400 font-bold bg-gold-500/10 px-2 py-0.5 rounded border border-gold-500/20 flex items-center space-x-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-gold-400" />
+                        <span>Active HQ</span>
                       </span>
                     ) : (
                       <button
@@ -476,28 +531,95 @@ export default function Settings({
           })}
         </div>
       </div>
+    
+      {/* Change HQ Confirmation Modal */}
+      {isChangeHqOpen && (
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 select-none">
+          <div className="bg-studio-900 border border-gold-500/30 rounded-3xl w-full max-w-lg shadow-2xl p-6 space-y-5 animate-in fade-in zoom-in-95">
+            <div className="flex items-center justify-between border-b border-white/5 pb-3">
+              <div className="flex items-center space-x-2.5">
+                <div className="w-9 h-9 rounded-xl bg-gold-500/10 text-gold-400 border border-gold-500/20 flex items-center justify-center">
+                  <Icon name="building" size={16} />
+                </div>
+                <div>
+                  <h3 className="font-display font-bold text-sm text-white">Change Store Headquarters (HQ)</h3>
+                  <p className="text-[11px] text-studio-400">Designate a new central reference branch</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsChangeHqOpen(false)}
+                className="p-1.5 rounded-lg text-studio-400 hover:text-white hover:bg-studio-800 transition"
+              >
+                <Icon name="close" size={16} />
+              </button>
+            </div>
 
-      {/* Scratch Testing & System Reset Card */}
-      <div className="glass-panel p-6 rounded-2xl border border-crimson-500/20 bg-crimson-500/5 space-y-3 shadow-sm">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <h4 className="font-display font-bold text-sm text-crimson-400 flex items-center space-x-2">
-              <Icon name="alertTriangle" size={16} />
-              <span>Scratch Testing & Data Reset</span>
-            </h4>
-            <p className="text-xs text-studio-400 mt-1 max-w-xl">
-              Wipe all physical products, stock balances, movements ledger, and sales orders to return to the fresh store registration flow.
-            </p>
+            <div className="space-y-4 text-xs">
+              <div className="p-3.5 rounded-xl bg-studio-950 border border-white/5 space-y-1">
+                <span className="text-[10px] text-studio-500 uppercase font-mono">Current Headquarters:</span>
+                <div className="font-bold text-white text-sm">{currentHq?.name || 'Main Branch'}</div>
+                <div className="text-[11px] text-studio-400 font-mono">
+                  ID: {currentHq?.id} • {currentHq?.address || 'Address not configured'}
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-mono text-[11px] text-studio-300 uppercase tracking-wider mb-1.5">
+                  Select New Headquarters Branch:
+                </label>
+                <select
+                  value={selectedNewHqId}
+                  onChange={(e) => setSelectedNewHqId(e.target.value)}
+                  className="w-full bg-studio-950 border border-studio-700 focus:border-gold-500 rounded-xl px-3.5 py-2.5 text-sm text-white outline-none cursor-pointer font-sans"
+                >
+                  {locations.map(loc => (
+                    <option key={loc.id} value={loc.id} disabled={loc.id === currentHq?.id}>
+                      {loc.name} ({loc.code || loc.id}) {loc.id === currentHq?.id ? '• [CURRENT ACTIVE HQ]' : ''}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Preservation Assurance */}
+              <div className="p-3.5 rounded-xl bg-gold-500/5 border border-gold-500/20 space-y-1 text-[11px] text-studio-300">
+                <div className="font-bold text-gold-400 flex items-center space-x-1.5">
+                  <Icon name="checkCircle" size={13} />
+                  <span>Branch Data Preservation Safeguard</span>
+                </div>
+                <p>
+                  Changing Headquarters will update the central company reference. All branch inventory quantities, physical stock movements, sales transactions, Store IDs, and staff credentials remain 100% operational and unchanged.
+                </p>
+              </div>
+
+              {hqError && (
+                <div className="p-3 rounded-xl bg-crimson-500/10 border border-crimson-500/30 text-crimson-300 text-xs">
+                  {hqError}
+                </div>
+              )}
+
+              <div className="flex space-x-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setIsChangeHqOpen(false)}
+                  className="flex-1 py-2.5 rounded-xl bg-studio-800 hover:bg-studio-700 text-studio-300 font-bold text-xs uppercase"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSwitchHqSubmit}
+                  disabled={isSubmittingHq || !selectedNewHqId || selectedNewHqId === currentHq?.id}
+                  className="flex-1 py-2.5 rounded-xl btn-gold text-studio-950 font-bold text-xs uppercase flex items-center justify-center space-x-1.5 shadow-lg shadow-gold-500/20 disabled:opacity-50 cursor-pointer"
+                >
+                  {isSubmittingHq ? <span>Switching HQ...</span> : <span>Confirm & Switch HQ</span>}
+                </button>
+              </div>
+            </div>
           </div>
-          <button
-            onClick={onResetToScratch}
-            className="px-4 py-2.5 rounded-xl text-xs font-mono font-bold bg-crimson-600 hover:bg-crimson-500 text-white shadow-md shadow-crimson-500/20 transition-all flex items-center space-x-1.5 self-start sm:self-auto flex-shrink-0 active:scale-95"
-          >
-            <Icon name="trash" size={13} />
-            <span>Wipe All Data & Re-register</span>
-          </button>
         </div>
-      </div>
+      )}
+
     </section>
   );
 }

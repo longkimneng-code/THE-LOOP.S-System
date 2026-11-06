@@ -162,6 +162,19 @@ export const api = {
     return res.json();
   },
 
+  updateCapitalPartner: async (partnerId, data) => {
+    const res = await fetch(`${API_BASE}/capital/partners/${partnerId}`, {
+      method: 'PUT',
+      headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify(data)
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'Failed to update partner');
+    }
+    return res.json();
+  },
+
   deleteCapitalPartner: async (partnerId) => {
     const res = await fetch(`${API_BASE}/capital/partners/${partnerId}`, {
       method: 'DELETE',
@@ -346,7 +359,9 @@ export const api = {
 
   // Operating Expenses
   getExpenses: async () => {
-    const res = await fetch(`${API_BASE}/expenses`);
+    const res = await fetch(`${API_BASE}/expenses`, {
+      headers: getAuthHeaders()
+    });
     if (!res.ok) throw new Error('Failed to fetch expenses');
     return res.json();
   },

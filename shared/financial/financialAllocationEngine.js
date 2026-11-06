@@ -56,6 +56,10 @@ function ensureAllocationSchema() {
         db.prepare(`ALTER TABLE monthly_revenue_allocations ADD COLUMN ${col.name} ${col.type}`).run();
       }
     }
+    const expCols = db.prepare('PRAGMA table_info(expenses)').all().map(c => c.name);
+    if (!expCols.includes('budget_category_id')) {
+      db.prepare("ALTER TABLE expenses ADD COLUMN budget_category_id TEXT DEFAULT 'OPERATING_EXPENSES'").run();
+    }
   } catch (e) {
     // Non-fatal if already present
   }
@@ -112,11 +116,27 @@ function calculateInventoryReinvestmentAndPool({
 }
 
 // ----------------------------------------------------------------------------
+// HELPER: RESOLVE VALID ORGANIZATION ID
+// ----------------------------------------------------------------------------
+function resolveOrgId(organizationId) {
+  try {
+    const db = getDatabase();
+    if (organizationId) {
+      const exists = db.prepare('SELECT id FROM organizations WHERE id = ?').get(organizationId);
+      if (exists) return organizationId;
+    }
+    const defaultOrg = db.prepare('SELECT id FROM organizations LIMIT 1').get();
+    if (defaultOrg && defaultOrg.id) return defaultOrg.id;
+  } catch (e) {}
+  return organizationId || 'org-loops-001';
+}
+
+// ----------------------------------------------------------------------------
 // 2. COLLECTED REVENUE CALCULATION & ACTUAL PRODUCT COST
 // ----------------------------------------------------------------------------
 function calculateEligibleRevenue(organizationId, periodMonth, storeId = null) {
   const db = getDatabase();
-  const orgId = organizationId || 'org-loops-001';
+  const orgId = resolveOrgId(organizationId);
   const [yearStr, monthStr] = periodMonth.split('-');
   const startIso = `${periodMonth}-01T00:00:00.000Z`;
   
@@ -260,22 +280,11 @@ function calculateEligibleRevenue(organizationId, periodMonth, storeId = null) {
 function getDefaultAllocationCategories() {
   return [
     {
-      id: 'INVENTORY_REINVESTMENT',
-      name: 'Inventory Reinvestment / New Stock',
-      type: 'PERCENT',
-      value: 50.0,
-      priority: 1,
-      allowsCarryForward: true,
-      carryForwardAction: 'AUTO',
-      enabled: true,
-      description: 'Actual Product Cost + Additional % Reinvestment (rounded UP to next whole dollar)'
-    },
-    {
       id: 'EMPLOYEE_SALARIES',
       name: 'Employee Salaries',
       type: 'PERCENT',
-      value: 20.0,
-      priority: 2,
+      value: 40.0,
+      priority: 1,
       allowsCarryForward: false,
       carryForwardAction: 'MANUAL_CHOICE',
       enabled: true,
@@ -285,8 +294,8 @@ function getDefaultAllocationCategories() {
       id: 'OPERATING_EXPENSES',
       name: 'Operating Expenses',
       type: 'PERCENT',
-      value: 15.0,
-      priority: 3,
+      value: 30.0,
+      priority: 2,
       allowsCarryForward: true,
       carryForwardAction: 'AUTO',
       enabled: true,
@@ -296,8 +305,8 @@ function getDefaultAllocationCategories() {
       id: 'LOOP_SHARE',
       name: 'Loop Share (Profit Sharing)',
       type: 'PERCENT',
-      value: 15.0,
-      priority: 4,
+      value: 30.0,
+      priority: 3,
       allowsCarryForward: true,
       carryForwardAction: 'AUTO',
       enabled: true,
@@ -308,7 +317,7 @@ function getDefaultAllocationCategories() {
       name: 'Remaining Revenue / Capital Reserve',
       type: 'PERCENT',
       value: 0.0,
-      priority: 5,
+      priority: 4,
       allowsCarryForward: true,
       carryForwardAction: 'AUTO',
       enabled: true,
@@ -323,7 +332,7 @@ function getDefaultAllocationCategories() {
 function getOrCreateMonthlyPlan(organizationId, periodMonth, createdBy = 'Business Owner') {
   const db = getDatabase();
   ensureAllocationSchema();
-  const orgId = organizationId || 'org-loops-001';
+  const orgId = resolveOrgId(organizationId);
   const [yearStr] = periodMonth.split('-');
 
   let planRow = db.prepare(`
@@ -349,8 +358,32 @@ function getOrCreateMonthlyPlan(organizationId, periodMonth, createdBy = 'Busine
   }
 
   // Ensure category budget records exist
-  const categories = JSON.parse(planRow.categories_config_json || '[]');
+  let rawCategories = JSON.parse(planRow.categories_config_json || '[]');
+  if (rawCategories.some(c => c.id === 'INVENTORY_REINVESTMENT')) {
+    rawCategories = rawCategories.filter(c => c.id !== 'INVENTORY_REINVESTMENT');
+    try {
+      db.prepare('UPDATE monthly_revenue_allocations SET categories_config_json = ? WHERE id = ?').run(JSON.stringify(rawCategories), planRow.id);
+    } catch (e) {}
+  }
+  const categories = rawCategories;
   const prevMonth = getPreviousMonthKey(periodMonth);
+
+  // Ensure INVENTORY_REINVESTMENT row exists in budget_allocations
+  let invBudget = db.prepare(`
+    SELECT * FROM budget_allocations
+    WHERE organization_id = ? AND period_month = ? AND category_id = 'INVENTORY_REINVESTMENT'
+  `).get(orgId, periodMonth);
+  if (!invBudget) {
+    const budgetId = `ba-${periodMonth}-inv-${crypto.randomBytes(3).toString('hex')}`;
+    const now = new Date().toISOString();
+    try {
+      db.prepare(`
+        INSERT INTO budget_allocations
+        (id, organization_id, period_month, category_id, category_name, allocation_type, allocation_value, allocated_amount, opening_carry_forward, available_budget, spent_amount, borrowed_from_capital, repaid_to_capital, remaining_balance, allows_carry_forward, carry_forward_action, created_at, updated_at)
+        VALUES (?, ?, ?, 'INVENTORY_REINVESTMENT', 'Inventory Reinvestment & Reserve', 'FORMULA', 'COGS + %', 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1, 'AUTO', ?, ?)
+      `).run(budgetId, orgId, periodMonth, now, now);
+    } catch (e) {}
+  }
 
   categories.forEach(cat => {
     let budgetRow = db.prepare(`
@@ -413,7 +446,7 @@ function getOrCreateMonthlyPlan(organizationId, periodMonth, createdBy = 'Busine
 function syncMonthlyAllocations(organizationId, periodMonth) {
   const db = getDatabase();
   ensureAllocationSchema();
-  const orgId = organizationId || 'org-loops-001';
+  const orgId = resolveOrgId(organizationId);
   const rev = calculateEligibleRevenue(orgId, periodMonth);
 
   const planRow = db.prepare(`
@@ -520,15 +553,50 @@ function syncMonthlyAllocations(organizationId, periodMonth) {
   );
 
   // 2. Update each category budget record and compute real spending
+  const prevMonthKey = getPreviousMonthKey(periodMonth);
+  const prevBudgets = db.prepare(`
+    SELECT category_id, remaining_balance, allows_carry_forward, carry_forward_action, borrowed_from_capital, repaid_to_capital
+    FROM budget_allocations
+    WHERE organization_id = ? AND period_month = ?
+  `).all(orgId, prevMonthKey);
+  const prevMap = {};
+  prevBudgets.forEach(pb => { prevMap[pb.category_id] = pb; });
+
   const budgetRows = db.prepare(`
     SELECT * FROM budget_allocations
     WHERE organization_id = ? AND period_month = ?
   `).all(orgId, periodMonth);
 
   budgetRows.forEach(b => {
+    // Dynamic Carry-Forward Integrity:
+    // If previous month has net capital debt or remaining balance is 0 or less, carry-forward MUST be exactly 0.00!
+    const pb = prevMap[b.category_id];
+    let correctCarryForward = 0.0;
+    if (pb && b.allows_carry_forward) {
+      const netCapitalDebt = roundMoney((pb.borrowed_from_capital || 0) - (pb.repaid_to_capital || 0));
+      if (netCapitalDebt > 0 || pb.remaining_balance <= 0) {
+        correctCarryForward = 0.0;
+      } else {
+        if (b.category_id === 'EMPLOYEE_SALARIES') {
+          if (pb.carry_forward_action === 'CARRY_FORWARD') {
+            correctCarryForward = roundMoney(pb.remaining_balance);
+          }
+        } else {
+          correctCarryForward = roundMoney(pb.remaining_balance);
+        }
+      }
+    }
+
+    if (roundMoney(b.opening_carry_forward || 0) !== correctCarryForward) {
+      b.opening_carry_forward = correctCarryForward;
+      try {
+        db.prepare(`UPDATE budget_allocations SET opening_carry_forward = ?, updated_at = ? WHERE id = ?`).run(correctCarryForward, new Date().toISOString(), b.id);
+      } catch (e) {}
+    }
+
     const config = categories.find(c => c.id === b.category_id) || {};
-    const allocated = config.calculatedAmount || 0.0;
-    const available = roundMoney((b.opening_carry_forward || 0.0) + allocated);
+    let allocated = config.calculatedAmount || 0.0;
+    let available = roundMoney((b.opening_carry_forward || 0.0) + allocated);
 
     // Compute actual spending in this category for this month
     let actualSpent = b.spent_amount || 0.0;
@@ -548,6 +616,7 @@ function syncMonthlyAllocations(organizationId, periodMonth) {
           FROM expenses
           WHERE (organization_id = ? OR organization_id IS NULL)
             AND date >= ? AND date < ?
+            AND (budget_category_id = 'OPERATING_EXPENSES' OR (budget_category_id IS NULL AND category NOT LIKE '%Payroll%' AND category NOT LIKE '%Salary%' AND category NOT LIKE '%Wage%'))
         `).get(orgId, startIso, nextIso);
 
         if (expSum && expSum.total_minor) {
@@ -556,13 +625,95 @@ function syncMonthlyAllocations(organizationId, periodMonth) {
       } catch (e) {}
     }
 
-    // B. Inventory Purchases
+    // B. Employee Salaries & Staff Payroll
+    if (b.category_id === 'EMPLOYEE_SALARIES') {
+      try {
+        const [yStr, mStr] = periodMonth.split('-');
+        const startIso = `${periodMonth}-01T00:00:00.000Z`;
+        let y = parseInt(yStr, 10);
+        let m = parseInt(mStr, 10) + 1;
+        if (m > 12) { m = 1; y += 1; }
+        const nextIso = `${y}-${String(m).padStart(2, '0')}-01T00:00:00.000Z`;
+
+        const salSum = db.prepare(`
+          SELECT SUM(amount_minor) as total_minor
+          FROM expenses
+          WHERE (organization_id = ? OR organization_id IS NULL)
+            AND date >= ? AND date < ?
+            AND (budget_category_id = 'EMPLOYEE_SALARIES' OR category LIKE '%Payroll%' OR category LIKE '%Salary%' OR category LIKE '%Wage%')
+        `).get(orgId, startIso, nextIso);
+
+        if (salSum && salSum.total_minor) {
+          actualSpent = roundMoney(salSum.total_minor / 100.0);
+        }
+      } catch (e) {}
+    }
+
+    // C. Inventory Purchases (from Top Section 2 Calculation)
     if (b.category_id === 'INVENTORY_REINVESTMENT') {
+      allocated = calc.totalInventoryReinvestment;
+      available = calc.totalInventoryReinvestment;
       actualSpent = actualInventoryPurchases;
     }
 
+    // D. Store Share (Profit Sharing) Payouts & Sync
+    if (b.category_id === 'LOOP_SHARE') {
+      try {
+        const distSum = db.prepare(`
+          SELECT SUM(amount) as total_dist
+          FROM loop_share_ledger
+          WHERE (organization_id = ? OR organization_id IS NULL)
+            AND period_month = ?
+            AND transaction_type IN ('DISTRIBUTION', 'WITHDRAWAL', 'PAYMENT')
+        `).get(orgId, periodMonth);
+        if (distSum && distSum.total_dist) {
+          actualSpent = roundMoney(distSum.total_dist);
+        }
+
+        const currentAlloc = roundMoney(allocated);
+        if (currentAlloc > 0) {
+          const existingAlloc = db.prepare(`
+            SELECT * FROM loop_share_ledger
+            WHERE (organization_id = ? OR organization_id IS NULL)
+              AND period_month = ?
+              AND transaction_type = 'ALLOCATION'
+          `).get(orgId, periodMonth);
+
+          const nowIso = new Date().toISOString();
+          if (!existingAlloc) {
+            db.prepare(`
+              INSERT INTO loop_share_ledger
+              (id, organization_id, period_month, transaction_type, amount, balance_after, date, reference, recipient_name, description, authorized_by, created_at)
+              VALUES (?, ?, ?, 'ALLOCATION', ?, ?, ?, ?, 'Store Share Reserve', ?, 'Revenue Allocation Engine', ?)
+            `).run(
+              `ls-${crypto.randomUUID()}`,
+              orgId,
+              periodMonth,
+              currentAlloc,
+              currentAlloc,
+              nowIso,
+              `SHARE-ALLOC-${periodMonth.replace('-', '')}`,
+              `Monthly Profit Sharing Allocation (${periodMonth})`,
+              nowIso
+            );
+          } else if (Math.abs(existingAlloc.amount - currentAlloc) > 0.01) {
+            const diff = roundMoney(currentAlloc - existingAlloc.amount);
+            db.prepare(`
+              UPDATE loop_share_ledger
+              SET amount = ?, balance_after = balance_after + ?, updated_at = ?
+              WHERE id = ?
+            `).run(currentAlloc, diff, nowIso, existingAlloc.id);
+          }
+        }
+      } catch (e) {
+        console.warn('[FinanceEngine] Store share sync error:', e.message);
+      }
+    }
+
     // Remaining balance
-    const remaining = Math.max(0, roundMoney(available - actualSpent));
+    const remaining = b.category_id === 'INVENTORY_REINVESTMENT' 
+      ? inventoryReserveBalance 
+      : Math.max(0, roundMoney(available - actualSpent));
 
     db.prepare(`
       UPDATE budget_allocations
@@ -579,7 +730,7 @@ function syncMonthlyAllocations(organizationId, periodMonth) {
 // ----------------------------------------------------------------------------
 function getMonthlyDashboardData(organizationId, periodMonth) {
   const db = getDatabase();
-  const orgId = organizationId || 'org-loops-001';
+  const orgId = resolveOrgId(organizationId);
 
   const rev = calculateEligibleRevenue(orgId, periodMonth);
   const plan = db.prepare(`
@@ -594,10 +745,10 @@ function getMonthlyDashboardData(organizationId, periodMonth) {
   `).all(orgId, periodMonth);
 
   // Capital Account Balances
-  let capitalBalance = 10000.0;
+  let capitalBalance = 0.0;
   try {
     const capAccount = db.prepare(`
-      SELECT COALESCE(current_equity, (total_invested - total_withdrawn), 10000.0) as balance FROM capital_accounts
+      SELECT COALESCE(current_equity, (total_invested - total_withdrawn), 0.0) as balance FROM capital_accounts
       WHERE organization_id = ? LIMIT 1
     `).get(orgId);
     if (capAccount && capAccount.balance !== undefined && capAccount.balance !== null) {
@@ -605,26 +756,47 @@ function getMonthlyDashboardData(organizationId, periodMonth) {
     }
   } catch (e) {}
 
-  // Outstanding Capital Borrowings
-  const borrowings = db.prepare(`
+  // Live Cash Now from general ledger
+  let cashNow = 0.0;
+  try {
+    const { getExecutiveDashboardData } = require('../../account_system_Loops/backend/src/db');
+    const dash = getExecutiveDashboardData(orgId);
+    if (dash && dash.kpiCards && typeof dash.kpiCards.cashNow === 'number') {
+      cashNow = roundMoney(dash.kpiCards.cashNow);
+    }
+  } catch (e) {
+    cashNow = capitalBalance;
+  }
+
+  // All Capital Borrowings
+  const allBorrowings = db.prepare(`
     SELECT * FROM capital_borrowings
-    WHERE organization_id = ? AND status != 'FULLY_REPAID'
-    ORDER BY date DESC
+    WHERE organization_id = ?
+    ORDER BY date DESC, created_at DESC
   `).all(orgId);
 
-  const totalBorrowed = borrowings.reduce((s, b) => roundMoney(s + (b.amount || 0)), 0);
-  const totalRepaid = borrowings.reduce((s, b) => roundMoney(s + (b.repaid_amount || 0)), 0);
-  const totalOutstandingRepayment = borrowings.reduce((s, b) => roundMoney(s + (b.outstanding_amount || 0)), 0);
+  // Active (Unresolved) Capital Borrowings
+  const activeBorrowings = allBorrowings.filter(b => b.status !== 'FULLY_REPAID' && b.status !== 'NOT_TO_PAY' && Number(b.outstanding_amount || 0) > 0);
 
-  // Loop Share Telemetry
+  const totalBorrowed = allBorrowings.reduce((s, b) => roundMoney(s + (b.amount || 0)), 0);
+  const totalRepaid = allBorrowings.reduce((s, b) => roundMoney(s + (b.repaid_amount || 0)), 0);
+  const totalOutstandingRepayment = activeBorrowings.reduce((s, b) => roundMoney(s + (b.outstanding_amount || 0)), 0);
+  const effectiveCapital = cashNow > 0 ? cashNow : capitalBalance;
+  const netLiquidCash = Math.max(0, roundMoney(effectiveCapital - totalOutstandingRepayment));
+
+  // Store / Loop Share Telemetry (Net pool balance)
   let loopShareBalance = 0.0;
   try {
-    const latestShare = db.prepare(`
-      SELECT balance_after FROM loop_share_ledger
-      WHERE organization_id = ?
-      ORDER BY date DESC, created_at DESC LIMIT 1
+    const netShare = db.prepare(`
+      SELECT 
+        COALESCE(SUM(CASE WHEN transaction_type IN ('ALLOCATION', 'ADJUSTMENT_ADD') THEN amount ELSE 0 END), 0) -
+        COALESCE(SUM(CASE WHEN transaction_type IN ('DISTRIBUTION', 'WITHDRAWAL', 'PAYMENT', 'ADJUSTMENT_SUB') THEN amount ELSE 0 END), 0) as balance
+      FROM loop_share_ledger
+      WHERE organization_id = ? OR organization_id IS NULL
     `).get(orgId);
-    if (latestShare) loopShareBalance = roundMoney(latestShare.balance_after);
+    if (netShare && netShare.balance !== null) {
+      loopShareBalance = Math.max(0, roundMoney(netShare.balance));
+    }
   } catch (e) {}
 
   // 17 Metrics from Master Requirements Sections 1-8
@@ -677,11 +849,14 @@ function getMonthlyDashboardData(organizationId, periodMonth) {
     } : null,
     budgets,
     capital: {
-      balance: capitalBalance,
+      balance: effectiveCapital,
+      cashNow: effectiveCapital,
+      netLiquidCash,
       borrowed: totalBorrowed,
       repaid: totalRepaid,
       outstandingRepayment: totalOutstandingRepayment,
-      activeBorrowings: borrowings
+      activeBorrowings,
+      allBorrowings
     },
     loopShare: {
       balance: loopShareBalance
@@ -706,7 +881,7 @@ function recordExpenseWithCapitalProtection({
   allowCapitalBorrowing = true
 }) {
   const db = getDatabase();
-  const orgId = organizationId || 'org-loops-001';
+  const orgId = resolveOrgId(organizationId);
   const monthKey = periodMonth || getYearMonthKey(paymentDate);
   const totalExpense = roundMoney(amount);
 
@@ -788,7 +963,7 @@ function recordExpenseWithCapitalProtection({
     try {
       db.prepare(`
         UPDATE capital_accounts
-        SET current_equity = COALESCE(current_equity, 10000.0) - ?
+        SET current_equity = COALESCE(current_equity, 0.0) - ?
         WHERE organization_id = ?
       `).run(capitalBorrowingRequired, orgId);
     } catch (e) {}
@@ -806,39 +981,113 @@ function recordExpenseWithCapitalProtection({
   const expenseNumber = `EXP-${Date.now().toString().slice(-6)}`;
   const amountMinor = Math.round(totalExpense * 100);
   const now = new Date().toISOString();
+  const payee = supplierName || (description && description.includes('—') ? description.split('—')[0].trim() : (categoryId === 'EMPLOYEE_SALARIES' ? 'Staff Payee' : 'Vendor Payee'));
+
+  try { db.exec("ALTER TABLE expenses ADD COLUMN vendor_payee TEXT;"); } catch (e) {}
+  try { db.exec("ALTER TABLE expenses ADD COLUMN notes TEXT;"); } catch (e) {}
 
   try {
     db.prepare(`
       INSERT INTO expenses
-      (id, organization_id, expense_number, category, amount_minor, payment_method, date, description, created_at)
-      VALUES (?, ?, ?, ?, ?, 'CASH', ?, ?, ?)
+      (id, organization_id, expense_number, category, budget_category_id, amount_minor, payment_method, date, description, vendor_payee, notes, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, 'CASH', ?, ?, ?, ?, ?)
     `).run(
       expenseId,
       orgId,
       expenseNumber,
-      expenseCategory || 'Operational',
+      expenseCategory || (categoryId === 'EMPLOYEE_SALARIES' ? 'Payroll & Staff Wages' : 'Operational'),
+      categoryId || 'OPERATING_EXPENSES',
       amountMinor,
       paymentDate || now,
+      description,
+      payee,
       description,
       now
     );
   } catch (e) {
-    console.warn('[FinanceEngine] Could not write to expenses table:', e.message);
+    try {
+      db.prepare(`
+        INSERT INTO expenses
+        (id, organization_id, expense_number, category, budget_category_id, amount_minor, payment_method, date, description, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, 'CASH', ?, ?, ?)
+      `).run(
+        expenseId,
+        orgId,
+        expenseNumber,
+        expenseCategory || (categoryId === 'EMPLOYEE_SALARIES' ? 'Payroll & Staff Wages' : 'Operational'),
+        categoryId || 'OPERATING_EXPENSES',
+        amountMinor,
+        paymentDate || now,
+        description,
+        now
+      );
+    } catch (err2) {
+      console.warn('[FinanceEngine] Could not write to expenses table:', err2.message);
+    }
   }
 
   // Record in master financial transaction history
   recordFinancialTransaction({
     organizationId: orgId,
     date: paymentDate || now,
-    transactionType: 'EXPENSE_PAYMENT',
-    category: expenseCategory || 'Operating Expense',
+    transactionType: categoryId === 'EMPLOYEE_SALARIES' ? 'SALARY_PAYMENT' : 'EXPENSE_PAYMENT',
+    category: expenseCategory || (categoryId === 'EMPLOYEE_SALARIES' ? 'Payroll & Staff Wages' : 'Operating Expense'),
     amount: totalExpense,
-    sourceAccount: capitalBorrowingRequired > 0 ? `Budget ($${budgetDeduction}) + Capital ($${capitalBorrowingRequired})` : 'Operating Budget',
-    destinationAccount: supplierName || 'Operational Expense',
+    sourceAccount: capitalBorrowingRequired > 0 
+      ? `Budget ($${budgetDeduction}) + Capital ($${capitalBorrowingRequired})` 
+      : (categoryId === 'EMPLOYEE_SALARIES' ? 'Salaries Budget' : 'Operating Budget'),
+    destinationAccount: supplierName || (categoryId === 'EMPLOYEE_SALARIES' ? 'Staff Employee' : 'Operational Expense'),
     referenceId: expenseId,
     performedBy,
     description: `${description} [Budget: $${budgetDeduction.toFixed(2)}, Capital Borrowed: $${capitalBorrowingRequired.toFixed(2)}]`
   });
+
+  // Auto-post double-entry expense journal entry so Cash and Profit update in General Ledger
+  try {
+    const { postJournalEntry, getAccountByCode } = require('../../account_system_Loops/backend/src/db');
+    let expenseAccountCode = '6050';
+    const catCheck = `${categoryId || ''} ${expenseCategory || ''} ${description || ''}`.toLowerCase();
+    if (categoryId === 'EMPLOYEE_SALARIES' || catCheck.includes('payroll') || catCheck.includes('salary') || catCheck.includes('wage')) {
+      expenseAccountCode = '6040'; // Payroll & Staff Wages
+    } else if (catCheck.includes('rent') || catCheck.includes('utilit') || catCheck.includes('electric') || catCheck.includes('water')) {
+      expenseAccountCode = '6030'; // Rent & Store Utilities
+    } else if (catCheck.includes('marketing') || catCheck.includes('advertis')) {
+      expenseAccountCode = '6020'; // Marketing & Advertising
+    } else if (catCheck.includes('direct selling') || catCheck.includes('shipping')) {
+      expenseAccountCode = '6010'; // Direct Selling
+    } else if (catCheck.includes('equip') || catCheck.includes('maintenance') || catCheck.includes('admin') || catCheck.includes('software')) {
+      expenseAccountCode = '6050'; // Admin / Software / Store Equipment
+    }
+
+    const expAcc = (getAccountByCode && getAccountByCode(expenseAccountCode)) || { name: 'Operating Expense' };
+    const isCashPay = (paymentMethod || 'CASH').toUpperCase() === 'CASH';
+    const paymentAccountCode = isCashPay ? '1010' : '1020';
+    const paymentAccountName = isCashPay ? 'Cash in Register Drawer' : 'Bank Operating Account';
+
+    postJournalEntry({
+      sourceType: 'EXPENSE',
+      sourceId: expenseId,
+      organizationId: orgId,
+      accountingDate: paymentDate || now.slice(0, 10),
+      memo: `Expense: ${payee} — ${expenseCategory || 'Operating Expense'}`,
+      lines: [
+        {
+          accountCode: expenseAccountCode,
+          accountName: expAcc.name,
+          debit: totalExpense,
+          credit: 0
+        },
+        {
+          accountCode: paymentAccountCode,
+          accountName: paymentAccountName,
+          debit: 0,
+          credit: totalExpense
+        }
+      ]
+    });
+  } catch (jErr) {
+    console.warn('[FinanceEngine] Could not post journal entry for expense:', jErr.message);
+  }
 
   syncMonthlyAllocations(orgId, monthKey);
 
@@ -867,7 +1116,7 @@ function processCapitalRepayment({
   notes = ''
 }) {
   const db = getDatabase();
-  const orgId = organizationId || 'org-loops-001';
+  const orgId = resolveOrgId(organizationId);
   const repayAmount = roundMoney(amount);
 
   if (repayAmount <= 0) {
@@ -892,6 +1141,44 @@ function processCapitalRepayment({
   const newRepaidTotal = roundMoney(borrowing.repaid_amount + actualRepay);
   const newStatus = newOutstanding <= 0.01 ? 'FULLY_REPAID' : 'PARTIALLY_REPAID';
   const now = new Date().toISOString();
+
+  // 0. Enforce Allocation Funding & Sufficiency Check
+  // If expense borrowed the capital, that expense budget must be used and have enough money to pay back
+  const effectiveCategoryId = sourceCategoryId || borrowing.budget_category_id || 'OPERATING_EXPENSES';
+  const monthKey = borrowing.period_month || new Date().toISOString().slice(0, 7);
+
+  let sourceBudget = db.prepare(`
+    SELECT * FROM budget_allocations
+    WHERE organization_id = ? AND period_month = ? AND category_id = ?
+  `).get(orgId, monthKey, effectiveCategoryId);
+
+  if (!sourceBudget) {
+    const curMonth = new Date().toISOString().slice(0, 7);
+    sourceBudget = db.prepare(`
+      SELECT * FROM budget_allocations
+      WHERE organization_id = ? AND period_month = ? AND category_id = ?
+    `).get(orgId, curMonth, effectiveCategoryId);
+  }
+
+  const categoryLabel = sourceBudget?.category_name || (effectiveCategoryId === 'EMPLOYEE_SALARIES' ? 'Employee Salaries' : 'Operating Expenses');
+  const availableBudget = roundMoney(sourceBudget?.remaining_balance || 0);
+
+  if (!sourceBudget || availableBudget < actualRepay) {
+    return {
+      ok: false,
+      error: `Insufficient budget in ${categoryLabel}. Available: $${availableBudget.toFixed(2)}, Required: $${actualRepay.toFixed(2)}. Cannot repay capital advance without sufficient allocated funds.`
+    };
+  }
+
+  // Deduct repayment from source category budget
+  db.prepare(`
+    UPDATE budget_allocations
+    SET spent_amount = spent_amount + ?,
+        remaining_balance = remaining_balance - ?,
+        repaid_to_capital = repaid_to_capital + ?,
+        updated_at = ?
+    WHERE id = ?
+  `).run(actualRepay, actualRepay, actualRepay, now, sourceBudget.id);
 
   // 1. Update borrowing record
   db.prepare(`
@@ -925,7 +1212,7 @@ function processCapitalRepayment({
   try {
     db.prepare(`
       UPDATE capital_accounts
-      SET current_equity = COALESCE(current_equity, 10000.0) + ?
+      SET current_equity = COALESCE(current_equity, 0.0) + ?
       WHERE organization_id = ?
     `).run(actualRepay, orgId);
   } catch (e) {}
@@ -956,11 +1243,89 @@ function processCapitalRepayment({
 }
 
 /**
+ * 7b. CAPITAL BORROWING DISMISSAL (DECIDE NOT TO PAY)
+ * When business owner decides not to pay/repay a capital borrowing advance:
+ * 1. Mark borrowing status as 'NOT_TO_PAY'
+ * 2. Set outstanding_amount = 0.0 (removes it from active borrowings)
+ * 3. Log audit event and transaction record for full transparency and permanent history
+ */
+function dismissCapitalBorrowing({
+  organizationId,
+  borrowingId,
+  performedBy = 'Administrator',
+  reason = 'Written off / Owner decision not to pay'
+}) {
+  const db = getDatabase();
+  const orgId = resolveOrgId(organizationId);
+
+  const borrowing = db.prepare(`
+    SELECT * FROM capital_borrowings
+    WHERE id = ? AND organization_id = ?
+  `).get(borrowingId, orgId);
+
+  if (!borrowing) {
+    return { ok: false, error: 'Capital borrowing record not found.' };
+  }
+
+  if (borrowing.status === 'FULLY_REPAID' || borrowing.status === 'NOT_TO_PAY') {
+    return { ok: false, error: `Borrowing is already marked as ${borrowing.status}.` };
+  }
+
+  const dismissedAmount = roundMoney(borrowing.outstanding_amount);
+  const now = new Date().toISOString();
+
+  // 1. Update status to NOT_TO_PAY and zero out outstanding amount
+  db.prepare(`
+    UPDATE capital_borrowings
+    SET outstanding_amount = 0.0, status = 'NOT_TO_PAY', reason = ?, updated_at = ?
+    WHERE id = ?
+  `).run(`${borrowing.reason || ''} [DECISION: NOT TO PAY - ${reason}]`, now, borrowingId);
+
+  // 2. Audit log
+  try {
+    db.prepare(`
+      INSERT INTO audit_logs (id, organization_id, action, entity_type, entity_id, user_name, details, created_at)
+      VALUES (?, ?, 'BORROWING_DISMISSED_NOT_TO_PAY', 'capital_borrowings', ?, ?, ?, ?)
+    `).run(
+      `aud-${crypto.randomUUID()}`,
+      orgId,
+      borrowingId,
+      performedBy,
+      JSON.stringify({ borrowingRef: borrowing.borrowing_ref, dismissedAmount, reason }),
+      now
+    );
+  } catch (e) {}
+
+  // 3. Record in master financial transaction history
+  recordFinancialTransaction({
+    organizationId: orgId,
+    date: now,
+    transactionType: 'CAPITAL_BORROWING_DISMISSED',
+    category: 'Capital Management',
+    amount: dismissedAmount,
+    sourceAccount: 'CAPITAL_ACCOUNT',
+    destinationAccount: borrowing.budget_category_id || 'OPERATING_EXPENSES',
+    referenceId: borrowing.borrowing_ref,
+    performedBy,
+    description: `Borrowing dismissed without repayment (Owner decision not to pay): ${reason}`
+  });
+
+  syncMonthlyAllocations(orgId, borrowing.period_month);
+
+  return {
+    ok: true,
+    message: `Borrowing ${borrowing.borrowing_ref} ($${dismissedAmount.toFixed(2)}) marked as Decide Not to Pay. Permanently recorded in borrowing history.`,
+    borrowingId,
+    dismissedAmount
+  };
+}
+
+/**
  * Direct Capital Injection
  */
 function injectCapital({ organizationId, amount, storeId = null, storeName = null, performedBy = 'Owner', notes = '' }) {
   const db = getDatabase();
-  const orgId = organizationId || 'org-loops-001';
+  const orgId = resolveOrgId(organizationId);
   const val = roundMoney(amount);
   if (val <= 0) return { ok: false, error: 'Injection amount must be greater than zero.' };
 
@@ -1002,7 +1367,7 @@ function injectCapital({ organizationId, amount, storeId = null, storeName = nul
  */
 function withdrawCapital({ organizationId, amount, storeId = null, storeName = null, performedBy = 'Owner', notes = '' }) {
   const db = getDatabase();
-  const orgId = organizationId || 'org-loops-001';
+  const orgId = resolveOrgId(organizationId);
   const val = roundMoney(amount);
   if (val <= 0) return { ok: false, error: 'Withdrawal amount must be greater than zero.' };
 
@@ -1050,25 +1415,27 @@ function recordLoopShareTransaction({
   authorizedBy = 'Owner'
 }) {
   const db = getDatabase();
-  const orgId = organizationId || 'org-loops-001';
+  const orgId = resolveOrgId(organizationId);
   const monthKey = periodMonth || getYearMonthKey();
   const txAmount = roundMoney(amount);
 
-  // Get current balance
-  const latest = db.prepare(`
-    SELECT balance_after FROM loop_share_ledger
-    WHERE organization_id = ?
-    ORDER BY date DESC, created_at DESC LIMIT 1
+  // Get current net balance
+  const netShare = db.prepare(`
+    SELECT 
+      COALESCE(SUM(CASE WHEN transaction_type IN ('ALLOCATION', 'ADJUSTMENT_ADD') THEN amount ELSE 0 END), 0) -
+      COALESCE(SUM(CASE WHEN transaction_type IN ('DISTRIBUTION', 'WITHDRAWAL', 'PAYMENT', 'ADJUSTMENT_SUB') THEN amount ELSE 0 END), 0) as balance
+    FROM loop_share_ledger
+    WHERE organization_id = ? OR organization_id IS NULL
   `).get(orgId);
 
-  const prevBalance = latest ? roundMoney(latest.balance_after) : 0.0;
+  const prevBalance = Math.max(0, roundMoney(netShare?.balance || 0));
   let newBalance = prevBalance;
 
   if (transactionType === 'ALLOCATION' || transactionType === 'ADJUSTMENT_ADD') {
     newBalance = roundMoney(prevBalance + txAmount);
   } else if (transactionType === 'DISTRIBUTION' || transactionType === 'WITHDRAWAL' || transactionType === 'PAYMENT') {
     if (txAmount > prevBalance) {
-      return { ok: false, error: `Insufficient Loop Share balance ($${prevBalance.toFixed(2)} available). Cannot distribute $${txAmount.toFixed(2)}.` };
+      return { ok: false, error: `Insufficient Store Share balance ($${prevBalance.toFixed(2)} available). Cannot distribute $${txAmount.toFixed(2)}.` };
     }
     newBalance = roundMoney(prevBalance - txAmount);
   }
@@ -1105,8 +1472,22 @@ function recordLoopShareTransaction({
     destinationAccount: recipientName || 'Shareholder',
     referenceId: txId,
     performedBy: authorizedBy,
-    description: `Loop Share ${transactionType}: ${description}`
+    description: `Store Share ${transactionType}: ${description}`
   });
+
+  if (transactionType === 'DISTRIBUTION' || transactionType === 'WITHDRAWAL') {
+    try {
+      db.prepare(`
+        UPDATE budget_allocations
+        SET spent_amount = spent_amount + ?,
+            remaining_balance = MAX(0, remaining_balance - ?),
+            updated_at = ?
+        WHERE (organization_id = ? OR organization_id IS NULL)
+          AND period_month = ?
+          AND category_id = 'LOOP_SHARE'
+      `).run(txAmount, txAmount, now, orgId, monthKey);
+    } catch (e) {}
+  }
 
   return {
     ok: true,
@@ -1129,8 +1510,14 @@ function executeMonthEndClosing({
   manualSalaryAmount = 0.0
 }) {
   const db = getDatabase();
-  const orgId = organizationId || 'org-loops-001';
+  const orgId = resolveOrgId(organizationId);
   const [yearStr] = periodMonth.split('-');
+
+  const [y, m] = periodMonth.split('-').map(Number);
+  let nextY = y;
+  let nextM = m + 1;
+  if (nextM > 12) { nextM = 1; nextY += 1; }
+  const nextMonthKey = `${nextY}-${String(nextM).padStart(2, '0')}`;
 
   // 1. Prevent duplicate closing
   const existing = db.prepare(`
@@ -1139,7 +1526,13 @@ function executeMonthEndClosing({
   `).get(orgId, periodMonth);
 
   if (existing) {
-    return { ok: false, error: `Period ${periodMonth} is already finalized and closed. Cannot close twice.` };
+    return {
+      ok: true,
+      isAlreadyClosed: true,
+      periodMonth,
+      nextMonth: nextMonthKey,
+      message: `Period ${periodMonth} is already finalized and closed.`
+    };
   }
 
   // 2. Run final sync
@@ -1193,12 +1586,6 @@ function executeMonthEndClosing({
   );
 
   // 6. Automatically initialize next month with roll-over carry-forwards
-  const [y, m] = periodMonth.split('-').map(Number);
-  let nextY = y;
-  let nextM = m + 1;
-  if (nextM > 12) { nextM = 1; nextY += 1; }
-  const nextMonthKey = `${nextY}-${String(nextM).padStart(2, '0')}`;
-
   // 4b. Archive all completed imports for this closed month into permanent history
   try {
     db.prepare(`
@@ -1238,7 +1625,7 @@ function recordFinancialTransaction({
   attachmentUrl = ''
 }) {
   const db = getDatabase();
-  const orgId = organizationId || 'org-loops-001';
+  const orgId = resolveOrgId(organizationId);
   const id = `tx-${crypto.randomUUID()}`;
   const now = new Date().toISOString();
 
@@ -1291,7 +1678,7 @@ function recordImportHistory({
   isArchived = 0
 }) {
   const db = getDatabase();
-  const orgId = organizationId || 'org-loops-001';
+  const orgId = resolveOrgId(organizationId);
   const now = new Date().toISOString();
   const dateIso = importDate || now;
   const monthPeriod = getYearMonthKey(dateIso);
@@ -1408,7 +1795,7 @@ function recordImportHistory({
 
 function getImportHistoryList({ organizationId, monthPeriod, yearPeriod, search, status, limit = 100, onlyArchived = false }) {
   const db = getDatabase();
-  const orgId = organizationId || 'org-loops-001';
+  const orgId = resolveOrgId(organizationId);
 
   let query = `
     SELECT * FROM import_history
@@ -1463,7 +1850,7 @@ function recordExportAudit({
   periodOrDateRange = ''
 }) {
   const db = getDatabase();
-  const orgId = organizationId || 'org-loops-001';
+  const orgId = resolveOrgId(organizationId);
   const id = `exp-${crypto.randomUUID()}`;
   const now = new Date().toISOString();
 
@@ -1491,6 +1878,7 @@ module.exports = {
   getMonthlyDashboardData,
   recordExpenseWithCapitalProtection,
   processCapitalRepayment,
+  dismissCapitalBorrowing,
   injectCapital,
   withdrawCapital,
   recordLoopShareTransaction,
