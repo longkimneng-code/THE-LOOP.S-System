@@ -108,7 +108,8 @@ export default function AdminDashboardView() {
   const activeUser = currentUser || cashierUser;
 
   // Check access rights
-  const isOwner = activeUser?.role === 'OWNER' || activeUser?.role === 'SUPER_ADMIN';
+  const isOwner = activeUser?.role === 'OWNER' || activeUser?.role === 'SUPER_ADMIN' || Boolean(activeUser?.permissions?.isOwnerEquivalent);
+  const canResetStoreData = isOwner || Boolean(activeUser?.permissions?.manageStoreData);
   const canManageStaff = hasPermission('manageEmployees') || isOwner || activeUser?.role === 'POS_ADMIN';
   const canAccessStock = hasPermission('accessStockApp') || isOwner || activeUser?.appAccess?.stock;
   const canAccessFinance = hasPermission('accessFinanceApp') || isOwner || activeUser?.appAccess?.finance;
@@ -772,37 +773,39 @@ export default function AdminDashboardView() {
                 </div>
               </div>
 
-              {/* Reset Store Data Section (Admin Backoffice -> Ecosystem -> Reset Store Data) */}
-              <div className="bg-obsidian-900 border border-crimson-500/25 rounded-2xl p-5 space-y-3 mt-6">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <div className="space-y-1">
-                    <div className="flex items-center space-x-2">
-                      <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-crimson-400 px-2 py-0.5 rounded bg-crimson-500/10 border border-crimson-500/20">
-                        Operational State Control
-                      </span>
-                      <span className="text-xs text-slate-500 font-mono">Store Owner Access</span>
+              {/* Reset Store Data Section (Visible strictly to users with Owner or Reset Data permission) */}
+              {canResetStoreData && (
+                <div className="bg-obsidian-900 border border-crimson-500/25 rounded-2xl p-5 space-y-3 mt-6">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="space-y-1">
+                      <div className="flex items-center space-x-2">
+                        <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-crimson-400 px-2 py-0.5 rounded bg-crimson-500/10 border border-crimson-500/20">
+                          Operational State Control
+                        </span>
+                        <span className="text-xs text-slate-500 font-mono">Store Owner Access</span>
+                      </div>
+                      <h3 className="text-sm font-bold text-slate-100 flex items-center space-x-2">
+                        <ShieldAlert className="w-4 h-4 text-crimson-400" />
+                        <span>Reset Store Data</span>
+                      </h3>
+                      <p className="text-xs text-slate-400 max-w-xl">
+                        Reset the selected store's operational transactions, shifts, stock balances, and expenses to begin fresh as a newly registered store. Your login account, credentials, company registration, and master products remain 100% safe.
+                      </p>
                     </div>
-                    <h3 className="text-sm font-bold text-slate-100 flex items-center space-x-2">
-                      <ShieldAlert className="w-4 h-4 text-crimson-400" />
-                      <span>Reset Store Data</span>
-                    </h3>
-                    <p className="text-xs text-slate-400 max-w-xl">
-                      Reset the selected store's operational transactions, shifts, stock balances, and expenses to begin fresh as a newly registered store. Your login account, credentials, company registration, and master products remain 100% safe.
-                    </p>
-                  </div>
 
-                  <button
-                    onClick={() => {
-                      playBeep(440, 'triangle', 0.08);
-                      setIsResetStoreModalOpen(true);
-                    }}
-                    className="px-4 py-2.5 rounded-xl bg-crimson-600 hover:bg-crimson-500 text-white font-bold text-xs uppercase flex items-center space-x-2 shrink-0 shadow-lg shadow-crimson-600/20 transition-all active:scale-98 cursor-pointer"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                    <span>Reset Store Data</span>
-                  </button>
+                    <button
+                      onClick={() => {
+                        playBeep(440, 'triangle', 0.08);
+                        setIsResetStoreModalOpen(true);
+                      }}
+                      className="px-4 py-2.5 rounded-xl bg-crimson-600 hover:bg-crimson-500 text-white font-bold text-xs uppercase flex items-center space-x-2 shrink-0 shadow-lg shadow-crimson-600/20 transition-all active:scale-98 cursor-pointer"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>Reset Store Data</span>
+                    </button>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           )}
 
@@ -866,19 +869,21 @@ export default function AdminDashboardView() {
             </div>
           )}
 
-          {/* Reset Store Data Modal */}
-          <ResetStoreDataModal
-            isOpen={isResetStoreModalOpen}
-            onClose={() => setIsResetStoreModalOpen(false)}
-            stores={stores}
-            currentStoreId={currentStore?.id}
-            currentUser={currentUser || cashierUser}
-            authToken={authToken}
-            onResetSuccess={() => {
-              if (loadStores) loadStores();
-              playBeep(1200, 'sine', 0.15);
-            }}
-          />
+          {/* Reset Store Data Modal (Guarded by Authorization) */}
+          {canResetStoreData && (
+            <ResetStoreDataModal
+              isOpen={isResetStoreModalOpen}
+              onClose={() => setIsResetStoreModalOpen(false)}
+              stores={stores}
+              currentStoreId={currentStore?.id}
+              currentUser={currentUser || cashierUser}
+              authToken={authToken}
+              onResetSuccess={() => {
+                if (loadStores) loadStores();
+                playBeep(1200, 'sine', 0.15);
+              }}
+            />
+          )}
         </main>
       </div>
     </div>

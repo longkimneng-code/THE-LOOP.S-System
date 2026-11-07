@@ -43,11 +43,16 @@ export default function ResetStoreDataModal({
     }
   }, [currentStoreId, stores]);
 
+  const getEffectiveToken = () => {
+    return authToken || (typeof window !== 'undefined' ? (localStorage.getItem('loops_auth_token') || localStorage.getItem('token') || localStorage.getItem('pos_session_token')) : null);
+  };
+
   const fetchHistory = async () => {
     setLoadingHistory(true);
     try {
+      const token = getEffectiveToken();
       const res = await fetch(`/api/ecosystem/reset-store-data/history?storeId=${encodeURIComponent(selectedStoreId || '')}`, {
-        headers: authToken ? { Authorization: `Bearer ${authToken}` } : {}
+        headers: token ? { Authorization: `Bearer ${token}` } : {}
       });
       if (res.ok) {
         const data = await res.json();
@@ -80,11 +85,12 @@ export default function ResetStoreDataModal({
     setErrorMessage('');
 
     try {
+      const token = getEffectiveToken();
       const res = await fetch('/api/ecosystem/reset-store-data', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          ...(authToken ? { Authorization: `Bearer ${authToken}` } : {})
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
         },
         body: JSON.stringify({
           storeId: selectedStoreId,
@@ -300,13 +306,11 @@ export default function ResetStoreDataModal({
                     <span>What Will Be Removed:</span>
                   </div>
                   <ul className="text-slate-300 space-y-1 text-[11px] list-disc list-inside">
-                    <li>POS shifts & register sessions</li>
-                    <li>Completed & held sales orders</li>
-                    <li>Cash movements & drawer float</li>
-                    <li>Inventory balances (zeroed)</li>
-                    <li>Stock movements & transfer history</li>
-                    <li>Store expenses & supplier bills</li>
-                    <li>Monthly revenue allocation records</li>
+                    <li>POS shifts, sales orders, drawer float & refunds</li>
+                    <li>Stock ledger, warehouse movements & on-hand balances (zeroed)</li>
+                    <li>Operating expenses, payroll records & supplier bills</li>
+                    <li>Revenue allocations, capital advances & borrowings</li>
+                    <li>Account system journal entries, customer invoices & shipments</li>
                   </ul>
                 </div>
 

@@ -9,8 +9,6 @@ import NewProductModal from './components/NewProductModal';
 import InventoryManagement from './components/InventoryManagement';
 import ReceiveStockModal from './components/ReceiveStockModal';
 import StockTransferModal from './components/StockTransferModal';
-import SalesOrders from './components/SalesOrders';
-import PosSaleModal from './components/PosSaleModal';
 import Purchasing from './components/Purchasing';
 import Customers from './components/Customers';
 import Reports from './components/Reports';
@@ -143,6 +141,18 @@ export default function App() {
             const canAccess = user.role === 'OWNER' || user.role === 'SUPER_ADMIN' || user.role === 'STOCK_ADMIN' || user.role === 'STOCK_MANAGER' || user.appAccess?.stock || user.permissions?.accessStockApp;
             if (canAccess) {
               setAuthSession({ checked: true, authenticated: true, user, error: null });
+              if (user.role !== 'OWNER' && user.role !== 'SUPER_ADMIN') {
+                let assigned = user.assignedStoreIds || user.locations;
+                if (!assigned && user.assigned_store_ids) {
+                  try {
+                    assigned = typeof user.assigned_store_ids === 'string' ? JSON.parse(user.assigned_store_ids) : user.assigned_store_ids;
+                  } catch (e) {}
+                }
+                if (Array.isArray(assigned) && assigned.length > 0 && !assigned.includes('*')) {
+                  setDashboardScope(assigned[0]);
+                  setActiveLocationId(assigned[0]);
+                }
+              }
             } else {
               setAuthSession({ checked: true, authenticated: false, user, error: 'Access Denied: Your staff account is not permitted to access Stock Management.' });
             }
@@ -692,6 +702,7 @@ export default function App() {
             dashboardData={dashboardData}
             locations={locations}
             scopeLocationId={dashboardScope}
+            user={authSession.user}
             onScopeChange={handleDashboardScopeChange}
             onSelectLocation={(locId, filter = 'ALL') => {
               setActiveLocationId(locId);
@@ -743,14 +754,6 @@ export default function App() {
             onOpenTransferModal={() => setIsTransferOpen(true)}
             onOpenExportModal={() => setIsExportOpen(true)}
             onQuickReceive={handleQuickReceive}
-          />
-        )}
-
-        {activeTab === 'sales' && (
-          <SalesOrders
-            sales={sales}
-            onOpenPosModal={() => setIsPosSaleOpen(true)}
-            onRefundSale={handleRefundSale}
           />
         )}
 
@@ -853,15 +856,6 @@ export default function App() {
         balances={balances}
         onClose={() => setIsTransferOpen(false)}
         onTransfer={handleTransferStock}
-      />
-
-      <PosSaleModal
-        isOpen={isPosSaleOpen}
-        products={products}
-        customers={customers}
-        locations={locations}
-        onClose={() => setIsPosSaleOpen(false)}
-        onSale={handleExecuteSale}
       />
 
       <AddLocationModal

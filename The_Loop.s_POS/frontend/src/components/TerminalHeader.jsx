@@ -152,78 +152,10 @@ export default function TerminalHeader() {
           )}
         </button>
 
-        {/* Cash In / Out (Petty Cash & Safe Drop) */}
-        <button
-          onClick={() => setIsCashMovementOpen(true)}
-          className="flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-obsidian-850 hover:bg-obsidian-800 text-slate-300 border border-obsidian-700 transition-colors"
-          title="Cash In / Out / Safe Drop"
-        >
-          <DollarSign className="w-3.5 h-3.5 text-brass-400" />
-          <span className="hidden sm:inline">Cash Flow</span>
-        </button>
-
-        {/* Refund & Exchange */}
-        <button
-          onClick={() => setIsRefundOpen(true)}
-          className="flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-obsidian-850 hover:bg-obsidian-800 text-slate-300 border border-obsidian-700 transition-colors"
-          title="Return or Exchange with Receipt"
-        >
-          <RotateCcw className="w-3.5 h-3.5 text-rose-400" />
-          <span className="hidden sm:inline">Return</span>
-        </button>
       </div>
 
-      {/* Right: Triad Sync Status & Cashier Switch */}
+      {/* Right: Cashier Session */}
       <div className="flex items-center space-x-2">
-        {/* Multi-Currency Multiplier Toggle */}
-        <button
-          onClick={() => setIsCurrencyModalOpen(true)}
-          className="flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg text-xs font-mono font-medium bg-obsidian-850 hover:bg-obsidian-800 text-brass-400 border border-obsidian-700 hover:border-brass-500/40 transition-colors shadow-xs"
-          title="Configure USD / KHR Exchange Rate Multiplier"
-        >
-          <span className="text-[10px] bg-brass-500/20 px-1.5 py-0.5 rounded font-bold">1$</span>
-          <span>=</span>
-          <span className="font-bold text-slate-100">{(exchangeRate || 4000).toLocaleString()} ៛</span>
-        </button>
-
-        {/* Triad Real-Time Sync Indicator */}
-        <button
-          onClick={() => setIsSyncModalOpen(true)}
-          className="flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg bg-obsidian-850 hover:bg-obsidian-800 border border-obsidian-700 text-xs transition-colors"
-          title="Click to view Triad Integration Monitor"
-        >
-          <div className="flex items-center space-x-1">
-            <span className={`w-2 h-2 rounded-full ${isStockOnline ? 'bg-emerald-400 animate-pulse' : 'bg-amber-500'}`} />
-            <span className={`w-2 h-2 rounded-full ${isFinanceOnline ? 'bg-emerald-400 animate-pulse' : 'bg-amber-500'}`} />
-          </div>
-          <span className="hidden lg:inline text-slate-300">Triad</span>
-          {pendingOutbox > 0 && (
-            <span className="bg-amber-500/20 text-amber-400 border border-amber-500/30 px-1.5 py-0.5 rounded font-mono text-[10px]">
-              {pendingOutbox}
-            </span>
-          )}
-        </button>
-
-        {/* Add Staff User */}
-        <button
-          onClick={() => setIsUserModalOpen(true)}
-          className="p-2 rounded-lg bg-obsidian-850 hover:bg-obsidian-800 border border-obsidian-700 text-slate-400 hover:text-brass-400 transition-colors"
-          title="Create Staff Account (Syncs to Stock & Finance)"
-        >
-          <UserPlus className="w-4 h-4" />
-        </button>
-
-        {/* Admin Dashboard Switcher (for authorized managers & owners) */}
-        {canAccessAdmin && (
-          <button
-            onClick={() => setAppView('ADMIN')}
-            className="flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-brass-500/10 hover:bg-brass-500/20 text-brass-400 border border-brass-500/30 transition-colors shadow-xs"
-            title="Open Private Admin Backoffice Dashboard"
-          >
-            <LayoutDashboard className="w-3.5 h-3.5" />
-            <span className="hidden xl:inline">Admin</span>
-          </button>
-        )}
 
         {/* Cashier Badge & User Session Menu */}
         <div className="relative flex items-center space-x-2 pl-2 border-l border-obsidian-800">

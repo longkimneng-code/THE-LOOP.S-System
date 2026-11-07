@@ -5,7 +5,6 @@ const TABS = [
   { id: 'dashboard', label: 'Dashboard', iconName: 'dashboard' },
   { id: 'catalog', label: 'Product Catalog', iconName: 'catalog' },
   { id: 'inventory', label: 'Inventory Management', iconName: 'inventory' },
-  { id: 'sales', label: 'Sales & Orders', iconName: 'sales' },
   { id: 'purchasing', label: 'Purchasing & Suppliers', iconName: 'purchasing' },
   { id: 'customers', label: 'Customers', iconName: 'customers' },
   { id: 'reports', label: 'Reports & Analytics', iconName: 'reports' },

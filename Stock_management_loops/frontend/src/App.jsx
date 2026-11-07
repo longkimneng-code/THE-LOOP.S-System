@@ -9,8 +9,6 @@ import NewProductModal from './components/NewProductModal';
 import InventoryManagement from './components/InventoryManagement';
 import ReceiveStockModal from './components/ReceiveStockModal';
 import StockTransferModal from './components/StockTransferModal';
-import SalesOrders from './components/SalesOrders';
-import PosSaleModal from './components/PosSaleModal';
 import Purchasing from './components/Purchasing';
 import Customers from './components/Customers';
 import Reports from './components/Reports';
@@ -650,6 +648,7 @@ export default function App() {
             dashboardData={dashboardData}
             locations={locations}
             scopeLocationId={dashboardScope}
+            user={authSession.user}
             onScopeChange={handleDashboardScopeChange}
             onSelectLocation={(locId, filter = 'ALL') => {
               setActiveLocationId(locId);
@@ -701,14 +700,6 @@ export default function App() {
             onOpenTransferModal={() => setIsTransferOpen(true)}
             onOpenExportModal={() => setIsExportOpen(true)}
             onQuickReceive={handleQuickReceive}
-          />
-        )}
-
-        {activeTab === 'sales' && (
-          <SalesOrders
-            sales={sales}
-            onOpenPosModal={() => setIsPosSaleOpen(true)}
-            onRefundSale={handleRefundSale}
           />
         )}
 
@@ -811,15 +802,6 @@ export default function App() {
         balances={balances}
         onClose={() => setIsTransferOpen(false)}
         onTransfer={handleTransferStock}
-      />
-
-      <PosSaleModal
-        isOpen={isPosSaleOpen}
-        products={products}
-        customers={customers}
-        locations={locations}
-        onClose={() => setIsPosSaleOpen(false)}
-        onSale={handleExecuteSale}
       />
 
       <AddLocationModal

@@ -48,6 +48,7 @@ const DB_FILE = path.join(DATA_DIR, 'loops_finance_state.json');
 let mysqlPool = null;
 let useMySQL = false;
 let memoryDb = null;
+let lastFinanceMtime = 0;
 
 // Ensure local data directory exists
 if (!fs.existsSync(DATA_DIR)) {
@@ -59,6 +60,9 @@ function initMemoryDb() {
     try {
       const raw = fs.readFileSync(DB_FILE, 'utf8');
       memoryDb = JSON.parse(raw);
+      try {
+        lastFinanceMtime = fs.statSync(DB_FILE).mtimeMs;
+      } catch (e) {}
       return;
     } catch (e) {
       console.warn('[DB] Could not parse existing state file, resetting with seed data:', e.message);
@@ -89,6 +93,9 @@ function initMemoryDb() {
 function saveMemoryDb() {
   try {
     fs.writeFileSync(DB_FILE, JSON.stringify(memoryDb, null, 2), 'utf8');
+    try {
+      lastFinanceMtime = fs.statSync(DB_FILE).mtimeMs;
+    } catch (e) {}
   } catch (err) {
     console.error('[DB] Error saving local state:', err.message);
   }
@@ -137,7 +144,21 @@ async function initDatabase() {
 // ----------------------------------------------------------------------------
 
 function getDb() {
-  if (!memoryDb) initMemoryDb();
+  let fileMtime = 0;
+  if (fs.existsSync(DB_FILE)) {
+    try {
+      fileMtime = fs.statSync(DB_FILE).mtimeMs;
+    } catch (e) {}
+  }
+
+  if (!memoryDb || (fileMtime > 0 && fileMtime > lastFinanceMtime)) {
+    initMemoryDb();
+  }
+  return memoryDb;
+}
+
+function reloadDb() {
+  initMemoryDb();
   return memoryDb;
 }
 
@@ -2616,7 +2637,7 @@ function getStores(orgId = null) {
   ];
 }
 
-function calculatePeriodMetrics(startStr, endStr, targetStoreId, orgId) {
+function calculatePeriodMetrics(startStr, endStr, targetStoreId, orgId, allowedStoreIds = ['*']) {
   const db = getDb();
   const allEntries = db.journalEntries || [];
   const entriesInOrg = orgId ? allEntries.filter(j => j.organizationId === orgId) : allEntries;
@@ -2624,9 +2645,11 @@ function calculatePeriodMetrics(startStr, endStr, targetStoreId, orgId) {
   // Filter journals strictly within [startStr, endStr]
   const periodJournals = entriesInOrg.filter(j => {
     if (j.status === 'REVERSED' || j.reversedById) return false;
+    const entryStore = j.storeId || j.locationId || 'loc-01';
     if (targetStoreId && targetStoreId !== 'ALL') {
-      const entryStore = j.storeId || j.locationId || 'loc-01';
       if (entryStore !== targetStoreId) return false;
+    } else if (allowedStoreIds && !allowedStoreIds.includes('*')) {
+      if (!allowedStoreIds.includes(entryStore)) return false;
     }
     return j.accountingDate >= startStr && j.accountingDate <= endStr;
   });
@@ -2737,7 +2760,10 @@ function calculatePeriodMetrics(startStr, endStr, targetStoreId, orgId) {
   const inventoryValuation = getInventoryValuationReport(orgId, { asOfDate: endStr, storeId: targetStoreId });
 
   // Store-by-Store Performance
-  const stores = getStores(orgId);
+  let stores = getStores(orgId);
+  if (allowedStoreIds && !allowedStoreIds.includes('*')) {
+    stores = stores.filter(s => allowedStoreIds.includes(s.id));
+  }
   const storePerformance = stores.map(store => {
     const isThisStore = (j) => {
       if (j.storeId === store.id || j.locationId === store.id) return true;
@@ -2855,7 +2881,11 @@ function calculatePeriodMetrics(startStr, endStr, targetStoreId, orgId) {
 }
 
 function getPeriodFinancials(orgId = null, options = {}) {
-  const stores = getStores(orgId);
+  const allowed = options.allowedStoreIds || ['*'];
+  let stores = getStores(orgId);
+  if (!allowed.includes('*')) {
+    stores = stores.filter(s => allowed.includes(s.id));
+  }
   const nowStr = new Date().toISOString().split('T')[0];
   
   const startDate = options.startDate || nowStr.slice(0, 7) + '-01';
@@ -2874,12 +2904,12 @@ function getPeriodFinancials(orgId = null, options = {}) {
   const prevStartDate = prevStartD.toISOString().split('T')[0];
   const prevEndDate = prevEndD.toISOString().split('T')[0];
 
-  const currentPeriod = calculatePeriodMetrics(startDate, endDate, storeId, orgId);
+  const currentPeriod = calculatePeriodMetrics(startDate, endDate, storeId, orgId, allowed);
   let previousPeriod = null;
   let comparison = null;
 
   if (compare) {
-    previousPeriod = calculatePeriodMetrics(prevStartDate, prevEndDate, storeId, orgId);
+    previousPeriod = calculatePeriodMetrics(prevStartDate, prevEndDate, storeId, orgId, allowed);
     
     const calcDelta = (curr, prev) => {
       const c = Number(curr) || 0;
@@ -2913,10 +2943,9 @@ function getPeriodFinancials(orgId = null, options = {}) {
       compare,
       durationDays: diffDays
     },
-    stores: [
-      { id: 'ALL', name: 'All Stores (Combined)', code: 'ALL', type: 'ALL', isDefault: true },
-      ...stores
-    ],
+    stores: stores.length > 1
+      ? [{ id: 'ALL', name: allowed.includes('*') ? 'All Stores (Combined)' : 'All Assigned Stores (Combined)', code: 'ALL', type: 'ALL', isDefault: true }, ...stores]
+      : stores,
     currentPeriod,
     previousPeriod,
     comparison
@@ -2974,5 +3003,6 @@ module.exports = {
   getAccountsReceivableReport,
   getStores,
   calculatePeriodMetrics,
-  getPeriodFinancials
+  getPeriodFinancials,
+  reloadDb
 };

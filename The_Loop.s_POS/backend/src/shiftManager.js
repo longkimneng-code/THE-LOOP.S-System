@@ -890,14 +890,24 @@ function getCashierPerformance({ cashierId, dateRange = 'ALL' }) {
 // ----------------------------------------------------------------------------
 // 8. MANAGER SHIFT DASHBOARD (Section 13.7)
 // ----------------------------------------------------------------------------
-function getManagerShiftDashboard(organizationId = null) {
+function getManagerShiftDashboard(organizationId = null, user = null) {
   const db = loadDb();
   const rate = getExchangeRate();
   const targetOrg = organizationId || db.organization?.id || 'org-6e9ed3cf';
+  const { canUserAccessStore } = require('./storeManager');
+
+  const isUserRestricted = user && user.role !== 'OWNER' && user.role !== 'SUPER_ADMIN';
 
   // Active shifts
   const activeShifts = db.shifts
-    .filter(s => s.status === 'ACTIVE' && (s.organizationId || 'org-loops-001') === targetOrg)
+    .filter(s => {
+      if (s.status !== 'ACTIVE' || (s.organizationId || 'org-loops-001') !== targetOrg) return false;
+      if (isUserRestricted) {
+        const shiftStore = s.storeId || s.locationId || 'loc-1';
+        return canUserAccessStore(user, shiftStore);
+      }
+      return true;
+    })
     .map(s => {
       const details = getShiftDetails(s.id);
       return {
@@ -908,12 +918,27 @@ function getManagerShiftDashboard(organizationId = null) {
 
   // Recent closed shifts with discrepancies
   const shiftsWithDiscrepancy = db.shifts
-    .filter(s => s.status === 'CLOSED' && (s.organizationId || 'org-loops-001') === targetOrg && Math.abs(Number(s.cashOverShort || 0)) >= 0.05)
+    .filter(s => {
+      if (s.status !== 'CLOSED' || (s.organizationId || 'org-loops-001') !== targetOrg) return false;
+      if (Math.abs(Number(s.cashOverShort || 0)) < 0.05) return false;
+      if (isUserRestricted) {
+        const shiftStore = s.storeId || s.locationId || 'loc-1';
+        return canUserAccessStore(user, shiftStore);
+      }
+      return true;
+    })
     .slice(0, 10);
 
   // Register assignments
   const registers = (db.registers || [])
-    .filter(reg => (reg.organizationId || 'org-loops-001') === targetOrg)
+    .filter(reg => {
+      if ((reg.organizationId || 'org-loops-001') !== targetOrg) return false;
+      if (isUserRestricted) {
+        const regStore = reg.storeId || reg.locationId || 'loc-1';
+        return canUserAccessStore(user, regStore);
+      }
+      return true;
+    })
     .map(reg => {
       const active = activeShifts.find(s => s.registerId === reg.id);
       const store = (db.locations || []).find(l => l.id === reg.storeId || l.id === reg.locationId);

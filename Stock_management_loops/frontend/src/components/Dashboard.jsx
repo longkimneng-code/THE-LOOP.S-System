@@ -14,6 +14,7 @@ export default function Dashboard({
   dashboardData,
   locations = [],
   scopeLocationId = 'ALL',
+  user = null,
   onScopeChange,
   onSelectLocation,
   onResetData,
@@ -132,12 +133,45 @@ export default function Dashboard({
     });
   }, [alertVariants, alertFilter, alertSearch]);
 
-  // Global Health Aggregates across all branch nodes
+  // Multi-Store Isolation RBAC Scoping
+  const userAllowedStoreIds = useMemo(() => {
+    if (!user) return ['*'];
+    if (user.role === 'OWNER' || user.role === 'SUPER_ADMIN') return ['*'];
+    const assigned = user.assignedStoreIds || user.locations;
+    if (Array.isArray(assigned) && assigned.length > 0) return assigned;
+    if (user.assigned_store_ids) {
+      try {
+        const p = typeof user.assigned_store_ids === 'string' ? JSON.parse(user.assigned_store_ids) : user.assigned_store_ids;
+        if (Array.isArray(p) && p.length > 0) return p;
+      } catch (e) {}
+    }
+    return ['*'];
+  }, [user]);
+
+  const displayLocationStats = useMemo(() => {
+    if (!userAllowedStoreIds.includes('*')) {
+      return locationStats.filter(loc => userAllowedStoreIds.includes(loc.id));
+    }
+    return locationStats;
+  }, [locationStats, userAllowedStoreIds]);
+
+  const displayMovements = useMemo(() => {
+    let list = recentMovements || [];
+    if (!userAllowedStoreIds.includes('*')) {
+      list = list.filter(m => userAllowedStoreIds.includes(m.locationId));
+    }
+    if (scopeLocationId && scopeLocationId !== 'ALL') {
+      list = list.filter(m => m.locationId === scopeLocationId);
+    }
+    return list;
+  }, [recentMovements, userAllowedStoreIds, scopeLocationId]);
+
+  // Global Health Aggregates across authorized branch nodes
   const networkTotals = useMemo(() => {
     let inStock = 0;
     let low = 0;
     let oos = 0;
-    locationStats.forEach((loc) => {
+    displayLocationStats.forEach((loc) => {
       inStock += loc.inStockCount || 0;
       low += loc.lowStockCount || 0;
       oos += loc.oosCount || 0;
@@ -147,7 +181,7 @@ export default function Dashboard({
     const lowPct = total > 0 ? Math.round((low / total) * 100) : 0;
     const oosPct = total > 0 ? Math.round((oos / total) * 100) : 0;
     return { inStock, low, oos, total, inStockPct, lowPct, oosPct };
-  }, [locationStats]);
+  }, [displayLocationStats]);
 
   const currentScopeLoc = locations.find((l) => l.id === scopeLocationId);
 
@@ -221,19 +255,6 @@ export default function Dashboard({
                 ))}
               </select>
             </div>
-
-            {/* Quick Action: New POS Sale */}
-            {onOpenSaleModal && (
-              <button
-                onClick={onOpenSaleModal}
-                className="px-3.5 py-2 text-xs font-semibold rounded-xl bg-gold-500 hover:bg-gold-400 text-studio-950 transition-all flex items-center space-x-1.5 shadow-md shadow-gold-500/20 active:scale-95"
-                title="Launch Point of Sale checkout"
-                aria-label="Launch Point of Sale checkout"
-              >
-                <Icon name="sales" size={13} />
-                <span>New Sale</span>
-              </button>
-            )}
 
             {/* Quick Action: Inbound Receiving */}
             {onOpenReceiveModal && (
@@ -592,7 +613,7 @@ export default function Dashboard({
         )}
 
         {/* Location Grid Cards */}
-        {locationStats.length === 0 ? (
+        {displayLocationStats.length === 0 ? (
           <div className="p-8 text-center text-xs font-mono text-studio-400 bg-studio-900/40 rounded-xl space-y-2 border border-white/5">
             <Icon name="locations" size={24} className="text-gold-400 mx-auto" />
             <p>No branch locations registered yet. Set up your first physical store or warehouse.</p>
@@ -605,7 +626,7 @@ export default function Dashboard({
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {locationStats.map((loc) => {
+            {displayLocationStats.map((loc) => {
               const total = (loc.inStockCount || 0) + (loc.lowStockCount || 0) + (loc.oosCount || 0);
               const inStockPct = total > 0 ? (loc.inStockCount / total) * 100 : 0;
               const lowStockPct = total > 0 ? (loc.lowStockCount / total) * 100 : 0;
@@ -902,13 +923,13 @@ export default function Dashboard({
             </div>
 
             <div className="space-y-2.5 mt-4 text-xs font-mono">
-              {recentMovements.length === 0 ? (
+              {displayMovements.length === 0 ? (
                 <div className="p-8 text-center text-studio-400 bg-studio-900/30 rounded-xl space-y-2 border border-white/5">
                   <Icon name="inventory" size={20} className="text-studio-400 mx-auto" />
                   <p>No stock movement transactions recorded yet.</p>
                 </div>
               ) : (
-                recentMovements.slice(0, 6).map((m) => {
+                displayMovements.slice(0, 6).map((m) => {
                   const isPositive = m.delta > 0;
                   const isNegative = m.delta < 0;
 

@@ -1,0 +1,43 @@
+{
+  "metadata": {
+    "storeId": "loc-01",
+    "storeName": "BeyondVER Main Branch",
+    "storeCode": "MAIN",
+    "organizationId": "org-6e9ed3cf",
+    "backedUpAt": "2026-11-07T10:20:30.995Z",
+    "performedBy": {
+      "id": "usr-owner-83bbcc",
+      "name": "neng@gmail.com"
+    }
+  },
+  "sqliteRecords": {
+    "shifts": [],
+    "pos_orders": [],
+    "saved_orders": [],
+    "stock_balances": [
+      {
+        "id": "bal-loc-01-BV-GEN-2723",
+        "organization_id": "org-6e9ed3cf",
+        "location_id": "loc-01",
+        "sku": "BV-GEN-2723",
+        "on_hand": 0,
+        "reserved": 0,
+        "damaged": 0,
+        "rop": 5,
+        "updated_at": "2026-11-05 04:27:36"
+      },
+      {
+        "id": "bal-loc-01-BV-GEN-5280",
+        "organization_id": "org-6e9ed3cf",
+        "location_id": "loc-01",
+        "sku": "BV-GEN-5280",
+        "on_hand": 0,
+        "reserved": 0,
+        "damaged": 0,
+        "rop": 5,
+        "updated_at": "2026-11-05 04:50:22"
+      }
+    ],
+    "stock_ledger": []
+  }
+}

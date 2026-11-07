@@ -55,15 +55,16 @@ export const formatPercent = (val) => {
 
 export const api = {
   // Dashboard & Health
-  getDashboard: async () => {
-    const res = await fetch(`${API_BASE}/dashboard`);
+  getDashboard: async (storeId) => {
+    const qs = storeId ? `?storeId=${encodeURIComponent(storeId)}` : '';
+    const res = await fetch(`${API_BASE}/dashboard${qs}`, { headers: getAuthHeaders() });
     if (!res.ok) throw new Error('Failed to fetch dashboard data');
     return res.json();
   },
 
   // Business & Settings
   getBusiness: async () => {
-    const res = await fetch(`${API_BASE}/business`);
+    const res = await fetch(`${API_BASE}/business`, { headers: getAuthHeaders() });
     if (!res.ok) throw new Error('Failed to fetch business info');
     return res.json();
   },

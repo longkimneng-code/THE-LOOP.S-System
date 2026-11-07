@@ -844,7 +844,10 @@ const server = http.createServer(async (req, res) => {
       const currentUser = getRequestUser(req);
       const orgId = currentUser?.organizationId || 'org-loops-001';
       const db = loadDb();
-      const filtered = (db.orders || []).filter(o => (o.organizationId || 'org-loops-001') === orgId);
+      let filtered = (db.orders || []).filter(o => (o.organizationId || 'org-loops-001') === orgId);
+      if (currentUser && currentUser.role !== 'OWNER' && currentUser.role !== 'SUPER_ADMIN') {
+        filtered = filtered.filter(o => canUserAccessStore(currentUser, o.storeId || o.locationId));
+      }
       return sendJson(res, 200, filtered.slice(0, 50));
     }
 
@@ -1283,7 +1286,7 @@ const server = http.createServer(async (req, res) => {
       const currentUser = getRequestUser(req);
       const dbState = loadDb();
       const targetOrg = currentUser?.organizationId || dbState.organization?.id || 'org-6e9ed3cf';
-      const dashboard = getManagerShiftDashboard(targetOrg);
+      const dashboard = getManagerShiftDashboard(targetOrg, currentUser);
       return sendJson(res, 200, dashboard);
     }
 

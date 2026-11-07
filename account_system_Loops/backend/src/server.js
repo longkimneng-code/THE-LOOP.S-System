@@ -13,6 +13,19 @@ require('dotenv').config();
 
 const PORT = process.env.PORT || 3001;
 
+function getUserAssignedStoreIds(user) {
+  if (!user) return ['*'];
+  if (user.role === 'OWNER' || user.role === 'SUPER_ADMIN') return ['*'];
+  let list = user.assignedStoreIds || user.locations;
+  if (!list && (user.assigned_store_ids_json || user.assigned_store_ids)) {
+    try {
+      const raw = user.assigned_store_ids_json || user.assigned_store_ids;
+      list = typeof raw === 'string' ? JSON.parse(raw) : raw;
+    } catch (e) {}
+  }
+  return Array.isArray(list) && list.length > 0 ? list : ['*'];
+}
+
 function getFinanceTenantContext(req) {
   const authHeader = req.headers['authorization'];
   let token = authHeader && authHeader.startsWith('Bearer ') ? authHeader.slice(7).trim() : null;
@@ -26,12 +39,13 @@ function getFinanceTenantContext(req) {
     token = req.headers['x-session-token'] || null;
   }
   let explicitOrgId = req.headers['x-organization-id'] || req.headers['x-business-id'];
+  let payload = null;
   
   // Try resolving from JWT token first
   if (token && token.split('.').length === 3) {
     try {
       const { verifyToken } = require('../../../shared/security/jwt');
-      const payload = verifyToken(token);
+      payload = verifyToken(token);
       if (payload) {
         explicitOrgId = payload.org || payload.organizationId || explicitOrgId;
       }
@@ -46,7 +60,14 @@ function getFinanceTenantContext(req) {
     let resolvedOrgId = explicitOrgId;
     let user = null;
 
-    if (token) {
+    if (payload && payload.sub) {
+      user = dbSync.prepare('SELECT * FROM users WHERE id = ?').get(payload.sub);
+      if (user && user.organization_id) {
+        resolvedOrgId = user.organization_id;
+      }
+    }
+
+    if (!user && token) {
       const sessionRow = dbSync.prepare('SELECT * FROM sessions WHERE token = ? AND expires_at > ?').get(token, new Date().toISOString());
       if (sessionRow) {
         user = dbSync.prepare('SELECT * FROM users WHERE id = ?').get(sessionRow.user_id);
@@ -68,9 +89,25 @@ function getFinanceTenantContext(req) {
       const org = dbSync.prepare('SELECT * FROM organizations WHERE id = ?').get(resolvedOrgId);
       if (org) {
         const explicitRole = req.headers['x-user-role'] || req.headers['x-staff-role'];
+        let assignedStoreIds = ['*'];
+        if (user) {
+          if (user.role === 'OWNER' || user.role === 'SUPER_ADMIN') {
+            assignedStoreIds = ['*'];
+          } else if (user.assigned_store_ids_json || user.assigned_store_ids) {
+            try {
+              const raw = user.assigned_store_ids_json || user.assigned_store_ids;
+              const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
+              if (Array.isArray(parsed) && parsed.length > 0) assignedStoreIds = parsed;
+            } catch (e) {}
+          } else if (user.assignedStoreIds) {
+            assignedStoreIds = Array.isArray(user.assignedStoreIds) ? user.assignedStoreIds : [user.assignedStoreIds];
+          } else if (user.locations) {
+            assignedStoreIds = Array.isArray(user.locations) ? user.locations : [user.locations];
+          }
+        }
         const effectiveUser = user 
-          ? { ...user, fullName: user.full_name, organizationId: user.organization_id } 
-          : (explicitRole ? { role: explicitRole.toUpperCase(), fullName: 'Staff' } : null);
+          ? { ...user, fullName: user.full_name || user.fullName, organizationId: user.organization_id, assignedStoreIds, locations: assignedStoreIds } 
+          : (explicitRole ? { role: explicitRole.toUpperCase(), fullName: 'Staff', assignedStoreIds: ['*'] } : null);
 
         return {
           orgId: org.id,
@@ -107,7 +144,17 @@ function getFinanceTenantContext(req) {
       if (orgId) {
         const org = (posDb.organizations || []).find(o => o.id === orgId);
         const explicitRole = req.headers['x-user-role'] || req.headers['x-staff-role'];
-        const effectiveUser = user || (explicitRole ? { role: explicitRole.toUpperCase(), fullName: 'Staff' } : null);
+        let assignedStoreIds = ['*'];
+        if (user) {
+          if (user.role === 'OWNER' || user.role === 'SUPER_ADMIN') {
+            assignedStoreIds = ['*'];
+          } else {
+            assignedStoreIds = user.assignedStoreIds || user.locations || ['*'];
+          }
+        }
+        const effectiveUser = user 
+          ? { ...user, assignedStoreIds, locations: assignedStoreIds }
+          : (explicitRole ? { role: explicitRole.toUpperCase(), fullName: 'Staff', assignedStoreIds: ['*'] } : null);
         return {
           orgId: orgId,
           user: effectiveUser,
@@ -122,7 +169,7 @@ function getFinanceTenantContext(req) {
   const fallbackRole = req.headers['x-user-role'] || req.headers['x-staff-role'];
   return { 
     orgId: 'org-6e9ed3cf', 
-    user: fallbackRole ? { role: fallbackRole.toUpperCase(), fullName: 'Staff' } : null, 
+    user: fallbackRole ? { role: fallbackRole.toUpperCase(), fullName: 'Staff', assignedStoreIds: ['*'] } : null, 
     org: null, 
     isDefaultOrg: false, 
     token: null 
@@ -182,6 +229,15 @@ const server = http.createServer(async (req, res) => {
     // ------------------------------------------------------------------------
     // 1. HEALTH & SYSTEM
     // ------------------------------------------------------------------------
+    if (pathname === '/api/internal/reload-store' && req.method === 'POST') {
+      try {
+        db.reloadDb();
+        return sendJson(res, 200, { ok: true, reloaded: true });
+      } catch (e) {
+        return sendJson(res, 500, { ok: false, error: e.message });
+      }
+    }
+
     if (pathname === '/api/health' && req.method === 'GET') {
       return sendJson(res, 200, {
         status: 'UP',
@@ -1006,18 +1062,33 @@ function checkStaffPermission(tenant, requiredPermission = null, actionName = 'a
     if (pathname === '/api/expenses' && req.method === 'GET') {
       const tenant = getFinanceTenantContext(req);
       const { expenses, recurringBills } = db.getExpenses(tenant?.orgId);
-      if (!tenant.isDefaultOrg) {
-        const filteredExp = expenses.filter(e => e.organizationId === tenant.orgId || (!e.organizationId && !tenant.orgId));
-        const filteredRec = recurringBills.filter(r => r.organizationId === tenant.orgId || (!r.organizationId && !tenant.orgId));
-        return sendJson(res, 200, { expenses: filteredExp, recurringBills: filteredRec });
+      const allowedStores = getUserAssignedStoreIds(tenant.user);
+
+      let filteredExp = expenses.filter(e => e.organizationId === tenant.orgId || (!e.organizationId && !tenant.orgId));
+      let filteredRec = recurringBills.filter(r => r.organizationId === tenant.orgId || (!r.organizationId && !tenant.orgId));
+
+      if (!allowedStores.includes('*')) {
+        filteredExp = filteredExp.filter(e => {
+          const sId = e.storeId || e.locationId;
+          return sId ? allowedStores.includes(sId) : true;
+        });
+        filteredRec = filteredRec.filter(r => {
+          const sId = r.storeId || r.locationId;
+          return sId ? allowedStores.includes(sId) : true;
+        });
       }
-      return sendJson(res, 200, { expenses, recurringBills });
+
+      return sendJson(res, 200, { expenses: filteredExp, recurringBills: filteredRec });
     }
 
     if (pathname === '/api/expenses' && req.method === 'POST') {
       const tenant = getFinanceTenantContext(req);
       checkStaffPermission(tenant, 'POST_JOURNAL', 'Record expense');
       const body = await parseJsonBody(req);
+      const allowedStores = getUserAssignedStoreIds(tenant.user);
+      if (body.storeId && !allowedStores.includes('*') && !allowedStores.includes(body.storeId)) {
+        return sendJson(res, 403, { ok: false, error: `Access denied: You are not authorized to record expenses for store '${body.storeId}'.` });
+      }
       const exp = db.createExpense({ ...body, organizationId: tenant.orgId });
       return sendJson(res, 201, exp);
     }
@@ -1096,72 +1167,124 @@ function checkStaffPermission(tenant, requiredPermission = null, actionName = 'a
       const endDate = url.searchParams.get('endDate') || undefined;
       const storeId = url.searchParams.get('storeId') || undefined;
       const compare = url.searchParams.get('compare') === 'true';
-      const periodData = db.getPeriodFinancials(tenant.orgId, { startDate, endDate, storeId, compare });
+
+      const allowedStores = getUserAssignedStoreIds(tenant.user);
+      if (storeId && storeId !== 'ALL' && !allowedStores.includes('*') && !allowedStores.includes(storeId)) {
+        return sendJson(res, 403, { ok: false, error: `Access denied: You are not authorized to view financial data for store '${storeId}'.` });
+      }
+
+      const periodData = db.getPeriodFinancials(tenant.orgId, { 
+        startDate, 
+        endDate, 
+        storeId, 
+        compare,
+        allowedStoreIds: allowedStores
+      });
       return sendJson(res, 200, periodData);
     }
 
     if (pathname === '/api/stores' && req.method === 'GET') {
       const tenant = getFinanceTenantContext(req);
-      const stores = db.getStores(tenant.orgId);
+      let stores = db.getStores(tenant.orgId);
+      const allowedStores = getUserAssignedStoreIds(tenant.user);
+      if (!allowedStores.includes('*')) {
+        stores = stores.filter(s => allowedStores.includes(s.id));
+      }
       return sendJson(res, 200, stores);
     }
 
     if (pathname === '/api/reports/pnl' && req.method === 'GET') {
       const tenant = getFinanceTenantContext(req);
+      const storeId = url.searchParams.get('storeId') || undefined;
+      const allowedStores = getUserAssignedStoreIds(tenant.user);
+      if (storeId && storeId !== 'ALL' && !allowedStores.includes('*') && !allowedStores.includes(storeId)) {
+        return sendJson(res, 403, { ok: false, error: `Access denied: You are not authorized to view P&L for store '${storeId}'.` });
+      }
+      const effectiveStore = (storeId && storeId !== 'ALL') ? storeId : (!allowedStores.includes('*') && allowedStores.length === 1 ? allowedStores[0] : undefined);
       const dash = db.getExecutiveDashboardData(tenant.orgId, {
         startDate: url.searchParams.get('startDate') || undefined,
         endDate: url.searchParams.get('endDate') || undefined,
-        storeId: url.searchParams.get('storeId') || undefined
+        storeId: effectiveStore
       });
       return sendJson(res, 200, dash.pnl);
     }
 
     if (pathname === '/api/reports/balance-sheet' && req.method === 'GET') {
       const tenant = getFinanceTenantContext(req);
+      const storeId = url.searchParams.get('storeId') || undefined;
+      const allowedStores = getUserAssignedStoreIds(tenant.user);
+      if (storeId && storeId !== 'ALL' && !allowedStores.includes('*') && !allowedStores.includes(storeId)) {
+        return sendJson(res, 403, { ok: false, error: `Access denied: You are not authorized to view balance sheet for store '${storeId}'.` });
+      }
+      const effectiveStore = (storeId && storeId !== 'ALL') ? storeId : (!allowedStores.includes('*') && allowedStores.length === 1 ? allowedStores[0] : undefined);
       const bs = db.getBalanceSheet(tenant.orgId, {
         endDate: url.searchParams.get('endDate') || undefined,
         asOfDate: url.searchParams.get('asOfDate') || url.searchParams.get('endDate') || undefined,
-        storeId: url.searchParams.get('storeId') || undefined
+        storeId: effectiveStore
       });
       return sendJson(res, 200, bs);
     }
 
     if (pathname === '/api/reports/trial-balance' && req.method === 'GET') {
       const tenant = getFinanceTenantContext(req);
+      const storeId = url.searchParams.get('storeId') || undefined;
+      const allowedStores = getUserAssignedStoreIds(tenant.user);
+      if (storeId && storeId !== 'ALL' && !allowedStores.includes('*') && !allowedStores.includes(storeId)) {
+        return sendJson(res, 403, { ok: false, error: `Access denied: You are not authorized to view trial balance for store '${storeId}'.` });
+      }
+      const effectiveStore = (storeId && storeId !== 'ALL') ? storeId : (!allowedStores.includes('*') && allowedStores.length === 1 ? allowedStores[0] : undefined);
       const tb = db.getTrialBalance(tenant.orgId, {
         startDate: url.searchParams.get('startDate') || undefined,
         endDate: url.searchParams.get('endDate') || undefined,
-        storeId: url.searchParams.get('storeId') || undefined
+        storeId: effectiveStore
       });
       return sendJson(res, 200, tb);
     }
 
     if (pathname === '/api/reports/cash-flow' && req.method === 'GET') {
       const tenant = getFinanceTenantContext(req);
+      const storeId = url.searchParams.get('storeId') || undefined;
+      const allowedStores = getUserAssignedStoreIds(tenant.user);
+      if (storeId && storeId !== 'ALL' && !allowedStores.includes('*') && !allowedStores.includes(storeId)) {
+        return sendJson(res, 403, { ok: false, error: `Access denied: You are not authorized to view cash flow for store '${storeId}'.` });
+      }
+      const effectiveStore = (storeId && storeId !== 'ALL') ? storeId : (!allowedStores.includes('*') && allowedStores.length === 1 ? allowedStores[0] : undefined);
       const cf = db.getCashFlowStatement(tenant.orgId, {
         startDate: url.searchParams.get('startDate') || undefined,
         endDate: url.searchParams.get('endDate') || undefined,
-        storeId: url.searchParams.get('storeId') || undefined
+        storeId: effectiveStore
       });
       return sendJson(res, 200, cf);
     }
 
     if (pathname === '/api/reports/inventory-valuation' && req.method === 'GET') {
       const tenant = getFinanceTenantContext(req);
+      const storeId = url.searchParams.get('storeId') || undefined;
+      const allowedStores = getUserAssignedStoreIds(tenant.user);
+      if (storeId && storeId !== 'ALL' && !allowedStores.includes('*') && !allowedStores.includes(storeId)) {
+        return sendJson(res, 403, { ok: false, error: `Access denied: You are not authorized to view inventory valuation for store '${storeId}'.` });
+      }
+      const effectiveStore = (storeId && storeId !== 'ALL') ? storeId : (!allowedStores.includes('*') && allowedStores.length === 1 ? allowedStores[0] : undefined);
       const iv = db.getInventoryValuationReport(tenant.orgId, {
         endDate: url.searchParams.get('endDate') || undefined,
         asOfDate: url.searchParams.get('asOfDate') || url.searchParams.get('endDate') || undefined,
-        storeId: url.searchParams.get('storeId') || undefined
+        storeId: effectiveStore
       });
       return sendJson(res, 200, iv);
     }
 
     if ((pathname === '/api/reports/ap' || pathname === '/api/reports/accounts-payable') && req.method === 'GET') {
       const tenant = getFinanceTenantContext(req);
+      const storeId = url.searchParams.get('storeId') || undefined;
+      const allowedStores = getUserAssignedStoreIds(tenant.user);
+      if (storeId && storeId !== 'ALL' && !allowedStores.includes('*') && !allowedStores.includes(storeId)) {
+        return sendJson(res, 403, { ok: false, error: `Access denied: You are not authorized to view AP report for store '${storeId}'.` });
+      }
+      const effectiveStore = (storeId && storeId !== 'ALL') ? storeId : (!allowedStores.includes('*') && allowedStores.length === 1 ? allowedStores[0] : undefined);
       const ap = db.getAccountsPayableReport(tenant.orgId, {
         endDate: url.searchParams.get('endDate') || undefined,
         asOfDate: url.searchParams.get('asOfDate') || url.searchParams.get('endDate') || undefined,
-        storeId: url.searchParams.get('storeId') || undefined
+        storeId: effectiveStore
       });
       return sendJson(res, 200, ap);
     }

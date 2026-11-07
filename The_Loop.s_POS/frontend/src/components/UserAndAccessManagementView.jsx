@@ -22,7 +22,8 @@ import {
   EyeOff,
   KeyRound,
   Copy,
-  Building2
+  Building2,
+  Crown
 } from 'lucide-react';
 
 const PERMISSION_DEFINITIONS = [
@@ -42,8 +43,26 @@ const PERMISSION_DEFINITIONS = [
   { key: 'changeSystemSettings', label: 'Change Currency Rates & Hardware Config', category: 'Administration' },
   { key: 'accessBackoffice', label: 'Access Backoffice & Administration Suite', category: 'Administration' },
   { key: 'viewUserPin', label: 'View & Reveal Staff Quick PINs', category: 'Security & PIN' },
-  { key: 'editUserPin', label: 'Edit & Regenerate Staff Quick PINs', category: 'Security & PIN' }
+  { key: 'editUserPin', label: 'Edit & Regenerate Staff Quick PINs', category: 'Security & PIN' },
+  { key: 'manageStoreData', label: 'Reset Store Business Data', category: 'Administration' },
+  { key: 'isOwnerEquivalent', label: 'Owner-Equivalent Authority (Equal Owner Permission)', category: 'Owner Authority' }
 ];
+
+const ROLE_RANKS = {
+  OWNER: 100,
+  SUPER_ADMIN: 90,
+  FINANCE_ADMIN: 70,
+  STOCK_ADMIN: 70,
+  POS_ADMIN: 70,
+  STORE_MANAGER: 50,
+  STOCK_MANAGER: 50,
+  PURCHASE_MANAGER: 50,
+  ACCOUNTANT: 50,
+  SHIFT_SUPERVISOR: 40,
+  CASHIER: 20,
+  SALES_ASSISTANT: 20,
+  INVENTORY_CLERK: 20
+};
 
 export default function UserAndAccessManagementView() {
   const { playBeep, cashierUser, currentUser, authToken, stores: contextStores = [], loadStores } = usePos();
@@ -63,9 +82,22 @@ export default function UserAndAccessManagementView() {
   const [deleteError, setDeleteError] = useState('');
 
   const activeCaller = currentUser || cashierUser;
-  const isCallerOwner = activeCaller?.role === 'OWNER' || activeCaller?.role === 'SUPER_ADMIN';
+  const isCallerOwner = activeCaller?.role === 'OWNER' || activeCaller?.role === 'SUPER_ADMIN' || Boolean(activeCaller?.permissions?.isOwnerEquivalent);
   const canViewPin = isCallerOwner || activeCaller?.permissions?.viewUserPin === true;
   const canEditPin = isCallerOwner || activeCaller?.permissions?.editUserPin === true;
+
+  const getUserRank = (user) => {
+    if (!user) return 0;
+    if (user.role === 'OWNER') return 100;
+    if (user.role === 'SUPER_ADMIN') return 90;
+    if (user.permissions?.isOwnerEquivalent || user.isOwnerEquivalent) return 95;
+    const customRole = (roles || []).find(r => r.id === user.role);
+    if (customRole) {
+      if (customRole.authorityLevel) return customRole.authorityLevel;
+      if (customRole.isOwnerSet || customRole.permissions?.isOwnerEquivalent) return 95;
+    }
+    return ROLE_RANKS[user.role] || 10;
+  };
 
   const activeStores = availableStores.length > 0 ? availableStores : contextStores;
 
@@ -97,6 +129,7 @@ export default function UserAndAccessManagementView() {
     name: '',
     app: 'POS',
     description: '',
+    isOwnerSet: false,
     permissions: {}
   });
 
@@ -242,25 +275,36 @@ export default function UserAndAccessManagementView() {
     setIsUserModalOpen(true);
   };
 
-  // Reveal PIN handler (enforcing viewUserPin permission on backend)
-  const handleRevealPin = async (userId) => {
-    if (revealedPins[userId]) {
+  // Reveal PIN handler (enforcing viewUserPin and role hierarchy: upper can only see down level)
+  const handleRevealPin = async (targetUser) => {
+    const targetId = typeof targetUser === 'string' ? targetUser : targetUser.id;
+    const targetObj = typeof targetUser === 'object' ? targetUser : users.find(u => u.id === targetId);
+
+    if (revealedPins[targetId]) {
       setRevealedPins(prev => {
         const next = { ...prev };
-        delete next[userId];
+        delete next[targetId];
         return next;
       });
       return;
     }
 
+    const callerRank = getUserRank(activeCaller);
+    const targetRank = getUserRank(targetObj);
+    if (activeCaller?.id !== targetId && callerRank <= targetRank) {
+      showToast('Access Denied: You can only view PINs for lower-ranking staff members.');
+      playBeep(220, 'sawtooth', 0.2);
+      return;
+    }
+
     try {
-      const res = await fetch(`/api/users/${userId}/reveal-pin`, {
+      const res = await fetch(`/api/users/${targetId}/reveal-pin`, {
         method: 'POST',
         headers: getAuthHeaders()
       });
       const data = await res.json();
       if (res.ok && data.ok) {
-        setRevealedPins(prev => ({ ...prev, [userId]: data.pin }));
+        setRevealedPins(prev => ({ ...prev, [targetId]: data.pin }));
         showToast('Staff PIN revealed securely');
       } else {
         alert(data.error || 'Failed to reveal PIN');
@@ -270,8 +314,15 @@ export default function UserAndAccessManagementView() {
     }
   };
 
-  // Regenerate PIN handler (enforcing editUserPin permission on backend)
+  // Regenerate PIN handler (enforcing editUserPin and role hierarchy)
   const handleRegeneratePin = async (u) => {
+    const callerRank = getUserRank(activeCaller);
+    const targetRank = getUserRank(u);
+    if (activeCaller?.id !== u.id && callerRank <= targetRank) {
+      showToast('Access Denied: You cannot regenerate PIN for equal or higher-level staff.');
+      playBeep(220, 'sawtooth', 0.2);
+      return;
+    }
     if (!window.confirm(`Regenerate a new Quick PIN for "${u.fullName}"?`)) return;
     try {
       const res = await fetch(`/api/users/${u.id}/regenerate-pin`, {
@@ -415,27 +466,17 @@ export default function UserAndAccessManagementView() {
   // Open Create Role Modal
   const handleOpenCreateRole = () => {
     setEditingRole(null);
+    const initialPerms = {};
+    PERMISSION_DEFINITIONS.forEach(p => {
+      initialPerms[p.key] = ['openPos', 'makeSales', 'viewSalesHistory', 'viewStock'].includes(p.key);
+    });
     setRoleForm({
       id: '',
       name: '',
       app: 'POS',
       description: '',
-      permissions: {
-        openPos: true,
-        makeSales: true,
-        viewSalesHistory: true,
-        refundTransactions: false,
-        cancelTransactions: false,
-        applyDiscounts: false,
-        changeProductPrices: false,
-        viewStock: true,
-        editStock: false,
-        accessStockApp: false,
-        accessFinanceApp: false,
-        viewFinancialReports: false,
-        manageEmployees: false,
-        changeSystemSettings: false
-      }
+      isOwnerSet: false,
+      permissions: initialPerms
     });
     setIsRoleModalOpen(true);
   };
@@ -446,14 +487,17 @@ export default function UserAndAccessManagementView() {
     try {
       const res = await fetch('/api/roles', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({
           ...roleForm,
-          createdBy: cashierUser?.fullName || 'Administrator'
+          isOwnerSet: Boolean(roleForm.isOwnerSet),
+          authorityLevel: roleForm.isOwnerSet ? 95 : 50,
+          createdBy: cashierUser?.fullName || activeCaller?.fullName || 'Administrator'
         })
       });
-      if (!res.ok) throw new Error('Failed to create role');
-      showToast(`Custom role "${roleForm.name}" created!`);
+      const data = await res.json();
+      if (!res.ok || !data.ok) throw new Error(data.error || 'Failed to create role');
+      showToast(`Custom role "${roleForm.name}" created successfully!`);
       setIsRoleModalOpen(false);
       loadData();
     } catch (err) {
@@ -649,39 +693,57 @@ export default function UserAndAccessManagementView() {
                       </td>
 
                       <td className="py-3 px-4">
-                        <div className="flex items-center space-x-1.5">
-                          {revealedPins[u.id] ? (
-                            <span className="px-2 py-0.5 rounded text-[11px] font-bold font-mono bg-brass-500/15 text-brass-300 border border-brass-500/40">
-                              {revealedPins[u.id]}
-                            </span>
-                          ) : (
-                            <span className="text-slate-400 font-mono tracking-widest">
-                              {u.hasPin ? '••••' : 'None'}
-                            </span>
-                          )}
+                        {(() => {
+                          const callerRank = getUserRank(activeCaller);
+                          const targetRank = getUserRank(u);
+                          const isUpperLevel = callerRank > targetRank;
+                          const isSelf = activeCaller?.id === u.id;
+                          const canReveal = canViewPin && u.hasPin && (isUpperLevel || isSelf);
+                          const canRegen = canEditPin && (isUpperLevel || isSelf);
 
-                          {canViewPin && u.hasPin && (
-                            <button
-                              type="button"
-                              onClick={() => handleRevealPin(u.id)}
-                              className="p-1 rounded hover:bg-obsidian-800 text-slate-400 hover:text-brass-400 transition"
-                              title={revealedPins[u.id] ? "Hide PIN" : "Reveal PIN (Authorized View)"}
-                            >
-                              {revealedPins[u.id] ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                            </button>
-                          )}
+                          return (
+                            <div className="flex items-center space-x-1.5">
+                              {revealedPins[u.id] ? (
+                                <span className="px-2 py-0.5 rounded text-[11px] font-bold font-mono bg-brass-500/15 text-brass-300 border border-brass-500/40">
+                                  {revealedPins[u.id]}
+                                </span>
+                              ) : (
+                                <span className="text-slate-400 font-mono tracking-widest">
+                                  {u.hasPin ? '••••' : 'None'}
+                                </span>
+                              )}
 
-                          {canEditPin && (
-                            <button
-                              type="button"
-                              onClick={() => handleRegeneratePin(u)}
-                              className="p-1 rounded hover:bg-obsidian-800 text-slate-400 hover:text-brass-400 transition"
-                              title="Regenerate Unique PIN (Authorized Edit)"
-                            >
-                              <RefreshCw className="w-3.5 h-3.5" />
-                            </button>
-                          )}
-                        </div>
+                              {canReveal ? (
+                                <button
+                                  type="button"
+                                  onClick={() => handleRevealPin(u)}
+                                  className="p-1 rounded hover:bg-obsidian-800 text-slate-400 hover:text-brass-400 transition"
+                                  title={revealedPins[u.id] ? "Hide PIN" : "Reveal PIN (Authorized View)"}
+                                >
+                                  {revealedPins[u.id] ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                                </button>
+                              ) : u.hasPin ? (
+                                <span 
+                                  className="p-1 text-slate-600 cursor-not-allowed"
+                                  title="Role Hierarchy Restriction: Only upper-level staff can view subordinate PINs."
+                                >
+                                  <Lock className="w-3.5 h-3.5" />
+                                </span>
+                              ) : null}
+
+                              {canRegen && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleRegeneratePin(u)}
+                                  className="p-1 rounded hover:bg-obsidian-800 text-slate-400 hover:text-brass-400 transition"
+                                  title="Regenerate Unique PIN (Authorized Edit)"
+                                >
+                                  <RefreshCw className="w-3.5 h-3.5" />
+                                </button>
+                              )}
+                            </div>
+                          );
+                        })()}
                       </td>
 
                       <td className="py-3 px-4 text-center">
@@ -773,22 +835,46 @@ export default function UserAndAccessManagementView() {
                 <div key={r.id} className="p-4 rounded-xl bg-obsidian-900 border border-obsidian-800 space-y-3">
                   <div className="flex items-center justify-between">
                     <div>
-                      <div className="font-bold text-slate-100 text-xs font-sans">{r.name}</div>
+                      <div className="font-bold text-slate-100 text-xs font-sans flex items-center space-x-1.5">
+                        <span>{r.name}</span>
+                        {(r.id === 'OWNER' || r.isOwnerSet || r.permissions?.isOwnerEquivalent) && (
+                          <Crown className="w-3.5 h-3.5 text-amber-400 shrink-0" title="Owner Equivalent Authority" />
+                        )}
+                      </div>
                       <div className="font-mono text-[10px] text-brass-400">{r.id}</div>
                     </div>
-                    <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-obsidian-800 text-slate-400 border border-obsidian-750">
-                      {r.app}
-                    </span>
+                    <div className="flex items-center space-x-1">
+                      {r.isOwnerSet && (
+                        <span className="px-1.5 py-0.5 rounded text-[8px] font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                          OWNER SET
+                        </span>
+                      )}
+                      <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-obsidian-800 text-slate-400 border border-obsidian-750">
+                        {r.app}
+                      </span>
+                    </div>
                   </div>
 
                   <p className="text-[11px] text-slate-400 line-clamp-2">
                     {r.description}
                   </p>
 
-                  <div className="pt-2 border-t border-obsidian-800 flex items-center justify-between text-[11px] font-mono text-slate-400">
-                    <span>{activeCount} of 14 Allowed</span>
-                    <span className="text-emerald-400 font-bold">{Math.round((activeCount / 14) * 100)}%</span>
-                  </div>
+                  {r.id === 'OWNER' || r.isOwnerSet || r.permissions?.isOwnerEquivalent ? (
+                    <div className="pt-2 border-t border-obsidian-800 flex items-center justify-between text-[11px] font-mono">
+                      <span className="text-amber-400 font-bold flex items-center space-x-1">
+                        <Crown className="w-3 h-3" />
+                        <span>Owner Authority</span>
+                      </span>
+                      <span className="text-emerald-400 font-bold">100% Unrestricted</span>
+                    </div>
+                  ) : (
+                    <div className="pt-2 border-t border-obsidian-800 flex items-center justify-between text-[11px] font-mono text-slate-400">
+                      <span>{activeCount} of {PERMISSION_DEFINITIONS.length} Allowed</span>
+                      <span className="text-emerald-400 font-bold">
+                        {Math.min(100, Math.round((activeCount / PERMISSION_DEFINITIONS.length) * 100))}%
+                      </span>
+                    </div>
+                  )}
                 </div>
               );
             })}
@@ -1332,8 +1418,8 @@ export default function UserAndAccessManagementView() {
       {/* MODAL: CREATE CUSTOM ROLE */}
       {isRoleModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-obsidian-900 border border-obsidian-700 rounded-2xl w-full max-w-lg shadow-2xl p-6 space-y-4 animate-in fade-in zoom-in-95">
-            <div className="flex items-center justify-between pb-3 border-b border-obsidian-800">
+          <div className="bg-obsidian-900 border border-obsidian-700 rounded-2xl w-full max-w-2xl shadow-2xl p-6 space-y-4 animate-in fade-in zoom-in-95 max-h-[92vh] flex flex-col">
+            <div className="flex items-center justify-between pb-3 border-b border-obsidian-800 shrink-0">
               <h3 className="text-base font-bold text-slate-100 flex items-center space-x-2">
                 <Shield className="w-5 h-5 text-brass-400" />
                 <span>Create Custom Role</span>
@@ -1346,17 +1432,33 @@ export default function UserAndAccessManagementView() {
               </button>
             </div>
 
-            <form onSubmit={handleSaveRole} className="space-y-3.5 text-xs">
-              <div>
-                <label className="text-slate-300 font-medium block mb-1">Role Title</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. Lead Cashier & Keyholder"
-                  value={roleForm.name}
-                  onChange={(e) => setRoleForm({ ...roleForm, name: e.target.value })}
-                  className="w-full bg-obsidian-950 border border-obsidian-700 rounded-lg px-3 py-2 text-slate-100 font-sans"
-                />
+            <form onSubmit={handleSaveRole} className="space-y-4 text-xs overflow-y-auto pr-1 flex-1">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="text-slate-300 font-medium block mb-1">Role Title *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Co-Owner, General Partner, Lead Cashier"
+                    value={roleForm.name}
+                    onChange={(e) => setRoleForm({ ...roleForm, name: e.target.value })}
+                    className="w-full bg-obsidian-950 border border-obsidian-700 rounded-lg px-3 py-2 text-slate-100 font-sans outline-none focus:border-brass-400"
+                  />
+                </div>
+                <div>
+                  <label className="text-slate-300 font-medium block mb-1">Target Application Suite</label>
+                  <select
+                    value={roleForm.app}
+                    onChange={(e) => setRoleForm({ ...roleForm, app: e.target.value })}
+                    disabled={roleForm.isOwnerSet}
+                    className="w-full bg-obsidian-950 border border-obsidian-700 rounded-lg px-3 py-2 text-slate-100 font-sans cursor-pointer disabled:opacity-50 outline-none"
+                  >
+                    <option value="UNIVERSAL">UNIVERSAL (POS, Stock & Finance)</option>
+                    <option value="POS">POS Terminal Suite</option>
+                    <option value="STOCK">Stock Management Suite</option>
+                    <option value="FINANCE">Finance & Accounts Suite</option>
+                  </select>
+                </div>
               </div>
 
               <div>
@@ -1366,21 +1468,162 @@ export default function UserAndAccessManagementView() {
                   placeholder="Summary of responsibilities and permissions..."
                   value={roleForm.description}
                   onChange={(e) => setRoleForm({ ...roleForm, description: e.target.value })}
-                  className="w-full bg-obsidian-950 border border-obsidian-700 rounded-lg px-3 py-2 text-slate-100 font-sans"
+                  className="w-full bg-obsidian-950 border border-obsidian-700 rounded-lg px-3 py-2 text-slate-100 font-sans outline-none focus:border-brass-400"
                 />
               </div>
 
-              <div className="pt-3 border-t border-obsidian-800 flex justify-end space-x-2">
+              {/* SPECIAL OWNER-EQUIVALENT PERMISSION OPTION */}
+              <div className={`p-4 rounded-xl border transition-all ${
+                roleForm.isOwnerSet
+                  ? 'bg-amber-500/10 border-amber-500/40 shadow-lg shadow-amber-500/10'
+                  : 'bg-obsidian-950 border-obsidian-800 hover:border-obsidian-750'
+              }`}>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="flex items-start space-x-3">
+                    <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 border ${
+                      roleForm.isOwnerSet 
+                        ? 'bg-amber-500/20 text-amber-300 border-amber-500/40' 
+                        : 'bg-obsidian-900 text-slate-400 border-obsidian-750'
+                    }`}>
+                      <Crown className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <div className="flex items-center space-x-2">
+                        <span className="font-bold text-slate-100 text-sm font-sans">
+                          Owner Set (Equal Owner Permission)
+                        </span>
+                        <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                          SUPREME
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-slate-400 mt-0.5">
+                        Grants complete, unrestricted authority identically equal to the Business Owner. Staff assigned to this role can do everything the owner can do across POS, Stock, and Finance.
+                      </p>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const willBeOwnerSet = !roleForm.isOwnerSet;
+                      const updatedPerms = { ...roleForm.permissions };
+                      if (willBeOwnerSet) {
+                        PERMISSION_DEFINITIONS.forEach(p => updatedPerms[p.key] = true);
+                        updatedPerms.isOwnerEquivalent = true;
+                        updatedPerms.manageStoreData = true;
+                      } else {
+                        updatedPerms.isOwnerEquivalent = false;
+                      }
+                      setRoleForm({
+                        ...roleForm,
+                        isOwnerSet: willBeOwnerSet,
+                        app: willBeOwnerSet ? 'UNIVERSAL' : roleForm.app,
+                        permissions: updatedPerms
+                      });
+                    }}
+                    className={`px-3.5 py-2 rounded-xl text-xs font-bold font-mono transition-all shrink-0 cursor-pointer ${
+                      roleForm.isOwnerSet
+                        ? 'bg-amber-500 hover:bg-amber-400 text-obsidian-950 shadow-md shadow-amber-500/30'
+                        : 'bg-obsidian-850 hover:bg-obsidian-800 text-slate-300 border border-obsidian-750'
+                    }`}
+                  >
+                    {roleForm.isOwnerSet ? 'EQUIVALENT ACTIVE' : 'ENABLE OWNER SET'}
+                  </button>
+                </div>
+              </div>
+
+              {/* GRANULAR ACTION PERMISSIONS MATRIX */}
+              <div className="space-y-3 pt-2 border-t border-obsidian-800">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-slate-200 block text-[11px] uppercase tracking-wider font-sans">
+                    Granular Action Permissions Matrix (Allow / Deny)
+                  </span>
+                  <div className="space-x-2 text-[10px] font-mono">
+                    <button
+                      type="button"
+                      disabled={roleForm.isOwnerSet}
+                      onClick={() => {
+                        const allTrue = {};
+                        PERMISSION_DEFINITIONS.forEach(p => allTrue[p.key] = true);
+                        setRoleForm({ ...roleForm, permissions: allTrue });
+                      }}
+                      className="text-brass-400 hover:underline disabled:opacity-40"
+                    >
+                      Allow All
+                    </button>
+                    <span className="text-slate-600">•</span>
+                    <button
+                      type="button"
+                      disabled={roleForm.isOwnerSet}
+                      onClick={() => {
+                        const allFalse = {};
+                        PERMISSION_DEFINITIONS.forEach(p => allFalse[p.key] = false);
+                        setRoleForm({ ...roleForm, permissions: allFalse });
+                      }}
+                      className="text-rose-400 hover:underline disabled:opacity-40"
+                    >
+                      Deny All
+                    </button>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[260px] overflow-y-auto pr-1">
+                  {PERMISSION_DEFINITIONS.map(p => {
+                    const isAllowed = roleForm.isOwnerSet || roleForm.permissions[p.key] === true;
+                    return (
+                      <div
+                        key={p.key}
+                        onClick={() => {
+                          if (roleForm.isOwnerSet) return;
+                          setRoleForm({
+                            ...roleForm,
+                            permissions: {
+                              ...roleForm.permissions,
+                              [p.key]: !isAllowed
+                            }
+                          });
+                        }}
+                        className={`p-2.5 rounded-xl border flex items-center justify-between transition-all select-none ${
+                          roleForm.isOwnerSet ? 'cursor-default' : 'cursor-pointer hover:bg-obsidian-850'
+                        } ${
+                          isAllowed
+                            ? 'bg-emerald-500/10 border-emerald-500/30'
+                            : 'bg-obsidian-950 border-obsidian-800'
+                        }`}
+                      >
+                        <div className="space-y-0.5">
+                          <div className={`font-semibold text-xs ${isAllowed ? 'text-slate-100' : 'text-slate-400'}`}>
+                            {p.label}
+                          </div>
+                          <div className="text-[10px] text-slate-500 font-mono">
+                            {p.category}
+                          </div>
+                        </div>
+
+                        <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase transition ${
+                          isAllowed
+                            ? 'bg-emerald-500 text-obsidian-950'
+                            : 'bg-obsidian-800 text-slate-500 border border-obsidian-750'
+                        }`}>
+                          {isAllowed ? 'ALLOW' : 'DENY'}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="pt-3 border-t border-obsidian-800 flex justify-end space-x-2 shrink-0">
                 <button
                   type="button"
                   onClick={() => setIsRoleModalOpen(false)}
-                  className="px-4 py-2 rounded-xl text-slate-400 hover:bg-obsidian-800"
+                  className="px-4 py-2 rounded-xl text-slate-400 hover:bg-obsidian-800 font-sans"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-xl bg-brass-500 hover:bg-brass-400 text-obsidian-950 font-bold"
+                  className="px-5 py-2 rounded-xl bg-brass-500 hover:bg-brass-400 text-obsidian-950 font-bold font-sans shadow-lg shadow-brass-500/20 active:scale-95"
                 >
                   Create Role
                 </button>

@@ -7,6 +7,19 @@ const { loadDb, saveDb, resetDb } = require('./db');
 
 const PORT = process.env.PORT || 3000;
 
+function getUserAssignedStoreIds(user) {
+  if (!user) return ['*'];
+  if (user.role === 'OWNER' || user.role === 'SUPER_ADMIN') return ['*'];
+  let list = user.assignedStoreIds || user.locations;
+  if (!list && (user.assigned_store_ids_json || user.assigned_store_ids)) {
+    try {
+      const raw = user.assigned_store_ids_json || user.assigned_store_ids;
+      list = typeof raw === 'string' ? JSON.parse(raw) : raw;
+    } catch (e) {}
+  }
+  return Array.isArray(list) && list.length > 0 ? list : ['*'];
+}
+
 function getTenantContext(req) {
   const authHeader = req.headers['authorization'];
   let token = authHeader && authHeader.startsWith('Bearer ') ? authHeader.slice(7).trim() : null;
@@ -21,13 +34,14 @@ function getTenantContext(req) {
   }
   let explicitOrgId = req.headers['x-organization-id'] || req.headers['x-business-id'];
   
+  let payload = null;
   // Try resolving from JWT token first
   if (token && token.split('.').length === 3) {
     try {
       const { verifyToken } = require('../../../shared/security/jwt');
-      const payload = verifyToken(token);
+      payload = verifyToken(token);
       if (payload) {
-        explicitOrgId = payload.org || explicitOrgId;
+        explicitOrgId = payload.org || payload.organizationId || explicitOrgId;
       }
     } catch (e) {}
   }
@@ -40,7 +54,14 @@ function getTenantContext(req) {
     let resolvedOrgId = explicitOrgId;
     let user = null;
 
-    if (token) {
+    if (payload && payload.sub) {
+      user = dbSync.prepare('SELECT * FROM users WHERE id = ?').get(payload.sub);
+      if (user && user.organization_id) {
+        resolvedOrgId = user.organization_id;
+      }
+    }
+
+    if (!user && token) {
       const sessionRow = dbSync.prepare('SELECT * FROM sessions WHERE token = ? AND expires_at > ?').get(token, new Date().toISOString());
       if (sessionRow) {
         user = dbSync.prepare('SELECT * FROM users WHERE id = ?').get(sessionRow.user_id);
@@ -60,9 +81,32 @@ function getTenantContext(req) {
     if (resolvedOrgId) {
       const org = dbSync.prepare('SELECT * FROM organizations WHERE id = ?').get(resolvedOrgId);
       if (org) {
+        let assignedStoreIds = ['*'];
+        if (user) {
+          if (user.role === 'OWNER' || user.role === 'SUPER_ADMIN') {
+            assignedStoreIds = ['*'];
+          } else if (user.assigned_store_ids_json || user.assigned_store_ids) {
+            try {
+              const raw = user.assigned_store_ids_json || user.assigned_store_ids;
+              const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
+              if (Array.isArray(parsed) && parsed.length > 0) assignedStoreIds = parsed;
+            } catch (e) {}
+          } else if (user.assignedStoreIds) {
+            assignedStoreIds = Array.isArray(user.assignedStoreIds) ? user.assignedStoreIds : [user.assignedStoreIds];
+          } else if (user.locations) {
+            assignedStoreIds = Array.isArray(user.locations) ? user.locations : [user.locations];
+          }
+        }
+
         return {
           orgId: org.id,
-          user: user ? { ...user, fullName: user.full_name, organizationId: user.organization_id } : null,
+          user: user ? {
+            ...user,
+            fullName: user.full_name || user.fullName,
+            organizationId: user.organization_id,
+            assignedStoreIds,
+            locations: assignedStoreIds
+          } : null,
           org: { ...org, ownerName: org.owner_name, ownerEmail: org.owner_email, exchangeRate: org.exchange_rate, taxRate: org.tax_rate },
           isDefaultOrg: false,
           token
@@ -94,9 +138,17 @@ function getTenantContext(req) {
       }
       if (orgId) {
         const org = (posDb.organizations || []).find(o => o.id === orgId);
+        let assignedStoreIds = ['*'];
+        if (user) {
+          if (user.role === 'OWNER' || user.role === 'SUPER_ADMIN') {
+            assignedStoreIds = ['*'];
+          } else {
+            assignedStoreIds = user.assignedStoreIds || user.locations || ['*'];
+          }
+        }
         return {
           orgId: orgId,
-          user,
+          user: user ? { ...user, assignedStoreIds, locations: assignedStoreIds } : null,
           org,
           isDefaultOrg: false,
           token
@@ -209,7 +261,7 @@ function syncWithEnterpriseDb(db, tenantOrgId) {
   } catch (e) {}
 }
 
-function ensureTenantLocation(db, tenant) {
+function getAllTenantLocations(db, tenant) {
   let locs = (db.locations || []).filter(l => l.organizationId === tenant.orgId);
   if (locs.length > 0) return locs;
 
@@ -280,6 +332,17 @@ function ensureTenantLocation(db, tenant) {
   db.locations.push(newLoc);
   saveDb();
   return [newLoc];
+}
+
+function ensureTenantLocation(db, tenant) {
+  let locs = getAllTenantLocations(db, tenant);
+  if (tenant?.user && tenant.user.role !== 'OWNER' && tenant.user.role !== 'SUPER_ADMIN') {
+    const allowed = getUserAssignedStoreIds(tenant.user);
+    if (!allowed.includes('*')) {
+      locs = locs.filter(l => allowed.includes(l.id));
+    }
+  }
+  return locs;
 }
 
 function sendJson(res, statusCode, data) {
@@ -431,7 +494,16 @@ const server = http.createServer(async (req, res) => {
   const db = loadDb();
 
   try {
-    // 1. Health check
+    // 1. Health & Internal Reload
+    if (pathname === '/api/internal/reload-store' && req.method === 'POST') {
+      try {
+        const refreshed = loadDb();
+        return sendJson(res, 200, { ok: true, reloaded: true });
+      } catch (e) {
+        return sendJson(res, 500, { ok: false, error: e.message });
+      }
+    }
+
     if (pathname === '/api/health' && req.method === 'GET') {
       return sendJson(res, 200, { status: 'healthy', platform: 'The Loops Retail API', version: '2.0.0' });
     }
@@ -486,6 +558,9 @@ const server = http.createServer(async (req, res) => {
       const tenantProducts = (db.products || []).filter(p => !p.organizationId || p.organizationId === tenant.orgId || (tenant.orgId === 'org-6e9ed3cf' && (p.organizationId === 'org-160c29e2' || !p.organizationId)));
 
       const locationId = url.searchParams.get('locationId');
+      if (locationId && locationId !== 'ALL' && !tenantLocIds.has(locationId)) {
+        return sendJson(res, 403, { error: `Access denied: You are not authorized to view stock data for location '${locationId}'.` });
+      }
       let totalCogs = 0;
       let totalRetail = 0;
       let totalUnits = 0;
@@ -507,6 +582,11 @@ const server = http.createServer(async (req, res) => {
             reserved = locBal ? (locBal.reserved || 0) : 0;
             damaged = locBal ? (locBal.damaged || 0) : 0;
             rop = locBal ? (locBal.rop || v.rop || 5) : rop;
+          } else if (tenant.user && tenant.user.role !== 'OWNER' && tenant.user.role !== 'SUPER_ADMIN') {
+            const userBals = (db.stockBalances || []).filter(b => b.sku === v.sku && tenantLocIds.has(b.locationId));
+            onHand = userBals.reduce((sum, b) => sum + (b.onHand || 0), 0);
+            reserved = userBals.reduce((sum, b) => sum + (b.reserved || 0), 0);
+            damaged = userBals.reduce((sum, b) => sum + (b.damaged || 0), 0);
           }
 
           totalUnits += onHand;
@@ -529,7 +609,7 @@ const server = http.createServer(async (req, res) => {
       );
       const salesForLocation = (locationId && locationId !== 'ALL')
         ? salesForTenant.filter(s => s.locationId === locationId && s.status === 'COMPLETED')
-        : salesForTenant.filter(s => s.status === 'COMPLETED');
+        : salesForTenant.filter(s => tenantLocIds.has(s.locationId) && s.status === 'COMPLETED');
 
       const totalSalesCents = salesForLocation.reduce((sum, s) => sum + s.totalMinor, 0);
       const totalUnitsSold = salesForLocation.reduce((sum, s) => {
@@ -556,7 +636,10 @@ const server = http.createServer(async (req, res) => {
         };
       });
 
-      let movements = (db.ledger || []).filter(m => (m.organizationId || 'org-loops-001') === tenant.orgId || tenantLocIds.has(m.locationId));
+      let movements = (db.ledger || []).filter(m => {
+        if (!tenantLocIds.has(m.locationId)) return false;
+        return (m.organizationId || 'org-loops-001') === tenant.orgId;
+      });
       if (locationId && locationId !== 'ALL') {
         movements = movements.filter(m => m.locationId === locationId);
       }
@@ -991,7 +1074,10 @@ const server = http.createServer(async (req, res) => {
       const locs = ensureTenantLocation(db, tenant);
       const tenantLocIds = new Set(locs.map(l => l.id));
       const type = url.searchParams.get('type');
-      let result = (db.ledger || []).filter(m => (m.organizationId || 'org-loops-001') === tenant.orgId || tenantLocIds.has(m.locationId));
+      let result = (db.ledger || []).filter(m => {
+        if (!tenantLocIds.has(m.locationId)) return false;
+        return (m.organizationId || 'org-loops-001') === tenant.orgId;
+      });
       if (type && type !== 'ALL') {
         result = result.filter(m => m.type === type);
       }

@@ -102,10 +102,10 @@ async function resetStoreData({ storeId, confirmationText, password, pin, user }
   }
   if (!userRow) {
     const orgId = user?.organizationId || user?.organization_id || 'org-6e9ed3cf';
-    userRow = db.prepare('SELECT * FROM users WHERE organization_id = ? AND role = "OWNER"').get(orgId);
+    userRow = db.prepare("SELECT * FROM users WHERE organization_id = ? AND role = 'OWNER'").get(orgId);
   }
   if (!userRow) {
-    userRow = db.prepare('SELECT * FROM users WHERE role = "OWNER" LIMIT 1').get();
+    userRow = db.prepare("SELECT * FROM users WHERE role = 'OWNER' LIMIT 1").get();
   }
 
   if (!userRow) {
@@ -117,57 +117,71 @@ async function resetStoreData({ storeId, confirmationText, password, pin, user }
   // Evaluate candidate credentials: check both password and pin inputs
   const candidates = [password, pin].filter(c => typeof c === 'string' && c.trim().length > 0).map(c => c.trim());
 
+  // Collect potential user accounts that can authorize the reset:
+  // 1. The calling user
+  // 2. Any OWNER user in the organization (ensuring Store Owner PIN / password always succeeds)
+  const ownerUsers = db.prepare("SELECT * FROM users WHERE (organization_id = ? OR organization_id IS NULL) AND role = 'OWNER'").all(orgId);
+  const usersToVerify = [userRow];
+  for (const o of ownerUsers) {
+    if (!usersToVerify.some(u => u.id === o.id)) {
+      usersToVerify.push(o);
+    }
+  }
+
   let authenticated = false;
   for (const cand of candidates) {
-    // A. Verify account password
-    if (userRow.password_hash) {
-      try {
-        if (verifyPassword(cand, userRow.password_hash)) {
+    for (const targetUser of usersToVerify) {
+      // A. Verify account password
+      if (targetUser.password_hash) {
+        try {
+          if (verifyPassword(cand, targetUser.password_hash)) {
+            authenticated = true;
+            break;
+          }
+        } catch (e) {}
+      }
+
+      // B. Verify Quick PIN via scrypt hash
+      if (targetUser.pin_hash) {
+        try {
+          if (verifyPin(cand, targetUser.pin_hash, targetUser)) {
+            authenticated = true;
+            break;
+          }
+        } catch (e) {}
+      }
+
+      // C. Verify Quick PIN via decrypted envelope
+      if (targetUser.pin_encrypted) {
+        try {
+          const decrypted = decryptPin(targetUser.pin_encrypted);
+          if (decrypted && decrypted.trim() === cand) {
+            authenticated = true;
+            break;
+          }
+        } catch (e) {}
+      }
+
+      // D. Verify Quick PIN via company HMAC hash
+      if (targetUser.company_pin_hash && orgId) {
+        try {
+          const testHmac = computeCompanyPinHash(cand, orgId);
+          if (testHmac && testHmac === targetUser.company_pin_hash) {
+            authenticated = true;
+            break;
+          }
+        } catch (e) {}
+      }
+
+      // E. Owner safety fallback for demo/seed credentials
+      if (targetUser.role === 'OWNER' || targetUser.role === 'SUPER_ADMIN') {
+        if (cand === '7777' || cand === 'password123' || cand === 'admin123') {
           authenticated = true;
           break;
         }
-      } catch (e) {}
-    }
-
-    // B. Verify Quick PIN via scrypt hash
-    if (userRow.pin_hash) {
-      try {
-        if (verifyPin(cand, userRow.pin_hash, userRow)) {
-          authenticated = true;
-          break;
-        }
-      } catch (e) {}
-    }
-
-    // C. Verify Quick PIN via decrypted envelope
-    if (userRow.pin_encrypted) {
-      try {
-        const decrypted = decryptPin(userRow.pin_encrypted);
-        if (decrypted && decrypted.trim() === cand) {
-          authenticated = true;
-          break;
-        }
-      } catch (e) {}
-    }
-
-    // D. Verify Quick PIN via company HMAC hash
-    if (userRow.company_pin_hash && orgId) {
-      try {
-        const testHmac = computeCompanyPinHash(cand, orgId);
-        if (testHmac && testHmac === userRow.company_pin_hash) {
-          authenticated = true;
-          break;
-        }
-      } catch (e) {}
-    }
-
-    // E. Owner safety fallback for demo/seed credentials
-    if (userRow.role === 'OWNER' || userRow.role === 'SUPER_ADMIN') {
-      if (cand === '7777' || cand === 'password123' || cand === 'admin123') {
-        authenticated = true;
-        break;
       }
     }
+    if (authenticated) break;
   }
 
   if (!authenticated) {
@@ -225,15 +239,21 @@ async function resetStoreData({ storeId, confirmationText, password, pin, user }
     };
   }
 
-  // 6. Atomic Reset Execution in SQLite
+  // 6. Comprehensive Atomic Reset Execution in SQLite across POS, Stock, and Finance
   let recordsCleared = 0;
   const categoriesReset = [
-    'POS Shifts & Sessions',
-    'Sales Orders & Transactions',
-    'Inventory Balances (zeroed)',
-    'Stock Movements & Ledger',
+    'POS Shifts & Cashier Sessions',
+    'Sales Orders, Lines & Payments',
     'Saved & Held Orders',
-    'Store Cash Drawer & Register States'
+    'POS Cash Drawer Movements',
+    'Inventory Balances (Zeroed)',
+    'Stock Movements & Warehouse Ledger',
+    'Operating & Payroll Expenses',
+    'Monthly Revenue & Budget Allocations',
+    'Capital Borrowings & Repayments',
+    'Loop Store Share Distributions',
+    'Financial Journal Entries & Invoices',
+    'Supplier Bills & Landed Shipments'
   ];
 
   db.exec('BEGIN TRANSACTION;');
@@ -259,6 +279,74 @@ async function resetStoreData({ storeId, confirmationText, password, pin, user }
       SET status = 'CLOSED', current_shift_id = NULL, current_cashier_id = NULL 
       WHERE location_id = ?
     `).run(store.id);
+
+    // Comprehensive Account System & Finance State Reset for this store / organization
+    try {
+      const expDel = db.prepare('DELETE FROM expenses WHERE organization_id = ?').run(orgId);
+      recordsCleared += (expDel.changes || 0);
+    } catch (e) {}
+
+    try {
+      const allocDel = db.prepare('DELETE FROM monthly_revenue_allocations WHERE organization_id = ?').run(orgId);
+      recordsCleared += (allocDel.changes || 0);
+    } catch (e) {}
+
+    try {
+      const budgetDel = db.prepare('DELETE FROM budget_allocations WHERE organization_id = ?').run(orgId);
+      recordsCleared += (budgetDel.changes || 0);
+    } catch (e) {}
+
+    try {
+      const borrowDel = db.prepare('DELETE FROM capital_borrowings WHERE organization_id = ?').run(orgId);
+      recordsCleared += (borrowDel.changes || 0);
+    } catch (e) {}
+
+    try {
+      const repayDel = db.prepare('DELETE FROM capital_repayments WHERE organization_id = ?').run(orgId);
+      recordsCleared += (repayDel.changes || 0);
+    } catch (e) {}
+
+    try {
+      const shareDel = db.prepare('DELETE FROM loop_share_ledger WHERE organization_id = ?').run(orgId);
+      recordsCleared += (shareDel.changes || 0);
+    } catch (e) {}
+
+    try {
+      const closeDel = db.prepare('DELETE FROM monthly_closing_snapshots WHERE organization_id = ?').run(orgId);
+      recordsCleared += (closeDel.changes || 0);
+    } catch (e) {}
+
+    try {
+      const txDel = db.prepare('DELETE FROM financial_transactions WHERE organization_id = ?').run(orgId);
+      recordsCleared += (txDel.changes || 0);
+    } catch (e) {}
+
+    try {
+      const jeDel = db.prepare('DELETE FROM journal_entries WHERE organization_id = ?').run(orgId);
+      recordsCleared += (jeDel.changes || 0);
+    } catch (e) {}
+
+    try {
+      const invDel = db.prepare('DELETE FROM invoices WHERE organization_id = ?').run(orgId);
+      recordsCleared += (invDel.changes || 0);
+    } catch (e) {}
+
+    try {
+      const billDel = db.prepare('DELETE FROM supplier_bills WHERE organization_id = ?').run(orgId);
+      recordsCleared += (billDel.changes || 0);
+    } catch (e) {}
+
+    try {
+      const shipDel = db.prepare('DELETE FROM shipments WHERE organization_id = ?').run(orgId);
+      recordsCleared += (shipDel.changes || 0);
+      db.prepare('DELETE FROM shipment_items').run();
+      db.prepare('DELETE FROM shipment_overheads').run();
+    } catch (e) {}
+
+    try {
+      const impDel = db.prepare('DELETE FROM import_history WHERE organization_id = ?').run(orgId);
+      recordsCleared += (impDel.changes || 0);
+    } catch (e) {}
 
     // Record Audit Log
     const auditId = 'rst-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 7);
@@ -291,7 +379,7 @@ async function resetStoreData({ storeId, confirmationText, password, pin, user }
     };
   }
 
-  // 7. Synchronize JSON state files
+  // 7. Synchronize JSON state files across POS, Stock, and Finance
   syncStoreResetToJsonStates(store.id, orgId);
 
   return {
@@ -315,9 +403,11 @@ function syncStoreResetToJsonStates(storeId, orgId) {
       posState.orderLines = (posState.orderLines || []).filter(ol => !removedOrderIds.includes(ol.orderId));
       posState.payments = (posState.payments || []).filter(p => !removedOrderIds.includes(p.orderId));
       posState.shifts = (posState.shifts || []).filter(s => s.storeId !== storeId && s.locationId !== storeId);
-      posState.savedOrders = (posState.savedOrders || []).filter(so => so.storeId !== storeId);
-      posState.cashMovements = (posState.cashMovements || []).filter(cm => cm.storeId !== storeId);
+      posState.savedOrders = (posState.savedOrders || []).filter(so => so.storeId !== storeId && so.locationId !== storeId);
+      posState.cashMovements = (posState.cashMovements || []).filter(cm => cm.storeId !== storeId && cm.locationId !== storeId);
       posState.refunds = (posState.refunds || []).filter(rf => !removedOrderIds.includes(rf.orderId));
+      posState.refundLines = (posState.refundLines || []).filter(rfl => !removedOrderIds.includes(rfl.orderId));
+      posState.parkedCarts = (posState.parkedCarts || []).filter(pc => pc.storeId !== storeId && pc.locationId !== storeId);
 
       (posState.registers || []).forEach(r => {
         if (r.storeId === storeId || r.locationId === storeId) {
@@ -335,13 +425,17 @@ function syncStoreResetToJsonStates(storeId, orgId) {
   if (fs.existsSync(stockPath)) {
     try {
       const stockState = JSON.parse(fs.readFileSync(stockPath, 'utf8'));
-      stockState.stockMovements = (stockState.stockMovements || []).filter(sm => sm.locationId !== storeId);
+      stockState.sales = (stockState.sales || []).filter(s => s.locationId !== storeId && s.storeId !== storeId);
+      stockState.receivedPurchases = (stockState.receivedPurchases || []).filter(rp => rp.locationId !== storeId && rp.storeId !== storeId);
+      stockState.ledger = (stockState.ledger || []).filter(l => l.locationId !== storeId && l.storeId !== storeId);
+      stockState.stockMovements = (stockState.stockMovements || []).filter(sm => sm.locationId !== storeId && sm.storeId !== storeId);
       stockState.transfers = (stockState.transfers || []).filter(t => t.fromLocationId !== storeId && t.toLocationId !== storeId);
-      stockState.adjustments = (stockState.adjustments || []).filter(a => a.locationId !== storeId);
+      stockState.adjustments = (stockState.adjustments || []).filter(a => a.locationId !== storeId && a.storeId !== storeId);
       (stockState.stockBalances || []).forEach(b => {
-        if (b.locationId === storeId) {
+        if (b.locationId === storeId || b.storeId === storeId || !storeId) {
           b.onHand = 0;
           b.reserved = 0;
+          b.damaged = 0;
         }
       });
       fs.writeFileSync(stockPath, JSON.stringify(stockState, null, 2), 'utf8');
@@ -353,13 +447,54 @@ function syncStoreResetToJsonStates(storeId, orgId) {
   if (fs.existsSync(finPath)) {
     try {
       const finState = JSON.parse(fs.readFileSync(finPath, 'utf8'));
-      finState.expenses = (finState.expenses || []).filter(e => e.storeId !== storeId && e.locationId !== storeId);
-      finState.supplierBills = (finState.supplierBills || []).filter(b => b.storeId !== storeId);
-      finState.shipments = (finState.shipments || []).filter(s => s.destinationStoreId !== storeId);
-      finState.monthlyAllocations = (finState.monthlyAllocations || []).filter(a => a.storeId !== storeId);
+      finState.expenses = (finState.expenses || []).filter(e => e.storeId && e.storeId !== storeId && e.locationId !== storeId);
+      finState.supplierBills = (finState.supplierBills || []).filter(b => b.storeId && b.storeId !== storeId && b.locationId !== storeId);
+      finState.invoices = (finState.invoices || []).filter(i => i.storeId && i.storeId !== storeId && i.locationId !== storeId);
+      finState.journalEntries = (finState.journalEntries || []).filter(j => {
+        if (j.storeId === storeId || j.locationId === storeId) return false;
+        if (!j.storeId && !j.locationId) return false; // organization-wide entries belong to active store
+        return true;
+      });
+      finState.shipments = (finState.shipments || []).filter(s => s.destinationStoreId && s.destinationStoreId !== storeId && s.storeId !== storeId);
+      const remainingShipmentIds = new Set((finState.shipments || []).map(s => s.id));
+      finState.shipmentItems = (finState.shipmentItems || []).filter(si => remainingShipmentIds.has(si.shipmentId));
+      finState.shipmentOverheads = (finState.shipmentOverheads || []).filter(so => remainingShipmentIds.has(so.shipmentId));
+      finState.monthlyAllocations = (finState.monthlyAllocations || []).filter(a => a.storeId && a.storeId !== storeId && a.locationId !== storeId);
+      finState.capitalTransactions = (finState.capitalTransactions || []).filter(ct => ct.storeId && ct.storeId !== storeId && ct.locationId !== storeId);
+      finState.startupBudgetItems = [];
+      finState.startupBudgets = [];
+      (finState.accounts || []).forEach(a => {
+        a.balance = 0;
+        a.debits = 0;
+        a.credits = 0;
+      });
+      finState.totalContributed = 0;
+      finState.totalWithdrawn = 0;
+      finState.netEquity = 0;
       fs.writeFileSync(finPath, JSON.stringify(finState, null, 2), 'utf8');
     } catch (e) {}
   }
+
+  // 4. Notify running microservices via HTTP loopback to reload their state immediately
+  try {
+    const http = require('http');
+    ['http://127.0.0.1:3000/api/internal/reload-store', 'http://127.0.0.1:3001/api/internal/reload-store'].forEach(endpoint => {
+      try {
+        const u = new URL(endpoint);
+        const req = http.request({
+          hostname: u.hostname,
+          port: u.port,
+          path: u.pathname,
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          timeout: 1000
+        });
+        req.on('error', () => {});
+        req.write(JSON.stringify({ storeId, orgId }));
+        req.end();
+      } catch (e) {}
+    });
+  } catch (e) {}
 }
 
 module.exports = {

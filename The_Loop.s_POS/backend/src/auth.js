@@ -62,7 +62,9 @@ const DEFAULT_PERMISSIONS = {
   reopenFinancialPeriods: false,
   exportInventoryReports: false,
   exportFinancialReports: false,
-  exportConfidentialReports: false
+  exportConfidentialReports: false,
+  manageStoreData: false,
+  isOwnerEquivalent: false
 };
 
 const SYSTEM_ROLES = [
@@ -128,7 +130,9 @@ const SYSTEM_ROLES = [
       reopenFinancialPeriods: true,
       exportInventoryReports: true,
       exportFinancialReports: true,
-      exportConfidentialReports: true
+      exportConfidentialReports: true,
+      manageStoreData: true,
+      isOwnerEquivalent: true
     }
   },
   {
@@ -167,7 +171,9 @@ const SYSTEM_ROLES = [
       viewImportHistory: true,
       viewMonthlyRevenue: true,
       exportInventoryReports: true,
-      exportFinancialReports: true
+      exportFinancialReports: true,
+      manageStoreData: true,
+      isOwnerEquivalent: true
     }
   },
   {
@@ -998,11 +1004,26 @@ function resolveUserPermissions(user, customPermissions = null) {
     }
   });
 
-  // Supreme roles: OWNER & SUPER_ADMIN hold all permissions
-  if (user.role === 'OWNER' || user.role === 'SUPER_ADMIN' || userRoles.includes('OWNER') || userRoles.includes('SUPER_ADMIN')) {
+  const hasOwnerSet = userRoles.some(rId => {
+    const rObj = allRoles.find(r => r.id === rId);
+    return rObj && (rObj.isOwnerSet === true || rObj.permissions?.isOwnerEquivalent === true);
+  });
+
+  // Supreme roles: OWNER, SUPER_ADMIN, or custom Owner-Equivalent role holds all permissions
+  if (
+    user.role === 'OWNER' || 
+    user.role === 'SUPER_ADMIN' || 
+    userRoles.includes('OWNER') || 
+    userRoles.includes('SUPER_ADMIN') ||
+    user.isOwnerEquivalent === true ||
+    user.permissions?.isOwnerEquivalent === true ||
+    hasOwnerSet
+  ) {
     Object.keys(basePermissions).forEach(k => {
       basePermissions[k] = true;
     });
+    basePermissions.isOwnerEquivalent = true;
+    basePermissions.manageStoreData = true;
   }
 
   const overrides = customPermissions || user.permissions || {};
@@ -1028,7 +1049,7 @@ function sanitizeUser(user) {
   const db = loadDb();
   const permissions = resolveUserPermissions(user);
   const appAccess = resolveAppAccess(user, permissions);
-  const isOwner = user.role === 'OWNER' || user.role === 'SUPER_ADMIN';
+  const isOwner = user.role === 'OWNER' || user.role === 'SUPER_ADMIN' || Boolean(permissions.isOwnerEquivalent);
   const assignedStoreIds = isOwner
     ? ['*']
     : (Array.isArray(user.assignedStoreIds) && user.assignedStoreIds.length > 0
@@ -1957,6 +1978,41 @@ function deleteUser(userId, performedBy, callerOrgId = null, callerUserId = null
 // 4b. DEDICATED PIN SECURITY: REVEAL, REGENERATE, AND UPDATE ENDPOINTS
 // ----------------------------------------------------------------------------
 
+const ROLE_AUTHORITY_HIERARCHY = {
+  OWNER: 100,
+  SUPER_ADMIN: 90,
+  FINANCE_ADMIN: 70,
+  STOCK_ADMIN: 70,
+  POS_ADMIN: 70,
+  STORE_MANAGER: 50,
+  STOCK_MANAGER: 50,
+  PURCHASE_MANAGER: 50,
+  ACCOUNTANT: 50,
+  SHIFT_SUPERVISOR: 40,
+  CASHIER: 20,
+  SALES_ASSISTANT: 20,
+  INVENTORY_CLERK: 20
+};
+
+function getRoleAuthorityLevel(roleOrUser) {
+  if (!roleOrUser) return 0;
+  const roleId = typeof roleOrUser === 'string' ? roleOrUser : (roleOrUser.role || roleOrUser.id);
+  const userPerms = typeof roleOrUser === 'object' ? (roleOrUser.permissions || {}) : {};
+
+  if (roleId === 'OWNER') return 100;
+  if (roleId === 'SUPER_ADMIN') return 90;
+  if (userPerms.isOwnerEquivalent || userPerms.manageStoreData) return 95;
+
+  const db = loadDb();
+  const customRole = (db.roles || []).find(r => r.id === roleId);
+  if (customRole) {
+    if (customRole.authorityLevel) return customRole.authorityLevel;
+    if (customRole.isOwnerSet || customRole.permissions?.isOwnerEquivalent) return 95;
+  }
+
+  return ROLE_AUTHORITY_HIERARCHY[roleId] || 10;
+}
+
 function revealUserPin(userId, caller) {
   const db = loadDb();
   const targetUser = db.users.find(u => u.id === userId);
@@ -1967,11 +2023,23 @@ function revealUserPin(userId, caller) {
     return { ok: false, forbidden: true, error: 'Access denied: Cross-company access prohibited.' };
   }
 
-  // Permission check: caller must have viewUserPin permission or be OWNER/SUPER_ADMIN
+  // Permission check: caller must have viewUserPin permission or be OWNER/SUPER_ADMIN/isOwnerEquivalent
   const callerPerms = caller.permissions || resolveUserPermissions(caller);
-  const canView = callerPerms.viewUserPin === true || caller.role === 'OWNER' || caller.role === 'SUPER_ADMIN';
+  const canView = callerPerms.viewUserPin === true || caller.role === 'OWNER' || caller.role === 'SUPER_ADMIN' || callerPerms.isOwnerEquivalent === true;
   if (!canView) {
     return { ok: false, forbidden: true, error: 'Permission Denied: You do not have permission to view staff PINs.' };
+  }
+
+  // Role hierarchy restriction: Only upper level role can see the PIN of down level staff!
+  const callerRank = getRoleAuthorityLevel(caller);
+  const targetRank = getRoleAuthorityLevel(targetUser);
+
+  if (caller.id !== targetUser.id && callerRank <= targetRank) {
+    return {
+      ok: false,
+      forbidden: true,
+      error: `Access Denied: Role hierarchy restriction. You can only view PINs for lower-ranking staff members (Your rank: ${callerRank}, Target rank: ${targetRank}).`
+    };
   }
 
   let pin = decryptPin(targetUser.pinEncrypted);
@@ -2012,11 +2080,23 @@ function regenerateUserPin(userId, caller) {
     return { ok: false, forbidden: true, error: 'Access denied: Cross-company access prohibited.' };
   }
 
-  // Permission check: caller must have editUserPin permission or be OWNER/SUPER_ADMIN
+  // Permission check: caller must have editUserPin permission or be OWNER/SUPER_ADMIN/isOwnerEquivalent
   const callerPerms = caller.permissions || resolveUserPermissions(caller);
-  const canEdit = callerPerms.editUserPin === true || caller.role === 'OWNER' || caller.role === 'SUPER_ADMIN';
+  const canEdit = callerPerms.editUserPin === true || caller.role === 'OWNER' || caller.role === 'SUPER_ADMIN' || callerPerms.isOwnerEquivalent === true;
   if (!canEdit) {
     return { ok: false, forbidden: true, error: 'Permission Denied: You do not have permission to edit or regenerate staff PINs.' };
+  }
+
+  // Role hierarchy restriction: Only upper level role can regenerate the PIN of down level staff!
+  const callerRank = getRoleAuthorityLevel(caller);
+  const targetRank = getRoleAuthorityLevel(targetUser);
+
+  if (caller.id !== targetUser.id && callerRank <= targetRank) {
+    return {
+      ok: false,
+      forbidden: true,
+      error: `Access Denied: Role hierarchy restriction. You cannot regenerate the PIN of equal or higher-level staff members.`
+    };
   }
 
   const orgId = targetUser.organizationId || 'org-loops-001';
@@ -2055,11 +2135,23 @@ function updateUserPin(userId, newPin, caller) {
     return { ok: false, forbidden: true, error: 'Access denied: Cross-company access prohibited.' };
   }
 
-  // Permission check: caller must have editUserPin permission or be OWNER/SUPER_ADMIN
+  // Permission check: caller must have editUserPin permission or be OWNER/SUPER_ADMIN/isOwnerEquivalent
   const callerPerms = caller.permissions || resolveUserPermissions(caller);
-  const canEdit = callerPerms.editUserPin === true || caller.role === 'OWNER' || caller.role === 'SUPER_ADMIN';
+  const canEdit = callerPerms.editUserPin === true || caller.role === 'OWNER' || caller.role === 'SUPER_ADMIN' || callerPerms.isOwnerEquivalent === true;
   if (!canEdit) {
     return { ok: false, forbidden: true, error: 'Permission Denied: You do not have permission to edit staff PINs.' };
+  }
+
+  // Role hierarchy restriction: Only upper level role can edit the PIN of down level staff!
+  const callerRank = getRoleAuthorityLevel(caller);
+  const targetRank = getRoleAuthorityLevel(targetUser);
+
+  if (caller.id !== targetUser.id && callerRank <= targetRank) {
+    return {
+      ok: false,
+      forbidden: true,
+      error: `Access Denied: Role hierarchy restriction. You cannot edit the PIN of equal or higher-level staff members.`
+    };
   }
 
   const cleanPin = String(newPin || '').trim();
@@ -2244,7 +2336,7 @@ function getRoles() {
   return ensureRolesInDb();
 }
 
-function createCustomRole({ id, name, app = 'POS', description, permissions, createdBy }) {
+function createCustomRole({ id, name, app = 'POS', description, permissions, createdBy, isOwnerSet = false, authorityLevel = null }) {
   const db = loadDb();
   ensureRolesInDb();
 
@@ -2253,13 +2345,28 @@ function createCustomRole({ id, name, app = 'POS', description, permissions, cre
     return { ok: false, error: `Role with ID ${roleId} already exists` };
   }
 
+  let mergedPermissions = { ...DEFAULT_PERMISSIONS, ...(permissions || {}) };
+  const ownerFlag = Boolean(isOwnerSet || mergedPermissions.isOwnerEquivalent);
+
+  if (ownerFlag) {
+    const ownerRole = db.roles.find(r => r.id === 'OWNER');
+    if (ownerRole && ownerRole.permissions) {
+      mergedPermissions = { ...ownerRole.permissions };
+    }
+    mergedPermissions.isOwnerEquivalent = true;
+    mergedPermissions.manageStoreData = true;
+  }
+
   const newRole = {
     id: roleId,
     name: name.trim(),
-    app,
+    app: ownerFlag ? 'UNIVERSAL' : app,
     isSystem: false,
+    isOwnerSet: ownerFlag,
+    authorityLevel: ownerFlag ? 95 : (authorityLevel || 50),
     description: description || 'Custom organization role',
-    permissions: { ...DEFAULT_PERMISSIONS, ...(permissions || {}) },
+    permissions: mergedPermissions,
+    createdBy: createdBy || 'Administrator',
     createdAt: new Date().toISOString()
   };
 
@@ -2276,9 +2383,22 @@ function updateCustomRole(roleId, updates, updatedBy) {
 
   if (updates.name) role.name = updates.name.trim();
   if (updates.description) role.description = updates.description.trim();
-  if (updates.permissions) {
+  if (updates.app) role.app = updates.app;
+  if (typeof updates.isOwnerSet === 'boolean') {
+    role.isOwnerSet = updates.isOwnerSet;
+    if (role.isOwnerSet) {
+      role.authorityLevel = 95;
+      role.app = 'UNIVERSAL';
+      const ownerRole = db.roles.find(r => r.id === 'OWNER');
+      if (ownerRole && ownerRole.permissions) {
+        role.permissions = { ...ownerRole.permissions, isOwnerEquivalent: true, manageStoreData: true };
+      }
+    }
+  }
+  if (updates.permissions && !role.isOwnerSet) {
     role.permissions = { ...role.permissions, ...updates.permissions };
   }
+  role.updatedAt = new Date().toISOString();
   saveDb();
   return { ok: true, role };
 }
@@ -2371,6 +2491,7 @@ module.exports = {
   updateCustomRole,
   deleteCustomRole,
   getAuditLogs,
+  getRoleAuthorityLevel,
   verifyManagerOverride,
   resolveUserPermissions,
   sanitizeUser,

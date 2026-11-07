@@ -55,6 +55,17 @@
       "status": "CLOSED",
       "currentShiftId": null,
       "currentCashierId": null
+    },
+    {
+      "id": "reg-c-01-c926",
+      "organizationId": "org-6e9ed3cf",
+      "locationId": "loc-01",
+      "storeId": "loc-01",
+      "registerCode": "REG-02",
+      "name": "BeyondVER Main Branch Register 02",
+      "status": "CLOSED",
+      "currentShiftId": null,
+      "currentCashierId": null
     }
   ],
   "users": [
@@ -140,10 +151,12 @@
         "reopenFinancialPeriods": false,
         "exportInventoryReports": false,
         "exportFinancialReports": false,
-        "exportConfidentialReports": false
+        "exportConfidentialReports": false,
+        "manageStoreData": false,
+        "isOwnerEquivalent": false
       },
       "createdAt": "2026-11-04T17:51:35.815Z",
-      "updatedAt": "2026-11-04T17:51:35.817Z"
+      "updatedAt": "2026-11-07T10:14:33.550Z"
     },
     {
       "id": "usr-38055d19",
@@ -161,10 +174,10 @@
       "active": true,
       "status": "ACTIVE",
       "assignedStoreIds": [
-        "loc-01"
+        "loc-zprdw9b"
       ],
       "locations": [
-        "loc-01"
+        "loc-zprdw9b"
       ],
       "appAccess": {
         "pos": true,
@@ -227,11 +240,13 @@
         "reopenFinancialPeriods": false,
         "exportInventoryReports": false,
         "exportFinancialReports": false,
-        "exportConfidentialReports": false
+        "exportConfidentialReports": false,
+        "manageStoreData": false,
+        "isOwnerEquivalent": false
       },
       "createdAt": "2026-11-04T17:51:35.667Z",
-      "updatedAt": "2026-11-05T04:56:00.378Z",
-      "lastLoginAt": "2026-11-05T04:56:11.916Z"
+      "updatedAt": "2026-11-07T10:28:55.227Z",
+      "lastLoginAt": "2026-11-07T10:29:11.282Z"
     },
     {
       "id": "usr-6b13c38f",
@@ -313,7 +328,7 @@
       },
       "createdAt": "2026-11-04T11:19:14.258Z",
       "updatedAt": "2026-11-04T14:31:47.399Z",
-      "lastLoginAt": "2026-11-06T10:01:45.931Z"
+      "lastLoginAt": "2026-11-07T10:06:07.257Z"
     },
     {
       "id": "usr-owner-83bbcc",
@@ -357,7 +372,7 @@
         "changeSystemSettings": true
       },
       "createdAt": "2026-11-03T17:08:27.890Z",
-      "lastLoginAt": "2026-11-06T09:36:27.998Z",
+      "lastLoginAt": "2026-11-07T10:29:21.688Z",
       "updatedAt": "2026-11-03T17:45:50.336Z",
       "companyPinHash": "9542dc4c9a0e6c6259565ae72793b68e526ec7c73088f1a71dea1e69fae3f86f",
       "pinEncrypted": "72a20ec6f593a82a287a91b3:d16575fbe5fb7b2d0e0d9219077c2af5:7891006e"
@@ -629,6 +644,76 @@
       "organizationId": "org-6e9ed3cf",
       "createdAt": "2026-11-06T10:01:45.931Z",
       "expiresAt": "2026-11-06T10:06:45.931Z"
+    },
+    {
+      "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c3Itb3duZXItODNiYmNjIiwic2lkIjoic2Vzc18zNTZlNGY0MS1mNGFiLTRmZTgtOGQ3ZS03ZTFmODdmYWI0NzAiLCJvcmciOiJvcmctNmU5ZWQzY2YiLCJyb2xlIjoiT1dORVIiLCJzdG9yZUlkIjpudWxsLCJlbWFpbCI6Im5lbmdAZ21haWwuY29tIiwibmFtZSI6Imxvbmcga2ltbmVuZyIsImlzcyI6Imh0dHBzOi8vYXV0aC50aGVsb29wcy5pbyIsImF1ZCI6InRoZWxvb3BzLWFwaSIsImlhdCI6MTc5NDAzODU4MSwiZXhwIjoxNzk0MDM4ODgxLCJqdGkiOiJlZWZjZGJmNC01MzM5LTQ3OTktYjM1OS1hMzRlOTY0YzM1NWQifQ.zmSljDcQM9fB31fOGiTF4gMlDhVAL_mVvhIkQQe-WJ0",
+      "userId": "usr-owner-83bbcc",
+      "organizationId": "org-6e9ed3cf",
+      "createdAt": "2026-11-07T08:03:01.661Z",
+      "expiresAt": "2026-11-07T08:08:01.661Z"
+    },
+    {
+      "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c3ItNmIxM2MzOGYiLCJzaWQiOiJzZXNzX2I0Nzk2M2RiLTIxZTYtNDE5ZS05MDFjLTRiN2M4Njc4ZDBhOSIsIm9yZyI6Im9yZy02ZTllZDNjZiIsInJvbGUiOiJTVE9SRV9NQU5BR0VSIiwic3RvcmVJZCI6bnVsbCwiZW1haWwiOiJwYW5oYUBnbWlhbC5jb20iLCJuYW1lIjoicGFuaGEiLCJpc3MiOiJodHRwczovL2F1dGgudGhlbG9vcHMuaW8iLCJhdWQiOiJ0aGVsb29wcy1hcGkiLCJpYXQiOjE3OTQwMzk0NjgsImV4cCI6MTc5NDAzOTc2OCwianRpIjoiOTM3NjNmMzQtZmQ3MC00NjQ5LTg1ZDktYmNhMjMwY2RmYWEzIn0.n5LsUGn8my8pPtDB-rQyjOCBB-Sfg5MJj4OK8V8YdWg",
+      "userId": "usr-6b13c38f",
+      "organizationId": "org-6e9ed3cf",
+      "createdAt": "2026-11-07T08:17:48.305Z",
+      "expiresAt": "2026-11-07T08:22:48.305Z"
+    },
+    {
+      "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c3Itb3duZXItODNiYmNjIiwic2lkIjoic2Vzc185ODNhODA2OC1kNWQ4LTQ2OTgtYmJiMy0zNTdhMzdiYzllMWEiLCJvcmciOiJvcmctNmU5ZWQzY2YiLCJyb2xlIjoiT1dORVIiLCJzdG9yZUlkIjpudWxsLCJlbWFpbCI6Im5lbmdAZ21haWwuY29tIiwibmFtZSI6Imxvbmcga2ltbmVuZyIsImlzcyI6Imh0dHBzOi8vYXV0aC50aGVsb29wcy5pbyIsImF1ZCI6InRoZWxvb3BzLWFwaSIsImlhdCI6MTc5NDA0MDU5NiwiZXhwIjoxNzk0MDQwODk2LCJqdGkiOiIxNjMzNWQxZi03OGMwLTQyYzEtYWNlZS1hYTQwYTY5ZmFlOWYifQ.VQrvuos2Zi4LscYEjOFt9jcHKb2NaMcndPv9-WXpfd0",
+      "userId": "usr-owner-83bbcc",
+      "organizationId": "org-6e9ed3cf",
+      "createdAt": "2026-11-07T08:36:36.996Z",
+      "expiresAt": "2026-11-07T08:41:36.996Z"
+    },
+    {
+      "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c3Itb3duZXItODNiYmNjIiwic2lkIjoic2Vzc183YzYxYjUzZS02NWRjLTQwNGYtYWI1My1mN2NmN2M5NzFhNjAiLCJvcmciOiJvcmctNmU5ZWQzY2YiLCJyb2xlIjoiT1dORVIiLCJzdG9yZUlkIjpudWxsLCJlbWFpbCI6Im5lbmdAZ21haWwuY29tIiwibmFtZSI6Imxvbmcga2ltbmVuZyIsImlzcyI6Imh0dHBzOi8vYXV0aC50aGVsb29wcy5pbyIsImF1ZCI6InRoZWxvb3BzLWFwaSIsImlhdCI6MTc5NDA0MDY3NSwiZXhwIjoxNzk0MDQwOTc1LCJqdGkiOiI0N2M3YzQ4OC02MTZkLTQ0NjgtODgyNC0zYzUxMTE2NjgzOGYifQ.23SsB20LyDSAXkGceESZN7BVRmv9lsABjVf8MPjdwTw",
+      "userId": "usr-owner-83bbcc",
+      "organizationId": "org-6e9ed3cf",
+      "createdAt": "2026-11-07T08:37:55.221Z",
+      "expiresAt": "2026-11-07T08:42:55.221Z"
+    },
+    {
+      "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c3ItNmIxM2MzOGYiLCJzaWQiOiJzZXNzXzczYzQ3OWE3LTZlYjMtNGViYy1iOGEyLWFmZmE0YWE4OGMwMyIsIm9yZyI6Im9yZy02ZTllZDNjZiIsInJvbGUiOiJTVE9SRV9NQU5BR0VSIiwic3RvcmVJZCI6bnVsbCwiZW1haWwiOiJwYW5oYUBnbWlhbC5jb20iLCJuYW1lIjoicGFuaGEiLCJpc3MiOiJodHRwczovL2F1dGgudGhlbG9vcHMuaW8iLCJhdWQiOiJ0aGVsb29wcy1hcGkiLCJpYXQiOjE3OTQwNDE2MTMsImV4cCI6MTc5NDA0MTkxMywianRpIjoiMTMyMmMyNzctODI3NC00YmM3LWI0NzktYjViY2JjNzY3NDU0In0.Hx6e6RpvfN2MrHz5_GjQ4iExif8ZAmA02_jFgGonzZ8",
+      "userId": "usr-6b13c38f",
+      "organizationId": "org-6e9ed3cf",
+      "createdAt": "2026-11-07T08:53:33.080Z",
+      "expiresAt": "2026-11-07T08:58:33.080Z"
+    },
+    {
+      "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c3ItNmIxM2MzOGYiLCJzaWQiOiJzZXNzX2MyYjcwMDUzLTQ1NDgtNGI4Ny04OTQzLWRhMjU4YjQzYjI5NCIsIm9yZyI6Im9yZy02ZTllZDNjZiIsInJvbGUiOiJTVE9SRV9NQU5BR0VSIiwic3RvcmVJZCI6bnVsbCwiZW1haWwiOiJwYW5oYUBnbWlhbC5jb20iLCJuYW1lIjoicGFuaGEiLCJpc3MiOiJodHRwczovL2F1dGgudGhlbG9vcHMuaW8iLCJhdWQiOiJ0aGVsb29wcy1hcGkiLCJpYXQiOjE3OTQwNDMwMDUsImV4cCI6MTc5NDA0MzMwNSwianRpIjoiNGUzYzE0ZmYtYTExOC00N2ZjLWIyOTAtOWI3MzViYzk5ZmMwIn0.wHSgSKAmgRfeWgf3awCywZuM5NyfkAYy0fDsNDe8_C8",
+      "userId": "usr-6b13c38f",
+      "organizationId": "org-6e9ed3cf",
+      "createdAt": "2026-11-07T09:16:45.882Z",
+      "expiresAt": "2026-11-07T09:21:45.882Z"
+    },
+    {
+      "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c3Itb3duZXItODNiYmNjIiwic2lkIjoic2Vzc18wODM4ZDQ0My0yNDNjLTQxNDEtYTZjZi1jZWQzYWU1MDNmMmIiLCJvcmciOiJvcmctNmU5ZWQzY2YiLCJyb2xlIjoiT1dORVIiLCJzdG9yZUlkIjpudWxsLCJlbWFpbCI6Im5lbmdAZ21haWwuY29tIiwibmFtZSI6Imxvbmcga2ltbmVuZyIsImlzcyI6Imh0dHBzOi8vYXV0aC50aGVsb29wcy5pbyIsImF1ZCI6InRoZWxvb3BzLWFwaSIsImlhdCI6MTc5NDA0NDQxNywiZXhwIjoxNzk0MDQ0NzE3LCJqdGkiOiJjOGZmZTFjZi04N2QyLTRlOGYtYjRjMC1iZTk0MTAzZDM2ODUifQ.hKYzQyfBsFmHPJ2Orqt3-f429gWSfr_czSOKmQLRm8k",
+      "userId": "usr-owner-83bbcc",
+      "organizationId": "org-6e9ed3cf",
+      "createdAt": "2026-11-07T09:40:17.726Z",
+      "expiresAt": "2026-11-07T09:45:17.726Z"
+    },
+    {
+      "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c3ItNmIxM2MzOGYiLCJzaWQiOiJzZXNzXzIzNjdmOWU1LWNiNjAtNGIwMi04MDY4LWE0OTgyOTAzMGJiMyIsIm9yZyI6Im9yZy02ZTllZDNjZiIsInJvbGUiOiJTVE9SRV9NQU5BR0VSIiwic3RvcmVJZCI6bnVsbCwiZW1haWwiOiJwYW5oYUBnbWlhbC5jb20iLCJuYW1lIjoicGFuaGEiLCJpc3MiOiJodHRwczovL2F1dGgudGhlbG9vcHMuaW8iLCJhdWQiOiJ0aGVsb29wcy1hcGkiLCJpYXQiOjE3OTQwNDU5NjcsImV4cCI6MTc5NDA0NjI2NywianRpIjoiNzk4NjEyNTQtMmViNy00OGM4LTliMGYtN2M4NjMxODJmMWEzIn0.8PraJgMg2VhhK3hlNZ0KHHlZ3vN92KqMH7_PN4BgZXs",
+      "userId": "usr-6b13c38f",
+      "organizationId": "org-6e9ed3cf",
+      "createdAt": "2026-11-07T10:06:07.257Z",
+      "expiresAt": "2026-11-07T10:11:07.257Z"
+    },
+    {
+      "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c3ItMzgwNTVkMTkiLCJzaWQiOiJzZXNzXzYwZDQ1MTUyLTExNGEtNDE1ZS05MDAwLWE1ZWZjM2NlMGI5MCIsIm9yZyI6Im9yZy02ZTllZDNjZiIsInJvbGUiOiJDQVNISUVSIiwic3RvcmVJZCI6bnVsbCwiZW1haWwiOiJjYXNoaWVyXzE3OTM4MTQ2OTU1NjZAdGVzdC5jb20iLCJuYW1lIjoiVGVzdCBDYXNoaWVyIiwiaXNzIjoiaHR0cHM6Ly9hdXRoLnRoZWxvb3BzLmlvIiwiYXVkIjoidGhlbG9vcHMtYXBpIiwiaWF0IjoxNzk0MDQ3MDY0LCJleHAiOjE3OTQwNDczNjQsImp0aSI6ImM2NmIwZTgzLTY3OWItNDQ1NC1hMDAzLTQzYjk0NDM1MDEzZSJ9.c6ya7TyYdSf_8nA8Vab0v-pGdWW0WDlBIeLON8Au09U",
+      "userId": "usr-38055d19",
+      "organizationId": "org-6e9ed3cf",
+      "createdAt": "2026-11-07T10:24:24.577Z",
+      "expiresAt": "2026-11-07T10:29:24.577Z"
+    },
+    {
+      "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c3Itb3duZXItODNiYmNjIiwic2lkIjoic2Vzc19iNzBmMzNmNS1lYzU0LTQ4ZmMtODUyNy00ZDZmZDljZDE0YmYiLCJvcmciOiJvcmctNmU5ZWQzY2YiLCJyb2xlIjoiT1dORVIiLCJzdG9yZUlkIjpudWxsLCJlbWFpbCI6Im5lbmdAZ21haWwuY29tIiwibmFtZSI6Imxvbmcga2ltbmVuZyIsImlzcyI6Imh0dHBzOi8vYXV0aC50aGVsb29wcy5pbyIsImF1ZCI6InRoZWxvb3BzLWFwaSIsImlhdCI6MTc5NDA0NzM2MSwiZXhwIjoxNzk0MDQ3NjYxLCJqdGkiOiI1MDc2YTkwNS02ZTk1LTQ4ODQtOTM1ZC0wM2I1M2NmYjhmNzgifQ.1Rv5xk1grPcdBYj7KaGIdfVKGSHG1YSrSd1Dby2veV0",
+      "userId": "usr-owner-83bbcc",
+      "organizationId": "org-6e9ed3cf",
+      "createdAt": "2026-11-07T10:29:21.688Z",
+      "expiresAt": "2026-11-07T10:34:21.688Z"
     }
   ],
   "orders": [],
@@ -1516,6 +1601,327 @@
   "parkedCarts": [],
   "inbox": [],
   "auditLog": [
+    {
+      "id": "374d0aa3-da69-4daf-aeb7-ce803c2a446b",
+      "action": "PIN_LOGIN_SUCCESS",
+      "userId": "usr-owner-83bbcc",
+      "userName": "long kimneng",
+      "organizationId": "org-6e9ed3cf",
+      "role": "OWNER",
+      "details": "Successful Quick PIN login. Landing destination: /admin",
+      "timestamp": "2026-11-07T10:29:21.688Z"
+    },
+    {
+      "id": "1d3f482a-5e4a-4572-8211-73312960bcb0",
+      "action": "PIN_LOGIN_SUCCESS",
+      "userId": "usr-38055d19",
+      "userName": "Test Cashier",
+      "organizationId": "org-6e9ed3cf",
+      "role": "CASHIER",
+      "details": "Successful Quick PIN login. Landing destination: /pos",
+      "timestamp": "2026-11-07T10:29:11.282Z"
+    },
+    {
+      "id": "d1250120-4147-4ede-8794-72cf221b1cbc",
+      "action": "USER_UPDATED",
+      "organizationId": "org-6e9ed3cf",
+      "performedBy": "long kimneng",
+      "userId": "usr-38055d19",
+      "userName": "Test Cashier",
+      "details": "Profile & permissions updated for Test Cashier",
+      "timestamp": "2026-11-07T10:28:55.229Z"
+    },
+    {
+      "id": "89594975-042c-4769-8131-1aa6b6e5bf6a",
+      "action": "PIN_LOGIN_SUCCESS",
+      "userId": "usr-owner-83bbcc",
+      "userName": "long kimneng",
+      "organizationId": "org-6e9ed3cf",
+      "role": "OWNER",
+      "details": "Successful Quick PIN login. Landing destination: /admin",
+      "timestamp": "2026-11-07T10:28:29.913Z"
+    },
+    {
+      "id": "00c0445d-22aa-4ce9-b103-bbe51ecdfd32",
+      "action": "COMPANY_CODE_VERIFIED",
+      "organizationId": "org-6e9ed3cf",
+      "performedBy": "IP ::1",
+      "details": "POS Terminal paired successfully with Company Code \"BV-8821\" (BeyondVER)",
+      "timestamp": "2026-11-07T10:28:07.613Z"
+    },
+    {
+      "id": "6e9b6860-822f-4836-bb5d-5ff66faadb9f",
+      "action": "PIN_LOGIN_SUCCESS",
+      "userId": "usr-owner-83bbcc",
+      "userName": "long kimneng",
+      "organizationId": "org-6e9ed3cf",
+      "role": "OWNER",
+      "details": "Successful Quick PIN login. Landing destination: /admin",
+      "timestamp": "2026-11-07T10:27:36.398Z"
+    },
+    {
+      "id": "6992f8a1-bb79-4312-8398-5e9de0a4fce4",
+      "action": "COMPANY_CODE_VERIFIED",
+      "organizationId": "org-6e9ed3cf",
+      "performedBy": "IP ::1",
+      "details": "POS Terminal paired successfully with Company Code \"BV-8821\" (BeyondVER)",
+      "timestamp": "2026-11-07T10:27:29.380Z"
+    },
+    {
+      "id": "ccd1e25c-35e7-48e1-bd88-6bac04a35a4d",
+      "action": "PIN_LOGIN_SUCCESS",
+      "userId": "usr-38055d19",
+      "userName": "Test Cashier",
+      "organizationId": "org-6e9ed3cf",
+      "role": "CASHIER",
+      "details": "Successful Quick PIN login. Landing destination: /pos",
+      "timestamp": "2026-11-07T10:24:24.577Z"
+    },
+    {
+      "id": "ee0487d2-7a7f-4893-9325-596b07395624",
+      "action": "PIN_VIEWED",
+      "organizationId": "org-6e9ed3cf",
+      "performedBy": "panha",
+      "userId": "usr-38055d19",
+      "userName": "Test Cashier",
+      "details": "Quick PIN revealed for employee Test Cashier (cashier_1793814695566@test.com) by panha",
+      "timestamp": "2026-11-07T10:24:18.912Z"
+    },
+    {
+      "id": "938e8358-ecb3-44f8-a655-cecb2cac4a29",
+      "action": "USER_UPDATED",
+      "organizationId": "org-6e9ed3cf",
+      "performedBy": "panha",
+      "userId": "usr-2ec6df3d",
+      "userName": "Branch Staff",
+      "details": "Profile & permissions updated for Branch Staff",
+      "timestamp": "2026-11-07T10:14:33.551Z"
+    },
+    {
+      "id": "a3204add-fb80-4e94-800c-c60268c145f8",
+      "action": "USER_UPDATED",
+      "organizationId": "org-6e9ed3cf",
+      "performedBy": "panha",
+      "userId": "usr-2ec6df3d",
+      "userName": "Branch Staff",
+      "details": "Profile & permissions updated for Branch Staff",
+      "timestamp": "2026-11-07T10:14:31.971Z"
+    },
+    {
+      "id": "5f229972-eaf9-4420-befb-46f666694abf",
+      "action": "PIN_LOGIN_FAILED",
+      "organizationId": "org-6e9ed3cf",
+      "timestamp": "2026-11-07T10:14:10.756Z",
+      "details": "Failed Quick PIN authentication attempt in company org-6e9ed3cf"
+    },
+    {
+      "id": "9eb29b6a-f580-44fe-902d-ddfeebb7d706",
+      "action": "PIN_VIEWED",
+      "organizationId": "org-6e9ed3cf",
+      "performedBy": "panha",
+      "userId": "usr-6b13c38f",
+      "userName": "panha",
+      "details": "Quick PIN revealed for employee panha (panha@gmial.com) by panha",
+      "timestamp": "2026-11-07T10:06:40.238Z"
+    },
+    {
+      "id": "d0963999-bb2a-49e2-99a4-3af19cb9b00c",
+      "action": "PIN_VIEWED",
+      "organizationId": "org-6e9ed3cf",
+      "performedBy": "panha",
+      "userId": "usr-6b13c38f",
+      "userName": "panha",
+      "details": "Quick PIN revealed for employee panha (panha@gmial.com) by panha",
+      "timestamp": "2026-11-07T10:06:37.615Z"
+    },
+    {
+      "id": "a27af502-9b31-4596-ab73-88f98126f5a8",
+      "action": "PIN_LOGIN_SUCCESS",
+      "userId": "usr-6b13c38f",
+      "userName": "panha",
+      "organizationId": "org-6e9ed3cf",
+      "role": "STORE_MANAGER",
+      "details": "Successful Quick PIN login. Landing destination: /admin",
+      "timestamp": "2026-11-07T10:06:07.257Z"
+    },
+    {
+      "id": "a59e4084-fcc3-4dd0-a792-5f1ba776cd13",
+      "action": "PIN_LOGIN_SUCCESS",
+      "userId": "usr-owner-83bbcc",
+      "userName": "long kimneng",
+      "organizationId": "org-6e9ed3cf",
+      "role": "OWNER",
+      "details": "Successful Quick PIN login. Landing destination: /admin",
+      "timestamp": "2026-11-07T09:40:17.726Z"
+    },
+    {
+      "id": "a2a74795-295c-4b03-ad63-d2eab2b86291",
+      "action": "PIN_LOGIN_SUCCESS",
+      "userId": "usr-6b13c38f",
+      "userName": "panha",
+      "organizationId": "org-6e9ed3cf",
+      "role": "STORE_MANAGER",
+      "details": "Successful Quick PIN login. Landing destination: /admin",
+      "timestamp": "2026-11-07T09:40:11.568Z"
+    },
+    {
+      "id": "ddd9e51d-d871-422b-bdab-0bf97c1dea5b",
+      "action": "PIN_LOGIN_SUCCESS",
+      "userId": "usr-6b13c38f",
+      "userName": "panha",
+      "organizationId": "org-6e9ed3cf",
+      "role": "STORE_MANAGER",
+      "details": "Successful Quick PIN login. Landing destination: /admin",
+      "timestamp": "2026-11-07T09:16:45.882Z"
+    },
+    {
+      "id": "4514d305-ab3f-4854-93a9-556fb284b660",
+      "action": "PIN_LOGIN_SUCCESS",
+      "userId": "usr-owner-83bbcc",
+      "userName": "long kimneng",
+      "organizationId": "org-6e9ed3cf",
+      "role": "OWNER",
+      "details": "Successful Quick PIN login. Landing destination: /admin",
+      "timestamp": "2026-11-07T09:16:32.134Z"
+    },
+    {
+      "id": "ae56d30b-fb09-4aca-a6d6-56206a352b04",
+      "action": "PIN_LOGIN_SUCCESS",
+      "userId": "usr-6b13c38f",
+      "userName": "panha",
+      "organizationId": "org-6e9ed3cf",
+      "role": "STORE_MANAGER",
+      "details": "Successful Quick PIN login. Landing destination: /admin",
+      "timestamp": "2026-11-07T08:53:33.080Z"
+    },
+    {
+      "id": "ff939ec3-375a-43c0-8f0c-0961d4fd8fdd",
+      "action": "PIN_LOGIN_SUCCESS",
+      "userId": "usr-owner-83bbcc",
+      "userName": "long kimneng",
+      "organizationId": "org-6e9ed3cf",
+      "role": "OWNER",
+      "details": "Successful Quick PIN login. Landing destination: /admin",
+      "timestamp": "2026-11-07T08:37:55.221Z"
+    },
+    {
+      "id": "0bffeea8-b7d1-4214-a239-0bc28d4bd4f5",
+      "action": "PIN_LOGIN_SUCCESS",
+      "userId": "usr-6b13c38f",
+      "userName": "panha",
+      "organizationId": "org-6e9ed3cf",
+      "role": "STORE_MANAGER",
+      "details": "Successful Quick PIN login. Landing destination: /admin",
+      "timestamp": "2026-11-07T08:36:56.884Z"
+    },
+    {
+      "id": "47b2ea00-ab4f-4022-ab22-e43f4249776a",
+      "action": "PIN_LOGIN_SUCCESS",
+      "userId": "usr-owner-83bbcc",
+      "userName": "long kimneng",
+      "organizationId": "org-6e9ed3cf",
+      "role": "OWNER",
+      "details": "Successful Quick PIN login. Landing destination: /admin",
+      "timestamp": "2026-11-07T08:36:36.996Z"
+    },
+    {
+      "id": "9189d0c1-da20-4fee-b91e-95691784ab9a",
+      "action": "PIN_VIEWED",
+      "organizationId": "org-6e9ed3cf",
+      "performedBy": "panha",
+      "userId": "usr-6b13c38f",
+      "userName": "panha",
+      "details": "Quick PIN revealed for employee panha (panha@gmial.com) by panha",
+      "timestamp": "2026-11-07T08:33:45.655Z"
+    },
+    {
+      "id": "aca52311-750d-4dee-ae9e-e9d5ea360330",
+      "action": "PIN_VIEWED",
+      "organizationId": "org-6e9ed3cf",
+      "performedBy": "panha",
+      "userId": "usr-38055d19",
+      "userName": "Test Cashier",
+      "details": "Quick PIN revealed for employee Test Cashier (cashier_1793814695566@test.com) by panha",
+      "timestamp": "2026-11-07T08:18:04.467Z"
+    },
+    {
+      "id": "0f3a1e3a-7927-4379-936b-d389a78581f2",
+      "action": "PIN_LOGIN_SUCCESS",
+      "userId": "usr-6b13c38f",
+      "userName": "panha",
+      "organizationId": "org-6e9ed3cf",
+      "role": "STORE_MANAGER",
+      "details": "Successful Quick PIN login. Landing destination: /admin",
+      "timestamp": "2026-11-07T08:17:48.306Z"
+    },
+    {
+      "id": "a6815435-0fd5-4762-8a1b-74d687d9288e",
+      "action": "PIN_LOGIN_SUCCESS",
+      "userId": "usr-owner-83bbcc",
+      "userName": "long kimneng",
+      "organizationId": "org-6e9ed3cf",
+      "role": "OWNER",
+      "details": "Successful Quick PIN login. Landing destination: /admin",
+      "timestamp": "2026-11-07T08:17:42.436Z"
+    },
+    {
+      "id": "1573922b-58d6-4a07-99ed-ce3a2754de3f",
+      "action": "PIN_VIEWED",
+      "organizationId": "org-6e9ed3cf",
+      "performedBy": "Admin",
+      "userId": "usr-6b13c38f",
+      "userName": "panha",
+      "details": "Quick PIN revealed for employee panha (panha@gmial.com) by Admin",
+      "timestamp": "2026-11-07T08:15:51.436Z"
+    },
+    {
+      "id": "6178c4f3-35c8-4950-ae64-f032b4bf0112",
+      "action": "PIN_VIEWED",
+      "organizationId": "org-6e9ed3cf",
+      "performedBy": "Admin",
+      "userId": "usr-38055d19",
+      "userName": "Test Cashier",
+      "details": "Quick PIN revealed for employee Test Cashier (cashier_1793814695566@test.com) by Admin",
+      "timestamp": "2026-11-07T08:15:51.430Z"
+    },
+    {
+      "id": "f821e9ad-aaab-46d9-ab69-e80be18c77e6",
+      "action": "PIN_VIEWED",
+      "organizationId": "org-6e9ed3cf",
+      "performedBy": "Admin",
+      "userId": "usr-38055d19",
+      "userName": "Test Cashier",
+      "details": "Quick PIN revealed for employee Test Cashier (cashier_1793814695566@test.com) by Admin",
+      "timestamp": "2026-11-07T08:15:51.427Z"
+    },
+    {
+      "id": "62b1524d-cdda-45c9-8bcf-0192f696baa5",
+      "action": "PIN_VIEWED",
+      "organizationId": "org-6e9ed3cf",
+      "performedBy": "Admin",
+      "userId": "usr-6b13c38f",
+      "userName": "panha",
+      "details": "Quick PIN revealed for employee panha (panha@gmial.com) by Admin",
+      "timestamp": "2026-11-07T08:15:51.424Z"
+    },
+    {
+      "id": "4b0b3143-aad2-490d-bcf8-1bbdd39c2377",
+      "action": "REGISTER_CREATED",
+      "organizationId": "org-6e9ed3cf",
+      "performedBy": "long kimneng",
+      "details": "Created register \"REG-02\" for store \"BeyondVER Main Branch\"",
+      "timestamp": "2026-11-07T08:15:14.686Z"
+    },
+    {
+      "id": "d0457c79-812a-4909-ad40-35af5d0f35fd",
+      "action": "PIN_LOGIN_SUCCESS",
+      "userId": "usr-owner-83bbcc",
+      "userName": "long kimneng",
+      "organizationId": "org-6e9ed3cf",
+      "role": "OWNER",
+      "details": "Successful Quick PIN login. Landing destination: /admin",
+      "timestamp": "2026-11-07T08:03:01.661Z"
+    },
     {
       "id": "98fcfe4c-2cc5-4173-9a60-b6039c544ac0",
       "action": "PIN_LOGIN_SUCCESS",
@@ -2476,7 +2882,9 @@
         "reopenFinancialPeriods": true,
         "exportInventoryReports": true,
         "exportFinancialReports": true,
-        "exportConfidentialReports": true
+        "exportConfidentialReports": true,
+        "manageStoreData": true,
+        "isOwnerEquivalent": true
       },
       "authorityLevel": 100
     },
@@ -2515,7 +2923,9 @@
         "viewImportHistory": true,
         "viewMonthlyRevenue": true,
         "exportInventoryReports": true,
-        "exportFinancialReports": true
+        "exportFinancialReports": true,
+        "manageStoreData": true,
+        "isOwnerEquivalent": true
       },
       "authorityLevel": 90
     },

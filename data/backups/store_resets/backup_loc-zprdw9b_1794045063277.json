@@ -1,0 +1,43 @@
+{
+  "metadata": {
+    "storeId": "loc-zprdw9b",
+    "storeName": "BEYONDSISOWAT",
+    "storeCode": "SSW",
+    "organizationId": "org-6e9ed3cf",
+    "backedUpAt": "2026-11-07T09:51:03.277Z",
+    "performedBy": {
+      "id": "usr-owner-83bbcc",
+      "name": "long kimneng"
+    }
+  },
+  "sqliteRecords": {
+    "shifts": [],
+    "pos_orders": [],
+    "saved_orders": [],
+    "stock_balances": [
+      {
+        "id": "bal-loc-zprdw9b-BV-GEN-2723",
+        "organization_id": "org-6e9ed3cf",
+        "location_id": "loc-zprdw9b",
+        "sku": "BV-GEN-2723",
+        "on_hand": 0,
+        "reserved": 0,
+        "damaged": 0,
+        "rop": 5,
+        "updated_at": "2026-11-05 04:27:36"
+      },
+      {
+        "id": "bal-loc-zprdw9b-BV-GEN-5280",
+        "organization_id": "org-6e9ed3cf",
+        "location_id": "loc-zprdw9b",
+        "sku": "BV-GEN-5280",
+        "on_hand": 0,
+        "reserved": 0,
+        "damaged": 0,
+        "rop": 5,
+        "updated_at": "2026-11-05 04:50:22"
+      }
+    ],
+    "stock_ledger": []
+  }
+}

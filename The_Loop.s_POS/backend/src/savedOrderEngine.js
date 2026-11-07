@@ -168,6 +168,11 @@ function getSavedOrders({
     list = list.filter(o => (o.organizationId || 'org-loops-001') === targetOrg);
   }
 
+  if (user && user.role !== 'OWNER' && user.role !== 'SUPER_ADMIN') {
+    const { canUserAccessStore } = require('./storeManager');
+    list = list.filter(o => canUserAccessStore(user, o.storeId || o.locationId));
+  }
+
   const now = new Date();
   const todayStr = now.toISOString().split('T')[0];
 

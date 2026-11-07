@@ -5,7 +5,6 @@ const NAV_TABS = [
   { id: 'dashboard', label: 'Dashboard', iconName: 'dashboard', desc: 'Valuation & telemetry' },
   { id: 'catalog', label: 'Product Catalog', iconName: 'catalog', desc: 'Single & multi-variant' },
   { id: 'inventory', label: 'Inventory Management', iconName: 'inventory', desc: 'Balances & audit ledger' },
-  { id: 'sales', label: 'Sales & Orders', iconName: 'sales', desc: 'POS checkout & returns' },
   { id: 'purchasing', label: 'Purchasing & Suppliers', iconName: 'purchasing', desc: 'PO & goods receipt' },
   { id: 'customers', label: 'Customers', iconName: 'customers', desc: 'Profiles & lifetime value' },
   { id: 'reports', label: 'Reports & Analytics', iconName: 'reports', desc: 'Gross margin & shrinkage' },
@@ -154,16 +153,6 @@ export default function Navbar({
             </span>
           </form>
 
-          {/* New POS Sale Action */}
-          <button
-            onClick={onOpenSaleModal}
-            className="hidden lg:flex bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-3.5 py-2 rounded-xl text-xs items-center space-x-1.5 shadow-sm transition-all active:scale-95"
-            title="Create New POS Sale Order"
-          >
-            <Icon name="shoppingBag" size={14} />
-            <span>New Sale</span>
-          </button>
-
           {/* Receive Stock Action */}
           <button
             onClick={onOpenReceiveModal}
@@ -268,17 +257,7 @@ export default function Navbar({
             </div>
 
             {/* Quick Action Buttons on Narrow Screen */}
-            <div className="p-3 bg-studio-900/40 border-b border-white/5 grid grid-cols-3 gap-2">
-              <button
-                onClick={() => {
-                  onOpenSaleModal();
-                  setIsMenuOpen(false);
-                }}
-                className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2 px-2 rounded-lg text-xs flex flex-col items-center justify-center space-y-1 shadow-sm"
-              >
-                <Icon name="shoppingBag" size={16} />
-                <span>New Sale</span>
-              </button>
+            <div className="p-3 bg-studio-900/40 border-b border-white/5 grid grid-cols-2 gap-2">
               <button
                 onClick={() => {
                   onOpenReceiveModal();

@@ -74,7 +74,11 @@ export default function DatePeriodReporting({ mode, onShowToast }) {
     const loadStores = async () => {
       try {
         const stores = await api.getStores();
-        setStoresList(Array.isArray(stores) ? stores : []);
+        const validStores = Array.isArray(stores) ? stores : [];
+        setStoresList(validStores);
+        if (validStores.length === 1) {
+          setSelectedStore(validStores[0].id);
+        }
       } catch (err) {
         console.warn('Could not load stores list:', err);
       }
@@ -579,7 +583,9 @@ export default function DatePeriodReporting({ mode, onShowToast }) {
               onChange={(e) => setSelectedStore(e.target.value)}
               className="bg-transparent text-xs text-white outline-none cursor-pointer pr-1"
             >
-              <option value="ALL" className="bg-[#111520] text-white">All Stores (Combined)</option>
+              {storesList.length > 1 && (
+                <option value="ALL" className="bg-[#111520] text-white">All Stores (Combined)</option>
+              )}
               {storesList.filter(s => s.id !== 'ALL').map(s => (
                 <option key={s.id} value={s.id} className="bg-[#111520] text-white">
                   {s.name} ({s.code || 'STORE'})
